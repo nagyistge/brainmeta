@@ -310,3 +310,13 @@ for n in range(17,len(names_subset)):
   out_count = len(out_nifti_subset)
   average_stat_map = mrtable.loc[in_nifti_subset].mean()
   reverse_inferences[name] = calculate_reverse_inference(average_stat_map,range_table,priors_in[name],priors_out[name],in_count,out_count)
+
+# Save to pickle
+pickle.dump(reverse_inferences,open("/home/vanessa/Documents/Work/BRAINMETA/data/brainmeta_reverse_inf.pkl","wb"))
+
+# Write to text file
+filey = open("/home/vanessa/Documents/Work/BRAINMETA/data/brainmeta_reverse_inf.tsv","wb")
+filey.writelines("NODE_GROUP\tREVERSE_INFERENCE_SCORE\n")
+for task,value in reverse_inferences.iteritems():
+  filey.writelines("%s\t%s\n" %(task,value))
+filey.close()
