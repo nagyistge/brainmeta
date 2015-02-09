@@ -2,6 +2,8 @@
 
 '''Similarity Metrics
 
+For experiment1: all image input are nibabel, Z maps, already registered to brain mask
+
 @author vsoch 
 @data 2/2015
 '''
@@ -16,24 +18,16 @@ from nipy.algorithms.registration import histogram_registration
 
 # http://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html#scipy.spatial.distance.pdist
 
-# IMAGE MANIPULATION
-def load_image_data(image_file):
-  mr = nib.load(image_file)
-  return mr.get_data()
-
-def flatten_image(image):
-  return 
-
 # METRIC EXTRACTION
-def run_all(image1,image2,brainmask):
+def run_all(image1,image2,brain_mask):
   '''Extract all similarity metrics for image1 and image2. image2 should be the "gold standard", if applicable (the image we register to). Returns a dictionary of metric scores.'''
-  data1 = load_image_data(image1)
-  data2 = load_image_data(image2)
+  data1 = image1.get_data()
+  data2 = image2.get_data()
 
   # Strategy 1: intersection of nonzero,non-nan voxels (pairwise deletion)
+  pairwise_deletion_mask = 
 
-  # Strategy 2: everything in whole brain mask (brain mask)
-
+  # Strategy 2: everything in whole brain mask (use mask)
 
 # (intersection corresponds to an "AND conjunction")
 bin_p_values = (log_p_values != 0)
