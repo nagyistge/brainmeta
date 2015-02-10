@@ -25,16 +25,16 @@ for i in inputs["ID"]:
   image_id = i
   single_metrics = "%s/000%s.pkl" %(outdirectory,i)
   output_metrics = "%s/000%s.tsv" %(outdirectory,i)
-  if not os.path.isfile(output_file):
-    filey = ".job/" + uuids[i] + ".job"
+  if not os.path.isfile(output_metrics):
+    filey = ".job/%s.job" %(image_id)
     filey = open(filey,"w")
     filey.writelines("#!/bin/bash\n")
-    filey.writelines("#SBATCH --job-name=" + uuids[i] + "\n")
-    filey.writelines("#SBATCH --output=.out/" + uuids[i] + ".out\n")
-    filey.writelines("#SBATCH --error=.out/" + uuids[i] + ".err\n")
+    filey.writelines("#SBATCH --job-name=%s\n" %(image_id))
+    filey.writelines("#SBATCH --output=.out/%s.out\n" %(image_id))
+    filey.writelines("#SBATCH --error=.out/%s.err\n" %(image_id))
     filey.writelines("#SBATCH --time=1-00:00\n")
-    filey.writelines("#SBATCH --mem=64000\n")
-    # Usage : experiment1_analysis1.py image_id base_path output_file standard input_file input_delim
-    filey.writelines("/home/vsochat/python-lapack-blas/bin/python /home/vsochat/SCRIPT/python/brainmeta/experiment1/experiment1_analysis1.py %s %s %s" %(image_id,indirectory,output_metrics,single_metrics,standard,input_file,input_delim))
+    filey.writelines("#SBATCH --mem=12000\n")
+    # Usage : experiment1_analysis1.py image_id base_path output_metrics, single_metrics,standard input_file input_delim
+    filey.writelines("/home/vsochat/python-lapack-blas/bin/python /home/vsochat/SCRIPT/python/brainmeta/experiment1/experiment1_analysis1.py %s %s %s %s %s %s %s" %(image_id,indirectory,output_metrics,single_metrics,standard,input_file,input_delim))
     filey.close()
-    os.system("sbatch " + ".job/" + image_id + ".job")
+    os.system("sbatch " + ".job/%s.job" %(image_id))
