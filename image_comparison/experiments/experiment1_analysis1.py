@@ -19,6 +19,7 @@
 
 import sys
 import pandas
+import pickle
 import numpy as np
 import nibabel as nib
 import similarity_metrics as SM
@@ -27,15 +28,16 @@ import image_transformations as IT
 # Get arguments
 image_id = sys.argv[1]
 indirectory = sys.argv[2]
-output_file = sys.argv[3]
-standard_mask = sys.argv[4]
-input_file = sys.argv[5]
-input_delim = sys.argv[6]
+output_metrics = sys.argv[3]
+single_metrics = sys.argv[4]
+standard_mask = sys.argv[5]
+input_file = sys.argv[6]
+input_delim = sys.argv[7]
 
 print "Processing image %s" %(image_path)
 
 # Load other image paths
-inputs = pandas.read_csv(inputfile,sep=input_delim)
+inputs = pandas.read_csv(input_file,sep=input_delim)
 image_path = "%s/000%s.nii.gz" %(indirectory,image_id)
 original = nib.load(image_path)
 mask = nib.load(standard_mask)
@@ -46,9 +48,12 @@ thresholds1 = np.sort(thresholded1.keys())
 image1_labels = ["%s_thr_%s" %(image_id,thresh) for thresh in thresholds1]
 
 # We will have a matrix of image threshold combinations (rows) by similarity metrics (columns)
-similarity_metrics = pandas.DataFrame()
+ordered_column_names = SM.get_column_labels()
+similarity_metrics = pandas.DataFrame(columns=ordered_column_names)
+single_metrics = dict()
 
 # Extract a column (list of similarity metrics) for each image vs original (index 0 == original)
+idx=0
 for t in range(0,len(thresholds1)):
   thresh = thresholds1[t]
   image1 = thresholded1[thresh]
@@ -70,15 +75,15 @@ for t in range(0,len(thresholds1)):
         thresh2 = thresholds2[t]
         image2 = thresholded2[thresh2]
         label2 = image2_labels[tt]
-        single_metrics,pairwise_metrics = SM.run_all(image1=image1,image2=image2,image1_label=label1,
-                                            image2_label=image2_label,brain_mask=mask)    
-        # Here we need to format into a data frame to save, and add single_metrics MUST TEST THIS!
-        similarity_metrics["%s_%s" %(label1,label2)] = pairwise_metrics
-        
+        single_metric,pairwise_metrics = SM.run_all(image1=image1,image2=image2,
+                               image1_label=label1,image2_label=image2_label,brain_mask=mask) 
+        # order metric dictionary by our column names, add to data frame   
+        similarity_metrics.loc[idx] = [pairwise_metrics[x] for x in ordered_column_names]
+        single_metrics.update(single_metric)
 
     else:
       print "ERROR: mask %s and image %s are not the same shape! Exiting." %(standard_mask,image_path)
 
   # Save the similarity metrics to file
-  similarity_metrics.to_csv(output_file,sep="\t")
-
+  similarity_metrics.to_csv(output_metrics,sep="\t")
+  pickle.dump(single_metrics,open(output_single,"wb"))
