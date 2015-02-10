@@ -21,54 +21,53 @@ from nipy.algorithms.registration.histogram_registration import HistogramRegistr
 # http://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html#scipy.spatial.distance.pdist
 
 # METRIC EXTRACTION
-def run_all(image1,image2,image1_label,image2_label,brain_mask):
-  '''Extract all similarity metrics for image1 and image2. image2 should be the "gold standard", if applicable (the image we register to). Returns a dictionary of metric scores.'''
+def run_single(image1):
 
-  strategies = dict()
+  metrics = dict()
+  metrics["standard_deviation"] = standard_deviation(image1)
+  metrics["variance"] = variance(image1)
+
+def run_pairwise(data,image1,image2,brain_mask):
+
   metrics = dict()
 
-  # Strategy 1: intersection of nonzero,non-nan voxels (pairwise deletion)
-  strategies["pairwise_deletion_mask"] = IT.get_pairwise_deletion_mask(image1,image2,brain_mask)
+  # Comparison metrics [continuous]
+  metrics["covariance"]  = covariance(data[0],data[1])
+  metrics["correlation_coefficient"] = correlation_coefficient(image1,image2,brain_mask)
+  metrics["correlation_ratio"] = correlation_ratio(image1,image2,brain_mask)
+  metrics["correlation_ratio_norm"] = correlation_ratio_norm(image1,image2,brain_mask)
+  metrics["mutual_information_norm"] = mutual_information_norm(image1,image2,brain_mask)
+  metrics["mutual_information"] = mutual_information_norm(image1,image2,brain_mask)
+  metrics["supervised_ll_ratio"] = supervised_ll_ratio(image1,image2,brain_mask)
+  metrics["cosine"] = cosine_metric(data[0],data[1])
+  metrics["activation_differences"] = activation_differences(data[0],data[1])
+  distances = ["euclidean","minkowski","cityblock","seuclidean","sqeuclidean",
+               "kulsinki","chebyshev","canberra","braycurtis","mahalanobis",
+               "wminkowski"]  
+  for dist in distances:
+    metrics["%s" %(dist)] = pdist(data[0],data[1],dist)
 
-  # Strategy 2: everything in whole brain mask (use mask)
-  strategies["inside_brain_mask"] = brain_mask
-  
-  # For each of the strategies, calculate similarity metrics
-  for strategy,strategy_mask in strategies.iteritems():
-    data = apply_mask([image1,image2],strategy_mask)
-    label1 = "%s_%s" %(image1_label,strategy) 
-    label2 = "%s_%s" %(image2_label,strategy) 
-    
-    # Comparison metrics [continuous]
-    metrics["covariance_%s_vs_%s" %(label1,label2)] = covariance(data[0],data[1])
-    metrics["correlation_coefficient_%s_vs_%s" %(label1,label2)] = correlation_coefficient(image1,image2,strategy_mask)
-    metrics["correlation_ratio_%s_vs_%s" %(label1,label2)] = correlation_ratio(image1,image2,strategy_mask)
-    metrics["correlation_ratio_norm_%s_vs_%s" %(label1,label2)] = correlation_ratio_norm(image1,image2,strategy_mask)
-    metrics["mutual_information_norm_%s_vs_%s" %(label1,label2)] = mutual_information_norm(image1,image2,strategy_mask)
-    metrics["mutual_information_%s_vs_%s" %(label1,label2)] = mutual_information_norm(image1,image2,strategy_mask)
-    metrics["supervised_ll_ratio_%s_vs_%s" %(label1,label2)] = supervised_ll_ratio(image1,image2,strategy_mask)
-    metrics["cosine_%s_vs_%s" %(label1,label2)] = cosine_metric(data[0],data[1])
-    metrics["activation_differences_%s_vs_%s" %(label1,label2)] = activation_differences(data[0],data[1])
-    distances = ["euclidean","minkowski","cityblock","seuclidean","sqeuclidean",
-                 "kulsinki","chebyshev","canberra","braycurtis","mahalanobis",
-                 "wminkowski"]  
-    for dist in distances:
-        metrics["%s_%s_vs_%s" %(dist,label1,label2)] = pdist(data[0],data[1],dist)
-
-    # Individual metrics
-    metrics["variance_%s" %(label1)] = variance(data[0])   
-    metrics["variance_%s" %(label2)] = variance(data[1])   
-    metrics["std_%s" %(label1)] = variance(data[0])   
-    metrics["std_%s" %(label2)] = variance(data[1])   
-
-    # Comparison metrics [boolean]
-    data = data.astype(bool).astype(int)
-    distances = ["hamming","yule","matching","dice","kulsinski","rogerstanimoto",
-                 "russellrao","sokalmichener"]
-    for dist in distances:
-        metrics["%s_%s_vs_%s" %(dist,label1,label2)] = pdist(data[0],data[1],dist)
+  # Comparison metrics [boolean]
+  data = data.astype(bool).astype(int)
+  distances = ["hamming","yule","matching","dice","kulsinski","rogerstanimoto",
+              "russellrao","sokalmichener"]
+  for dist in distances:
+      metrics["%s" %(dist)] = pdist(data[0],data[1],dist)
 
   return metrics  
+
+
+def run_all(image1,image2,label1,label2,brain_mask):
+  '''Extract all similarity metrics for image1 and image2. image2 should be the "gold standard", if applicable (the image we register to). Returns a dictionary of metric scores.'''
+
+  # We will use a pairwise deletion mask
+  pairwise_deletion_mask = IT.get_pairwise_deletion_mask(image1,image2,brain_mask)
+  data = apply_mask([image1,image2],brain_mask)
+  pairwise_metrics = run_pairwise(data=data,image1=image1,image2=image2,brain_mask=pairwise_deletion_mask)    
+  single_metrics = dict()
+  single_metrics[label1] = run_single(data[0],label1)
+  single_metrics[label2] = run_single(data[1],label2)
+  return pairwise_metrics,single_metrics
 
 # SIMILARITY METRICS
 

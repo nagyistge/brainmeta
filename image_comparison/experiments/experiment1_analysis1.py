@@ -18,6 +18,7 @@
 # neurosynth database. You should run this with run_authorSynth_cluster.py
 
 import sys
+import pandas
 import numpy as np
 import nibabel as nib
 import similarity_metrics as SM
@@ -25,36 +26,59 @@ import image_transformations as IT
 
 # Get arguments
 image_id = sys.argv[1]
-image_path = sys.argv[2]
+indirectory = sys.argv[2]
 output_file = sys.argv[3]
 standard_mask = sys.argv[4]
+input_file = sys.argv[5]
+input_delim = sys.argv[6]
 
 print "Processing image %s" %(image_path)
 
+# Load other image paths
+inputs = pandas.read_csv(inputfile,sep=input_delim)
+image_path = "%s/000%s.nii.gz" %(indirectory,image_id)
 original = nib.load(image_path)
 mask = nib.load(standard_mask)
 
-# Only proceed if image dimensions are equal, and in same space
-if ((mask.shape == standard.shape) and np.all(mask.get_affine() == original.get_affine())):
+# Produce thresholdings (these are all Z score maps, this includes original image (thresh 0))
+thresholded1 = IT.threshold_abs(original)
+thresholds1 = np.sort(thresholded1.keys())
+image1_labels = ["%s_thr_%s" %(image_id,thresh) for thresh in thresholds1]
 
-  # Produce thresholdings (these are all Z score maps, this includes original image (thresh 0))
-  thresholded = IT.threshold_abs(original)
-  thresholds = np.sort(thresholded.keys())
-  image_labels = ["%s_thresh_%s" %(image_id,thresh) for thresh in thresholds]
+# We will have a matrix of image threshold combinations (rows) by similarity metrics (columns)
+similarity_metrics = pandas.DataFrame()
 
-  # We will have a matrix of similarity scores (rows) by transformations (columns) compared to gold standard
-  similarity_metrics = pandas.DataFrame()
+# Extract a column (list of similarity metrics) for each image vs original (index 0 == original)
+for t in range(0,len(thresholds1)):
+  thresh = thresholds1[t]
+  image1 = thresholded1[thresh]
+  label1 = image1_labels[t]
+    
+  # Do a comparison for each pairwise set at each threshold
+  for i in inputs["IMAGE_ID"]:
 
-  # Extract a column (list of similarity metrics) for each image vs original (index 0 == original)
-  for t in range(0,len(thresholds)):
-    thresh = thresholds[t]
-    image = thresholded[thresh]
-    label = image_labels[t]
-    similarity_metrics[thresh] = SM.run_all(image1=image,image2=original,image1_label=label,
-                                            image2_label=image_id,brain_mask=mask)    
+    image2_path = "%s/000%s.nii.gz" %(indirectory,i)
+    image2 = nib.load(image2_path)
+  
+    # Only proceed if image dimensions are equal, and in same space
+    if ((image1.shape == image2.shape) and np.all(image1.get_affine() == image2.get_affine())):
+      thresholded2 = IT.threshold_abs(image2)
+      thresholds2 = np.sort(thresholded2.keys())
+      image2_labels = ["%s_thr_%s" %(i,th) for th in thresholds2]
+
+      for tt in range(0,len(thresholds2)):
+        thresh2 = thresholds2[t]
+        image2 = thresholded2[thresh2]
+        label2 = image2_labels[tt]
+        single_metrics,pairwise_metrics = SM.run_all(image1=image1,image2=image2,image1_label=label1,
+                                            image2_label=image2_label,brain_mask=mask)    
+        # Here we need to format into a data frame to save, and add single_metrics MUST TEST THIS!
+        similarity_metrics["%s_%s" %(label1,label2)] = pairwise_metrics
+        
+
+    else:
+      print "ERROR: mask %s and image %s are not the same shape! Exiting." %(standard_mask,image_path)
 
   # Save the similarity metrics to file
   similarity_metrics.to_csv(output_file,sep="\t")
 
-else:
-  print "ERROR: mask %s and image %s are not the same shape! Exiting." %(standard_mask,image_path)
