@@ -60,7 +60,7 @@ for t in range(0,len(thresholds1)):
   label1 = image1_labels[t]
     
   # Do a comparison for each pairwise set at each threshold
-  for i in inputs["IMAGE_ID"]:
+  for i in inputs["ID"]:
 
     image2_path = "%s/000%s.nii.gz" %(indirectory,i)
     image2 = nib.load(image2_path)

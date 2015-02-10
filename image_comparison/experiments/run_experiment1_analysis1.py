@@ -21,7 +21,7 @@ inputs = pandas.read_csv(input_file,sep=input_delim)
 # IMAGE_ID should correspond to integer ID
 
 # Prepare and submit a job for each
-for i in inputs["IMAGE_ID"]:
+for i in inputs["ID"]:
   image_id = i
   single_metrics = "%s/000%s.pkl" %(outdirectory,i)
   output_metrics = "%s/000%s.tsv" %(outdirectory,i)
