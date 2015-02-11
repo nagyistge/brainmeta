@@ -33,11 +33,10 @@ single_metrics = sys.argv[4]
 standard_mask = sys.argv[5]
 input_file = sys.argv[6]
 
-print "Processing image %s" %(image_path)
-
 # Load other image paths
 inputs = pandas.read_csv(input_file,sep="\t")
 image_path = "%s/000%s.nii.gz" %(indirectory,image_id)
+print "Processing image %s" %(image_path)
 original = nib.load(image_path)
 mask = nib.load(standard_mask)
 
@@ -59,10 +58,10 @@ for t in range(0,len(thresholds1)):
   label1 = image1_labels[t]
     
   # Do a comparison for each pairwise set at each threshold
-  for i in inputs["ID"]:
-
+  for i in inputs.ID:
     image2_path = "%s/000%s.nii.gz" %(indirectory,i)
     image2 = nib.load(image2_path)
+
   
     # Only proceed if image dimensions are equal, and in same space
     if ((image1.shape == image2.shape) and np.all(image1.get_affine() == image2.get_affine())):
@@ -70,15 +69,17 @@ for t in range(0,len(thresholds1)):
       thresholds2 = np.sort(thresholded2.keys())
       image2_labels = ["%s_thr_%s" %(i,th) for th in thresholds2]
 
+
       for tt in range(0,len(thresholds2)):
-        thresh2 = thresholds2[t]
+        thresh2 = thresholds2[tt]
         image2 = thresholded2[thresh2]
         label2 = image2_labels[tt]
         single_metric,pairwise_metrics = SM.run_all(image1=image1,image2=image2,
-                               image1_label=label1,image2_label=image2_label,brain_mask=mask) 
+                               label1=label1,label2=label2,brain_mask=mask) 
         # order metric dictionary by our column names, add to data frame   
         similarity_metrics.loc[idx] = [pairwise_metrics[x] for x in ordered_column_names]
         single_metrics.update(single_metric)
+
 
     else:
       print "ERROR: %s and %s are not the same shape! Exiting." %(image2_path,image_path)
