@@ -81,7 +81,7 @@ for t in range(0,len(thresholds1)):
         single_metrics.update(single_metric)
 
     else:
-      print "ERROR: mask %s and image %s are not the same shape! Exiting." %(standard_mask,image_path)
+      print "ERROR: %s and %s are not the same shape! Exiting." %(image2_path,image_path)
 
   # Save the similarity metrics to file
   similarity_metrics.to_csv(output_metrics,sep="\t")
