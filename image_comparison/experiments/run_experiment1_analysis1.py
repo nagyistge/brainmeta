@@ -6,15 +6,15 @@
 
 import os
 import pandas
-basedir = "/corral-repl/utexas/poldracklab/code/vsochat"
+#basedir = "/corral-repl/utexas/poldracklab/code/vsochat"
 #basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment1"
-#basedir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/mr"
+basedir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON"
 outdirectory = "%s/similarity_scores" %(basedir)
 indirectory = "%s/mr" %(basedir)
 standard = "%s/standard/MNI152_T1_2mm_brain_mask.nii.gz" %(basedir)
 
 # Input file
-input_file = "%s/openfmri_labels.tsv" %(basedir)
+input_file = "%s/openfmri_labels_local.tsv" %(basedir)
 input_delim = "\t"
 
 # Read in input file

@@ -13,7 +13,7 @@ import nibabel as nib
 import image_transformations as IT
 from nilearn.masking import apply_mask
 from scipy.spatial.distance import cdist
-from nipy.algorithms.registration.histogram_registration import HistogramRegistration
+from nipype.interfaces.nipy.utils import Similarity
 
 # Mean Absolute Differences
 # Activation Scores
@@ -27,7 +27,8 @@ def run_all(image1,image2,label1,label2,brain_mask):
   # We will use a pairwise deletion mask
   pairwise_deletion_mask = IT.get_pairwise_deletion_mask(image1,image2,brain_mask)
   data = apply_mask([image1,image2],pairwise_deletion_mask)
-  pairwise_metrics = run_pairwise(data=data,image1=image1,image2=image2,brain_mask=pairwise_deletion_mask)    
+  pairwise_metrics = run_pairwise(data=data,image1=image1,image2=image2,brain_mask=pairwise_deletion_mask,
+                                  label1=label1,label2=label2)    
   single_metrics = dict()
   single_metrics[label1] = run_single(data[0],label1)
   single_metrics[label2] = run_single(data[1],label2)
@@ -49,18 +50,23 @@ def run_single(image1):
   metrics["standard_deviation"] = standard_deviation(image1)
   metrics["variance"] = variance(image1)
 
-def run_pairwise(data,image1,image2,brain_mask):
+def run_pairwise(data,image1,image2,brain_mask,label1,label2):
 
   metrics = dict()
 
+  # We need to generate temporary images to use Similarity module
+  image1_tmp = IT.make_tmp_nii(image1,label1)
+  image2_tmp = IT.make_tmp_nii(image2,label2)
+  mask_tmp = IT.make_tmp_nii(brain_mask,"%s_%s_mask" %(label1,label2))
+  
   # Comparison metrics [continuous]
   metrics["covariance"]  = covariance(data[0],data[1])
-  metrics["correlation_coefficient"] = correlation_coefficient(data[0],data[1])
-  metrics["correlation_ratio"] = correlation_ratio(image1,image2,brain_mask.get_data())
-  metrics["correlation_ratio_norm"] = correlation_ratio_norm(image1,image2,brain_mask.get_data())
-  metrics["mutual_information_norm"] = mutual_information_norm(image1,image2,brain_mask.get_data())
-  metrics["mutual_information"] = mutual_information_norm(image1,image2,brain_mask.get_data())
-  metrics["supervised_ll_ratio"] = supervised_ll_ratio(image1,image2,brain_mask.get_data())
+  metrics["correlation_coefficient"] = correlation_coefficient(image1_tmp,image2_tmp,mask_tmp)
+  metrics["correlation_ratio"] = correlation_ratio(image1_tmp,image2_tmp,mask_tmp)
+  metrics["correlation_ratio_norm"] = correlation_ratio_norm(image1_tmp,image2_tmp,mask_tmp)
+  metrics["mutual_information_norm"] = mutual_information_norm(image1_tmp,image2_tmp,mask_tmp)
+  metrics["mutual_information"] = mutual_information_norm(image1_tmp,image2_tmp,mask_tmp)
+  metrics["supervised_ll_ratio"] = supervised_ll_ratio(image1_tmp,image2_tmp,mask_tmp)
   metrics["cosine"] = cosine_metric(data[0],data[1])
   metrics["activation_differences"] = activation_differences(data[0],data[1])
   distances = ["euclidean","minkowski","cityblock","seuclidean","sqeuclidean",
@@ -103,13 +109,18 @@ def standard_deviation(image1):
 
 
 # Correlation Coefficient
-def correlation_coefficient(image1,image2):
+def correlation_coefficient(image1_file,image2_file,mask_file):
   '''Correlation coefficient is ratio between covariance and product of standard deviations'''
   print "Calculating correlation coefficient for %s" %(image1)
-  return covariance(image1,image2) / (standard_deviation(image1) * standard_deviation(image2))
-  #mi = HistogramRegistration(image2, image1, similarity='cc',from_mask=mask,to_mask=mask)  
-  #T = mi.optimize("affine")
-  #return mi.explore(T)[0][0]
+  #return covariance(image1,image2) / (standard_deviation(image1) * standard_deviation(image2))
+  similarity = Similarity()
+  similarity.inputs.volume1 = image1_file
+  similarity.inputs.volume2 = image2_file
+  similarity.inputs.mask1 = mask_file
+  similarity.inputs.mask2 = mask_file
+  similarity.inputs.metric = 'cc'
+  res = similarity.run() # doctest: +SKIP  
+  return res.outputs.similarity
 
 
 # Correlation Coefficient Without Centering (cosine)
@@ -120,45 +131,70 @@ def cosine_metric(image1,image2):
 
 
 # Correlation Ratio
-def correlation_ratio(image1,image2,mask):
+def correlation_ratio(image1_file,image2_file,mask_file):
   print "Calculating correlation ratio for %s" %(image1)
-  mi = HistogramRegistration(image2, image1, similarity='cr',from_mask=mask,to_mask=mask)  
-  T = mi.optimize("affine")
-  return mi.explore(T)[0][0]
+  similarity = Similarity()
+  similarity.inputs.volume1 = image1_file
+  similarity.inputs.volume2 = image2_file
+  similarity.inputs.mask1 = mask_file
+  similarity.inputs.mask2 = mask_file
+  similarity.inputs.metric = 'cr'
+  res = similarity.run() # doctest: +SKIP  
+  return res.outputs.similarity
 
 
-def correlation_ratio_norm(image1,image2,mask):
+def correlation_ratio_norm(image1_file,image2_file,mask_file):
   '''L1 based correlation ratio'''
   print "Calculating correlation ratio norm for %s" %(image1)
-  mi = HistogramRegistration(image2, image1, similarity='crl1',from_mask=mask,to_mask=mask)  
-  T = mi.optimize("affine")
-  return mi.explore(T)[0][0]
+  similarity = Similarity()
+  similarity.inputs.volume1 = image1_file
+  similarity.inputs.volume2 = image2_file
+  similarity.inputs.mask1 = mask_file
+  similarity.inputs.mask2 = mask_file
+  similarity.inputs.metric = 'crl1'
+  res = similarity.run() # doctest: +SKIP  
+  return res.outputs.similarity
 
 
 # Mutual Information
-def mutual_information(image1,image2,mask):
+def mutual_information(image1_file,image2_file,mask_file):
   '''mutual information'''
-  print "Calculating mutual information for %s" %(image1)
-  mi = HistogramRegistration(image2, image1, similarity='mi',from_mask=mask,to_mask=mask)  
-  T = mi.optimize("affine")
-  return mi.explore(T)[0][0]
+  similarity = Similarity()
+  similarity.inputs.volume1 = image1_file
+  similarity.inputs.volume2 = image2_file
+  similarity.inputs.mask1 = mask_file
+  similarity.inputs.mask2 = mask_file
+  similarity.inputs.metric = 'mi'
+  res = similarity.run() # doctest: +SKIP  
+  return res.outputs.similarity
+
 
 
 # Normalized Mutual Information
-def mutual_information_norm(image1,image2,mask):
+def mutual_information_norm(image1_file,image2_file,mask_file):
   '''normalized mutual information'''
   print "Calculating normalized mutual information for %s" %(image1)
-  mi = HistogramRegistration(image2, image1, similarity='nmi',from_mask=mask,to_mask=mask)  
-  T = mi.optimize("affine")
-  return mi.explore(T)[0][0]
+  similarity = Similarity()
+  similarity.inputs.volume1 = image1_file
+  similarity.inputs.volume2 = image2_file
+  similarity.inputs.mask1 = mask_file
+  similarity.inputs.mask2 = mask_file
+  similarity.inputs.metric = 'nmi'
+  res = similarity.run() # doctest: +SKIP  
+  return res.outputs.similarity
 
   
-def supervised_ll_ratio(image1,image2,mask):
+def supervised_ll_ratio(image1_file,image2_file,mask_file):
   '''supervised log likihood ratio'''
   print "Calculating supervised ll ratio for %s" %(image1)
-  mi = HistogramRegistration(image2, image1, similarity='slr',from_mask=mask,to_mask=mask)  
-  T = mi.optimize("affine")
-  return mi.explore(T)[0][0]
+  similarity = Similarity()
+  similarity.inputs.volume1 = image1_file
+  similarity.inputs.volume2 = image2_file
+  similarity.inputs.mask1 = mask_file
+  similarity.inputs.mask2 = mask_file
+  similarity.inputs.metric = 'slr'
+  res = similarity.run() # doctest: +SKIP  
+  return res.outputs.similarity
 
 
 # Activation Scores
