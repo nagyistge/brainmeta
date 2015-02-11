@@ -32,12 +32,11 @@ output_metrics = sys.argv[3]
 single_metrics = sys.argv[4]
 standard_mask = sys.argv[5]
 input_file = sys.argv[6]
-input_delim = sys.argv[7]
 
 print "Processing image %s" %(image_path)
 
 # Load other image paths
-inputs = pandas.read_csv(input_file,sep=input_delim)
+inputs = pandas.read_csv(input_file,sep="\t")
 image_path = "%s/000%s.nii.gz" %(indirectory,image_id)
 original = nib.load(image_path)
 mask = nib.load(standard_mask)
