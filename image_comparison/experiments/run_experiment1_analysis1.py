@@ -11,6 +11,7 @@ import pandas
 basedir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON"
 outdirectory = "%s/similarity_scores" %(basedir)
 indirectory = "%s/mr" %(basedir)
+tmpdirectory = "%s/tmp" %(basedir)
 standard = "%s/standard/MNI152_T1_2mm_brain_mask.nii.gz" %(basedir)
 
 # Input file

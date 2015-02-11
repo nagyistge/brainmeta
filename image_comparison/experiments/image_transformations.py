@@ -50,8 +50,7 @@ def get_pairwise_deletion_mask(image1,image2,mask):
     return pdmask_img    
 
 # File Operations
-def make_tmp_nii(image1,label1):
-  image1_tmp_file = "/tmp/%s.nii" %(label1) 
+def make_tmp_nii(image1,tmp_file):
   image1_tmp = nib.Nifti1Image(image1.get_data(),affine=image1.get_affine(),header=image1.get_header())
-  nib.save(image1_tmp,image1_tmp_file)
-  return image1_tmp_file
+  nib.save(image1_tmp,tmp_file)
+  return tmp_file

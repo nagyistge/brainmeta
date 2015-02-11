@@ -28,10 +28,11 @@ import image_transformations as IT
 # Get arguments
 image_id = sys.argv[1]
 indirectory = sys.argv[2]
-output_metrics = sys.argv[3]
-single_metrics = sys.argv[4]
-standard_mask = sys.argv[5]
-input_file = sys.argv[6]
+tmpdirectory = sys.argv[3]
+output_metrics = sys.argv[4]
+single_metrics = sys.argv[5]
+standard_mask = sys.argv[6]
+input_file = sys.argv[7]
 
 # Load other image paths
 inputs = pandas.read_csv(input_file,sep="\t")
@@ -75,7 +76,7 @@ for t in range(0,len(thresholds1)):
         image2 = thresholded2[thresh2]
         label2 = image2_labels[tt]
         single_metric,pairwise_metrics = SM.run_all(image1=image1,image2=image2,
-                               label1=label1,label2=label2,brain_mask=mask) 
+                               label1=label1,label2=label2,brain_mask=mask,tmpdir=tmpdirectory) 
         # order metric dictionary by our column names, add to data frame   
         similarity_metrics.loc[idx] = [pairwise_metrics[x] for x in ordered_column_names]
         single_metrics.update(single_metric)
