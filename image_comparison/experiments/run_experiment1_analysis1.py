@@ -6,7 +6,8 @@
 
 import os
 import pandas
-basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment1"
+basedir = "/corral-repl/utexas/poldracklab/code/vsochat"
+#basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment1"
 #basedir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/mr"
 outdirectory = "%s/similarity_scores" %(basedir)
 indirectory = "%s/mr" %(basedir)
