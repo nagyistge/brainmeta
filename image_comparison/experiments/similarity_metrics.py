@@ -13,7 +13,7 @@ import numpy as np
 import nibabel as nib
 import image_transformations as IT
 from nilearn.masking import apply_mask
-from scipy.spatial.distance import cdist
+from scipy.spatial.distance import pdist
 from nipype.interfaces.nipy.utils import Similarity
 
 # Mean Absolute Differences
@@ -74,14 +74,14 @@ def run_pairwise(data,image1,image2,brain_mask,label1,label2,tmpdir):
                "kulsinki","chebyshev","canberra","braycurtis","mahalanobis",
                "wminkowski"]  
   for dist in distances:
-    metrics["%s" %(dist)] = pdist(data[0],data[1],dist)
+    metrics["%s" %(dist)] = pdist(data,dist)[0]
 
   # Comparison metrics [boolean]
   data = data.astype(bool).astype(int)
   distances = ["hamming","yule","matching","dice","kulsinski","rogerstanimoto",
               "russellrao","sokalmichener"]
   for dist in distances:
-      metrics["%s" %(dist)] = pdist(data[0],data[1],dist)
+      metrics["%s" %(dist)] = pdist(data,dist)[0]
 
   os.remove(image1_tmp)
   os.remove(image2_tmp)
@@ -131,7 +131,7 @@ def correlation_coefficient(image1_file,image2_file,mask_file):
 def cosine_metric(image1,image2):
   print "Calculating cosine for %s and %s" %(image1,image2)
   X = [image1,image2]
-  return pdist(X,"cosine")
+  return pdist(X,"cosine")[0]
 
 
 # Correlation Ratio
