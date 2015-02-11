@@ -79,6 +79,7 @@ for t in range(0,len(thresholds1)):
         # order metric dictionary by our column names, add to data frame   
         similarity_metrics.loc[idx] = [pairwise_metrics[x] for x in ordered_column_names]
         single_metrics.update(single_metric)
+        idx+=1
 
 
     else:

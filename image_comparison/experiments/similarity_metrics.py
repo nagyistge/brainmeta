@@ -21,6 +21,19 @@ from nipy.algorithms.registration.histogram_registration import HistogramRegistr
 # http://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html#scipy.spatial.distance.pdist
 
 # METRIC EXTRACTION
+def run_all(image1,image2,label1,label2,brain_mask):
+  '''Extract all similarity metrics for image1 and image2. image2 should be the "gold standard", if applicable (the image we register to). Returns a dictionary of metric scores.'''
+
+  # We will use a pairwise deletion mask
+  pairwise_deletion_mask = IT.get_pairwise_deletion_mask(image1,image2,brain_mask)
+  data = apply_mask([image1,image2],pairwise_deletion_mask)
+  pairwise_metrics = run_pairwise(data=data,image1=image1,image2=image2,brain_mask=pairwise_deletion_mask)    
+  single_metrics = dict()
+  single_metrics[label1] = run_single(data[0],label1)
+  single_metrics[label2] = run_single(data[1],label2)
+  return pairwise_metrics,single_metrics
+
+
 def get_column_labels():
   return ["covariance","correlation_coefficient","correlation_ratio","correlation_ratio_norm",
           "mutual_information_norm","mutual_information","supervised_ll_ratio","cosine",
@@ -42,7 +55,7 @@ def run_pairwise(data,image1,image2,brain_mask):
 
   # Comparison metrics [continuous]
   metrics["covariance"]  = covariance(data[0],data[1])
-  metrics["correlation_coefficient"] = correlation_coefficient(image1,image2,brain_mask.get_data())
+  metrics["correlation_coefficient"] = correlation_coefficient(data[0],data[1])
   metrics["correlation_ratio"] = correlation_ratio(image1,image2,brain_mask.get_data())
   metrics["correlation_ratio_norm"] = correlation_ratio_norm(image1,image2,brain_mask.get_data())
   metrics["mutual_information_norm"] = mutual_information_norm(image1,image2,brain_mask.get_data())
@@ -65,18 +78,6 @@ def run_pairwise(data,image1,image2,brain_mask):
 
   return metrics  
 
-
-def run_all(image1,image2,label1,label2,brain_mask):
-  '''Extract all similarity metrics for image1 and image2. image2 should be the "gold standard", if applicable (the image we register to). Returns a dictionary of metric scores.'''
-
-  # We will use a pairwise deletion mask
-  pairwise_deletion_mask = IT.get_pairwise_deletion_mask(image1,image2,brain_mask)
-  data = apply_mask([image1,image2],pairwise_deletion_mask)
-  pairwise_metrics = run_pairwise(data=data,image1=image1,image2=image2,brain_mask=pairwise_deletion_mask)    
-  single_metrics = dict()
-  single_metrics[label1] = run_single(data[0],label1)
-  single_metrics[label2] = run_single(data[1],label2)
-  return pairwise_metrics,single_metrics
 
 # SIMILARITY METRICS
 
@@ -102,13 +103,13 @@ def standard_deviation(image1):
 
 
 # Correlation Coefficient
-def correlation_coefficient(image1,image2,mask):
+def correlation_coefficient(image1,image2):
   '''Correlation coefficient is ratio between covariance and product of standard deviations'''
   print "Calculating correlation coefficient for %s" %(image1)
-  #return covariance(image1,image2) / (standard_deviation(image1) * standard_deviation(image2))
-  mi = HistogramRegistration(image2, image1, similarity='cc',from_mask=mask,to_mask=mask)  
-  T = mi.optimize("affine")
-  return mi.explore(T)[0][0]
+  return covariance(image1,image2) / (standard_deviation(image1) * standard_deviation(image2))
+  #mi = HistogramRegistration(image2, image1, similarity='cc',from_mask=mask,to_mask=mask)  
+  #T = mi.optimize("affine")
+  #return mi.explore(T)[0][0]
 
 
 # Correlation Coefficient Without Centering (cosine)
