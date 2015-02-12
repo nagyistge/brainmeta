@@ -36,6 +36,6 @@ for i in inputs["ID"]:
     filey.writelines("#SBATCH --time=1-00:00\n")
     filey.writelines("#SBATCH --mem=12000\n")
     # Usage : experiment1_analysis1.py image_id base_path output_metrics, single_metrics,standard input_file input_delim
-    filey.writelines("/home/vsochat/python-lapack-blas/bin/python /home/vsochat/SCRIPT/python/brainmeta/experiment1/experiment1_analysis1.py %s %s %s %s %s %s %s" %(image_id,indirectory,tmpdirectory,output_metrics,single_metrics,standard,input_file))
+    filey.writelines("/home/vsochat/python-lapack-blas/bin/python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment1_analysis1.py %s %s %s %s %s %s %s" %(image_id,indirectory,tmpdirectory,output_metrics,single_metrics,standard,input_file))
     filey.close()
     os.system("sbatch " + ".job/%s.job" %(image_id))

@@ -143,15 +143,16 @@ def correlation_coefficient(image1_file,image2_file,mask_file):
   '''Correlation coefficient is ratio between covariance and product of standard deviations'''
   print "Calculating correlation coefficient for %s and %s" %(image1_file,image2_file)
   #return covariance(image1,image2) / (standard_deviation(image1) * standard_deviation(image2))
-  similarity = Similarity()
-  similarity.inputs.volume1 = image1_file
-  similarity.inputs.volume2 = image2_file
-  similarity.inputs.mask1 = mask_file
-  similarity.inputs.mask2 = mask_file
-  similarity.inputs.metric = 'cc'
-  res = similarity.run() # doctest: +SKIP  
-  return res.outputs.similarity
-
+  try:
+    similarity = Similarity()
+    similarity.inputs.volume1 = image1_file
+    similarity.inputs.volume2 = image2_file
+    similarity.inputs.mask1 = mask_file
+    similarity.inputs.mask2 = mask_file
+    similarity.inputs.metric = 'cc'
+    res = similarity.run() # doctest: +SKIP  
+    return res.outputs.similarity
+  except: return None
 
 # Correlation Coefficient Without Centering (cosine)
 def cosine_metric(image1,image2):
@@ -163,57 +164,61 @@ def cosine_metric(image1,image2):
 # Correlation Ratio
 def correlation_ratio(image1_file,image2_file,mask_file):
   print "Calculating correlation ratio for %s and %s" %(image1_file,image2_file)
-  similarity = Similarity()
-  similarity.inputs.volume1 = image1_file
-  similarity.inputs.volume2 = image2_file
-  similarity.inputs.mask1 = mask_file
-  similarity.inputs.mask2 = mask_file
-  similarity.inputs.metric = 'cr'
-  res = similarity.run() # doctest: +SKIP  
-  return res.outputs.similarity
-
+  try:
+    similarity = Similarity()
+    similarity.inputs.volume1 = image1_file
+    similarity.inputs.volume2 = image2_file
+    similarity.inputs.mask1 = mask_file
+    similarity.inputs.mask2 = mask_file
+    similarity.inputs.metric = 'cr'
+    res = similarity.run() # doctest: +SKIP  
+    return res.outputs.similarity
+  except: return None
 
 def correlation_ratio_norm(image1_file,image2_file,mask_file):
   '''L1 based correlation ratio'''
   print "Calculating correlation ratio norm for %s and %s" %(image1_file,image2_file)
-  similarity = Similarity()
-  similarity.inputs.volume1 = image1_file
-  similarity.inputs.volume2 = image2_file
-  similarity.inputs.mask1 = mask_file
-  similarity.inputs.mask2 = mask_file
-  similarity.inputs.metric = 'crl1'
-  res = similarity.run() # doctest: +SKIP  
-  return res.outputs.similarity
-
+  try:
+    similarity = Similarity()
+    similarity.inputs.volume1 = image1_file
+    similarity.inputs.volume2 = image2_file
+    similarity.inputs.mask1 = mask_file
+    similarity.inputs.mask2 = mask_file
+    similarity.inputs.metric = 'crl1'
+    res = similarity.run() # doctest: +SKIP 
+    return res.outputs.similarity
+  except: return None
 
 # Mutual Information
 def mutual_information(image1_file,image2_file,mask_file):
   '''mutual information'''
   print "Calculating mutual information for %s and %s" %(image1_file,image2_file)
-  similarity = Similarity()
-  similarity.inputs.volume1 = image1_file
-  similarity.inputs.volume2 = image2_file
-  similarity.inputs.mask1 = mask_file
-  similarity.inputs.mask2 = mask_file
-  similarity.inputs.metric = 'mi'
-  res = similarity.run() # doctest: +SKIP  
-  return res.outputs.similarity
-
+  try:
+    similarity = Similarity()
+    similarity.inputs.volume1 = image1_file
+    similarity.inputs.volume2 = image2_file
+    similarity.inputs.mask1 = mask_file
+    similarity.inputs.mask2 = mask_file
+    similarity.inputs.metric = 'mi'
+    res = similarity.run() # doctest: +SKIP  
+    return res.outputs.similarity
+  except: return None
 
 
 # Normalized Mutual Information
 def mutual_information_norm(image1_file,image2_file,mask_file):
   '''normalized mutual information'''
   print "Calculating normalized mutual information for %s and %s" %(image1_file,image2_file)
-  similarity = Similarity()
-  similarity.inputs.volume1 = image1_file
-  similarity.inputs.volume2 = image2_file
-  similarity.inputs.mask1 = mask_file
-  similarity.inputs.mask2 = mask_file
-  similarity.inputs.metric = 'nmi'
-  res = similarity.run() # doctest: +SKIP  
-  return res.outputs.similarity
-
+  try:
+    similarity = Similarity()
+    similarity.inputs.volume1 = image1_file
+    similarity.inputs.volume2 = image2_file
+    similarity.inputs.mask1 = mask_file
+    similarity.inputs.mask2 = mask_file
+    similarity.inputs.metric = 'nmi'
+    res = similarity.run() # doctest: +SKIP  
+    return res.outputs.similarity
+  except: return None
 
 # Activation Scores
 def activation_differences(image1,image2):
@@ -222,9 +227,11 @@ def activation_differences(image1,image2):
   image2 is the original
   '''
   print "Calculating activation scores for %s and %s" %(image1,image2)
-  template_in_mask = image2.astype(bool).astype(int)
-  template_out_mask =  np.abs(template_in_mask - 1)
-  image_mask = image1.astype(bool).astype(int)  
-  activation_in_roi = np.sum(np.abs(image1)*template_in_mask) 
-  activation_out_roi = np.sum(np.abs(image1)*template_out_mask)
-  return (activation_in_roi/float(np.sum(template_in_mask))) - (activation_out_roi/float(np.sum(template_out_mask)))
+  try:
+    template_in_mask = image2.astype(bool).astype(int)
+    template_out_mask =  np.abs(template_in_mask - 1)
+    image_mask = image1.astype(bool).astype(int)  
+    activation_in_roi = np.sum(np.abs(image1)*template_in_mask) 
+    activation_out_roi = np.sum(np.abs(image1)*template_out_mask)
+    return (activation_in_roi/float(np.sum(template_in_mask))) - (activation_out_roi/float(np.sum(template_out_mask)))
+  except: return None
