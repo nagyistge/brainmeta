@@ -75,13 +75,12 @@ for t in range(0,len(thresholds1)):
         thresh2 = thresholds2[tt]
         image2 = thresholded2[thresh2]
         label2 = image2_labels[tt]
-        single_metric,pairwise_metrics = SM.run_all(image1=image1,image2=image2,
+        pairwise_metrics,single_metric = SM.run_all(image1=image1,image2=image2,
                                label1=label1,label2=label2,brain_mask=mask,tmpdir=tmpdirectory) 
         # order metric dictionary by our column names, add to data frame   
         similarity_metrics.loc[idx] = [pairwise_metrics[x] for x in ordered_column_names]
         single_metrics.update(single_metric)
         idx+=1
-
 
     else:
       print "ERROR: %s and %s are not the same shape! Exiting." %(image2_path,image_path)
