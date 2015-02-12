@@ -46,7 +46,7 @@ def get_column_labels():
   return ["covariance","correlation_coefficient","correlation_ratio","correlation_ratio_norm",
           "mutual_information_norm","mutual_information","cosine",
           "activation_differences","euclidean","minkowski","cityblock","seuclidean",
-          "sqeuclidean","chebyshev","canberra","braycurtis" "skl_linear_kernel",
+          "sqeuclidean","chebyshev","canberra","braycurtis","skl_linear_kernel",
           "skl_l1","skl_l2","skl_sigmoid_kernel","skl_polynomial_kernel","skl_rbf_kernel",
           "hamming","yule","matching","dice","kulsinski","rogerstanimoto",
           "russellrao","sokalmichener"]
