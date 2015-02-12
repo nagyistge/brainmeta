@@ -7,15 +7,15 @@
 import os
 import pandas
 #basedir = "/corral-repl/utexas/poldracklab/code/vsochat"
-#basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment1"
-basedir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON"
+basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment1"
+#basedir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON"
 outdirectory = "%s/similarity_scores" %(basedir)
 indirectory = "%s/mr" %(basedir)
 tmpdirectory = "%s/tmp" %(basedir)
 standard = "%s/standard/MNI152_T1_2mm_brain_mask.nii.gz" %(basedir)
 
 # Input file
-input_file = "%s/openfmri_labels_local.tsv" %(basedir)
+input_file = "%s/openfmri_labels.tsv" %(basedir)
 input_delim = "\t"
 
 # Read in input file
@@ -37,6 +37,6 @@ for i in inputs["ID"]:
     filey.writelines("#SBATCH --time=1-00:00\n")
     filey.writelines("#SBATCH --mem=12000\n")
     # Usage : experiment1_analysis1.py image_id base_path output_metrics, single_metrics,standard input_file input_delim
-    filey.writelines("/home/vsochat/python-lapack-blas/bin/python /home/vsochat/SCRIPT/python/brainmeta/experiment1/experiment1_analysis1.py %s %s %s %s %s %s %s" %(image_id,indirectory,output_metrics,single_metrics,standard,input_file,input_delim))
+    filey.writelines("/home/vsochat/python-lapack-blas/bin/python /home/vsochat/SCRIPT/python/brainmeta/experiment1/experiment1_analysis1.py %s %s %s %s %s %s %s" %(image_id,indirectory,tmpdirectory,output_metrics,single_metrics,standard,input_file))
     filey.close()
     os.system("sbatch " + ".job/%s.job" %(image_id))

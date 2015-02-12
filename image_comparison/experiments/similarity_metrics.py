@@ -37,8 +37,8 @@ def run_all(image1,image2,label1,label2,brain_mask,tmpdir):
   pairwise_metrics = run_pairwise(data=data,image1=image1,image2=image2,brain_mask=pairwise_deletion_mask,
                                   label1=label1,label2=label2,tmpdir=tmpdir)    
   single_metrics = dict()
-  single_metrics[label1] = run_single(data[0],label1)
-  single_metrics[label2] = run_single(data[1],label2)
+  single_metrics[label1] = run_single(data[0])
+  single_metrics[label2] = run_single(data[1])
   return pairwise_metrics,single_metrics
 
 
