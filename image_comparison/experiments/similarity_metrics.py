@@ -78,6 +78,7 @@ def run_pairwise(data,image1,image2,brain_mask,label1,label2,tmpdir):
                "chebyshev","canberra","braycurtis","mahalanobis",
                "wminkowski"]  
   for dist in distances:
+    print "Calculating %s" %(dist)
     metrics["%s" %(dist)] = pdist(data,dist)[0]
 
   # Comparison metrics [boolean]
