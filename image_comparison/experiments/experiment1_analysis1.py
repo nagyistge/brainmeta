@@ -82,5 +82,5 @@ for t in range(0,len(thresholds1)):
     else:
       print "ERROR: %s and %s are not the same shape!" %(image2_path,image_path)
     # Save the similarity metrics to file
-    similarity_metrics.to_csv("%s/000%s_pairwise_metrics.tsv" %(output_directory,label1),sep="\t")
-    pickle.dump(single_metrics,open("%s/000%s_single_metrics.pkl" %(output_directory,label1),"wb"))
+    similarity_metrics.to_csv("%s/000%s_%s_pairwise_metrics.tsv" %(output_directory,label1,i),sep="\t")
+    pickle.dump(single_metrics,open("%s/000%s_%s_single_metrics.pkl" %(output_directory,label1,i),"wb"))
