@@ -43,7 +43,7 @@ def run_all(image1,image2,label1,label2,brain_mask,tmpdir):
 
 def get_column_labels():
   return ["covariance","correlation_coefficient","correlation_ratio","correlation_ratio_norm",
-          "mutual_information_norm","mutual_information","supervised_ll_ratio","cosine",
+          "mutual_information_norm","mutual_information","cosine",
           "activation_differences","euclidean","minkowski","cityblock","seuclidean",
           "sqeuclidean","kulsinki","chebyshev","canberra","braycurtis","mahalanobis",
           "wminkowski","hamming","yule","matching","dice","kulsinski","rogerstanimoto",
@@ -72,7 +72,6 @@ def run_pairwise(data,image1,image2,brain_mask,label1,label2,tmpdir):
   metrics["correlation_ratio_norm"] = correlation_ratio_norm(image1_tmp,image2_tmp,mask_tmp)
   metrics["mutual_information_norm"] = mutual_information_norm(image1_tmp,image2_tmp,mask_tmp)
   metrics["mutual_information"] = mutual_information_norm(image1_tmp,image2_tmp,mask_tmp)
-  metrics["supervised_ll_ratio"] = supervised_ll_ratio(image1_tmp,image2_tmp,mask_tmp)
   metrics["cosine"] = cosine_metric(data[0],data[1])
   metrics["activation_differences"] = activation_differences(data[0],data[1])
   distances = ["euclidean","minkowski","cityblock","seuclidean","sqeuclidean",
@@ -190,19 +189,6 @@ def mutual_information_norm(image1_file,image2_file,mask_file):
   similarity.inputs.mask1 = mask_file
   similarity.inputs.mask2 = mask_file
   similarity.inputs.metric = 'nmi'
-  res = similarity.run() # doctest: +SKIP  
-  return res.outputs.similarity
-
-  
-def supervised_ll_ratio(image1_file,image2_file,mask_file):
-  '''supervised log likihood ratio'''
-  print "Calculating supervised ll ratio for %s and %s" %(image1_file,image2_file)
-  similarity = Similarity()
-  similarity.inputs.volume1 = image1_file
-  similarity.inputs.volume2 = image2_file
-  similarity.inputs.mask1 = mask_file
-  similarity.inputs.mask2 = mask_file
-  similarity.inputs.metric = 'slr'
   res = similarity.run() # doctest: +SKIP  
   return res.outputs.similarity
 
