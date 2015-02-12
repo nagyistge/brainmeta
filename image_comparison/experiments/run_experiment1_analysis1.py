@@ -21,11 +21,12 @@ input_delim = "\t"
 inputs = pandas.read_csv(input_file,sep=input_delim)
 # IMAGE_ID should correspond to integer ID
 
-# Prepare and submit a job for each
+# Prepare and submit a job for ach
 for i in inputs["ID"]:
   image_id = i
-  single_metrics = "%s/000%s.pkl" %(outdirectory,i)
-  output_metrics = "%s/000%s.tsv" %(outdirectory,i)
+  output_directory = "%s/%s" %(outdirectory,image_id)
+  if not os.path.exists(output_directory):
+    os.mkdir(output_directory)
   if not os.path.isfile(output_metrics):
     filey = ".job/%s.job" %(image_id)
     filey = open(filey,"w")
@@ -34,8 +35,8 @@ for i in inputs["ID"]:
     filey.writelines("#SBATCH --output=.out/%s.out\n" %(image_id))
     filey.writelines("#SBATCH --error=.out/%s.err\n" %(image_id))
     filey.writelines("#SBATCH --time=1-00:00\n")
-    filey.writelines("#SBATCH --mem=12000\n")
+    filey.writelines("#SBATCH --mem=64000\n")
     # Usage : experiment1_analysis1.py image_id base_path output_metrics, single_metrics,standard input_file input_delim
-    filey.writelines("/home/vsochat/python-lapack-blas/bin/python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment1_analysis1.py %s %s %s %s %s %s %s" %(image_id,indirectory,tmpdirectory,output_metrics,single_metrics,standard,input_file))
+    filey.writelines("/home/vsochat/python-lapack-blas/bin/python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment1_analysis1.py %s %s %s %s %s %s" %(image_id,indirectory,tmpdirectory,output_directory,standard,input_file))
     filey.close()
     os.system("sbatch " + ".job/%s.job" %(image_id))

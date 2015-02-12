@@ -29,10 +29,9 @@ import image_transformations as IT
 image_id = sys.argv[1]
 indirectory = sys.argv[2]
 tmpdirectory = sys.argv[3]
-output_metrics = sys.argv[4]
-output_single = sys.argv[5]
-standard_mask = sys.argv[6]
-input_file = sys.argv[7]
+output_directory = sys.argv[4]
+standard_mask = sys.argv[5]
+input_file = sys.argv[6]
 
 # Load other image paths
 inputs = pandas.read_csv(input_file,sep="\t")
@@ -48,12 +47,14 @@ image1_labels = ["%s_thr_%s" %(image_id,thresh) for thresh in thresholds1]
 
 # We will have a matrix of image threshold combinations (rows) by similarity metrics (columns)
 ordered_column_names = SM.get_column_labels()
-similarity_metrics = pandas.DataFrame(columns=ordered_column_names)
-single_metrics = dict()
 
 # Extract a column (list of similarity metrics) for each image vs original (index 0 == original)
 idx=0
 for t in range(0,len(thresholds1)):
+
+  # We will save a data frame for each threshold of the image
+  similarity_metrics = pandas.DataFrame(columns=ordered_column_names)
+  single_metrics = dict()
   thresh = thresholds1[t]
   image1 = thresholded1[thresh]
   label1 = image1_labels[t]
@@ -78,8 +79,8 @@ for t in range(0,len(thresholds1)):
         single_metrics.update(single_metric)
         idx+=1
     else:
-      print "ERROR: %s and %s are not the same shape! Exiting." %(image2_path,image_path)
+      print "ERROR: %s and %s are not the same shape!" %(image2_path,image_path)
 
-# Save the similarity metrics to file
-similarity_metrics.to_csv(output_metrics,sep="\t")
-pickle.dump(single_metrics,open(output_single,"wb"))
+  # Save the similarity metrics to file
+  similarity_metrics.to_csv("%s/000%s_pairwise_metrics.tsv" %(output_directory,label1),sep="\t")
+  pickle.dump(single_metrics,open("%s/000%s_single_metrics.pkl" %(output_directory,label1),"wb"))
