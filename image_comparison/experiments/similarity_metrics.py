@@ -9,7 +9,7 @@ For experiment1: all image input are nibabel, Z maps, already registered to brai
 '''
 
 import os
-import sys,ctypes
+#import sys,ctypes
 #_old_rtld = sys.getdlopenflags()
 #sys.setdlopenflags(_old_rtld|ctypes.RTLD_GLOBAL)
 import numpy as np
