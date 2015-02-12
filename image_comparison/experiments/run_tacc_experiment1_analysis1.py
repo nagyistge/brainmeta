@@ -25,9 +25,10 @@ filey = ".job/%s.job" %(jobname)
 filey = open(filey,"w")
 for i in inputs["ID"]:
   image_id = i
-  single_metrics = "%s/000%s.pkl" %(outdirectory,i)
-  output_metrics = "%s/000%s.tsv" %(outdirectory,i)
-  filey.writelines("/home1/02092/vsochat/SOFTWARE/python-venv/bin/python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment1_analysis1.py %s %s %s %s %s %s %s\n" %(image_id,indirectory,tmpdirectory,output_metrics,single_metrics,standard,input_file))
+  output_directory = "%s/%s" %(outdirectory,image_id)
+  if not os.path.exists(output_directory):
+    os.mkdir(output_directory)
+  filey.writelines("/home1/02092/vsochat/SOFTWARE/python-venv/bin/python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment1_analysis1.py %s %s %s %s %s %s\n" %(image_id,indirectory,tmpdirectory,output_directory,standard,input_file))
 
 filey.close()
 os.system("launch -s .job/%s.job -r 04:00:00 -p 1728 -e 1way -n exp1_test -j Analysis_Lonestar -m vsochat@stanford.edu" %(jobname))
