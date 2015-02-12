@@ -201,7 +201,7 @@ def activation_differences(image1,image2):
   '''
   print "Calculating activation scores for %s and %s" %(image1,image2)
   template_in_mask = image2.astype(bool).astype(int)
-  template_out_mask =  np.abs(template_mask - 1)
+  template_out_mask =  np.abs(template_in_mask - 1)
   image_mask = image1.astype(bool).astype(int)  
   activation_in_roi = np.sum(np.abs(image1)*template_in_mask) 
   activation_out_roi = np.sum(np.abs(image1)*template_out_mask)
