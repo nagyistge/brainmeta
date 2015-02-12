@@ -38,10 +38,13 @@ def run_all(image1,image2,label1,label2,brain_mask,tmpdir):
     data = apply_mask([image1,image2],pairwise_deletion_mask)
     pairwise_metrics = run_pairwise(data=data,image1=image1,image2=image2,brain_mask=pairwise_deletion_mask,
                                   label1=label1,label2=label2,tmpdir=tmpdir)    
-  else: pairwise_metrics = get_none_metrics()
-  single_metrics = dict()
-  single_metrics[label1] = run_single(data[0])
-  single_metrics[label2] = run_single(data[1])
+    single_metrics = dict()
+    single_metrics[label1] = run_single(data[0])
+    single_metrics[label2] = run_single(data[1])
+  
+  else: 
+    pairwise_metrics = get_none_metrics_pairwise()
+    single_metrics = dict()
   return pairwise_metrics,single_metrics
 
 
@@ -55,7 +58,7 @@ def get_column_labels():
           "russellrao","sokalmichener"]
 
 '''In the case that there is no overlap in the pairwise deletion mask, we return None for all'''
-def get_none_metrics():
+def get_none_metrics_pairwise():
   metric_names = get_column_labels()
   metrics = dict()
   for m in metric_names:
