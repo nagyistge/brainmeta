@@ -10,8 +10,8 @@ For experiment1: all image input are nibabel, Z maps, already registered to brai
 
 import os
 import sys,ctypes
-_old_rtld = sys.getdlopenflags()
-sys.setdlopenflags(_old_rtld|ctypes.RTLD_GLOBAL)
+#_old_rtld = sys.getdlopenflags()
+#sys.setdlopenflags(_old_rtld|ctypes.RTLD_GLOBAL)
 import numpy as np
 import nibabel as nib
 import sklearn.metrics as skm
@@ -20,7 +20,7 @@ from nilearn.masking import apply_mask
 from scipy.spatial.distance import pdist
 from nipype.interfaces.nipy.utils import Similarity
 #--end other packages that need MKL
-sys.setdlopenflags(_old_rtld)
+#sys.setdlopenflags(_old_rtld)
 
 # Mean Absolute Differences
 # Activation Scores

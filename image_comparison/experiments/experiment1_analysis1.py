@@ -57,20 +57,15 @@ for t in range(0,len(thresholds1)):
   thresh = thresholds1[t]
   image1 = thresholded1[thresh]
   label1 = image1_labels[t]
-    
   # Do a comparison for each pairwise set at each threshold
   for i in inputs.ID:
     image2_path = "%s/000%s.nii.gz" %(indirectory,i)
     image2 = nib.load(image2_path)
-
-  
     # Only proceed if image dimensions are equal, and in same space
     if ((image1.shape == image2.shape) and np.all(image1.get_affine() == image2.get_affine())):
       thresholded2 = IT.threshold_abs(image2)
       thresholds2 = np.sort(thresholded2.keys())
       image2_labels = ["%s_thr_%s" %(i,th) for th in thresholds2]
-
-
       for tt in range(0,len(thresholds2)):
         thresh2 = thresholds2[tt]
         image2 = thresholded2[thresh2]
@@ -81,7 +76,6 @@ for t in range(0,len(thresholds1)):
         similarity_metrics.loc[idx] = [pairwise_metrics[x] for x in ordered_column_names]
         single_metrics.update(single_metric)
         idx+=1
-
     else:
       print "ERROR: %s and %s are not the same shape! Exiting." %(image2_path,image_path)
 
