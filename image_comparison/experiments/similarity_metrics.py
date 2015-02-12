@@ -14,6 +14,7 @@ _old_rtld = sys.getdlopenflags()
 sys.setdlopenflags(_old_rtld|ctypes.RTLD_GLOBAL)
 import numpy as np
 import nibabel as nib
+import sklearn.metrics as skm
 import image_transformations as IT
 from nilearn.masking import apply_mask
 from scipy.spatial.distance import pdist
@@ -45,7 +46,8 @@ def get_column_labels():
   return ["covariance","correlation_coefficient","correlation_ratio","correlation_ratio_norm",
           "mutual_information_norm","mutual_information","cosine",
           "activation_differences","euclidean","minkowski","cityblock","seuclidean",
-          "sqeuclidean","chebyshev","canberra","braycurtis"
+          "sqeuclidean","chebyshev","canberra","braycurtis" "skl_linear_kernel",
+          "skl_l1","skl_l2","skl_sigmoid_kernel","skl_polynomial_kernel","skl_rbf_kernel",
           "hamming","yule","matching","dice","kulsinski","rogerstanimoto",
           "russellrao","sokalmichener"]
 
@@ -80,6 +82,13 @@ def run_pairwise(data,image1,image2,brain_mask,label1,label2,tmpdir):
     print "Calculating %s" %(dist)
     metrics["%s" %(dist)] = pdist(data,dist)[0]
 
+  metrics["skl_linear_kernel"] = skm.pairwise.linear_kernel(data[0],data[1])[0][0]
+  metrics["skl_l1"] = skm.pairwise_distances(data[0],data[1],metric="l1")[0][0]
+  metrics["skl_l2"] = skm.pairwise_distances(data[0],data[1],metric="l2")[0][0]
+  metrics["skl_sigmoid_kernel"] = skm.pairwise_kernels(data[0],data[1],metric="sigmoid")[0][0]
+  metrics["skl_polynomial_kernel"] = skm.pairwise_kernels(data[0],data[1],metric="polynomial")[0][0]
+  metrics["skl_rbf_kernel"] = skm.pairwise_kernels(data[0],data[1],metric="rbf")[0][0]
+
   # Comparison metrics [boolean]
   data = data.astype(bool).astype(int)
   distances = ["hamming","yule","matching","dice","kulsinski","rogerstanimoto",
@@ -87,9 +96,9 @@ def run_pairwise(data,image1,image2,brain_mask,label1,label2,tmpdir):
   for dist in distances:
       metrics["%s" %(dist)] = pdist(data,dist)[0]
 
-  os.remove(image1_tmp)
-  os.remove(image2_tmp)
-  os.remove(mask_tmp)
+  if os.path.exists(image1_tmp): os.remove(image1_tmp)
+  if os.path.exists(image2_tmp): os.remove(image2_tmp)
+  if os.path.exists(mask_tmp): os.remove(mask_tmp)
   return metrics  
 
 
