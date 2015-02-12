@@ -34,7 +34,7 @@ def run_all(image1,image2,label1,label2,brain_mask,tmpdir):
   # We will use a pairwise deletion mask
   pairwise_deletion_mask = IT.get_pairwise_deletion_mask(image1,image2,brain_mask)
   # If there is overlap:
-  if len(np.unique(pairwise_deletion_mask.get_data())[0]) != 1:
+  if len(np.unique(pairwise_deletion_mask.get_data())) != 1:
     data = apply_mask([image1,image2],pairwise_deletion_mask)
     pairwise_metrics = run_pairwise(data=data,image1=image1,image2=image2,brain_mask=pairwise_deletion_mask,
                                   label1=label1,label2=label2,tmpdir=tmpdir)    
