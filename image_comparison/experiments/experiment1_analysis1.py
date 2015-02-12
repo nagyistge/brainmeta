@@ -50,10 +50,6 @@ ordered_column_names = SM.get_column_labels()
 
 # Extract a column (list of similarity metrics) for each image vs original (index 0 == original)
 for t in range(0,len(thresholds1)):
-  idx=0
-  # We will save a data frame for each threshold of the image
-  similarity_metrics = pandas.DataFrame(columns=ordered_column_names)
-  single_metrics = dict()
   thresh = thresholds1[t]
   image1 = thresholded1[thresh]
   label1 = image1_labels[t]
@@ -61,6 +57,10 @@ for t in range(0,len(thresholds1)):
   for i in inputs.ID:
     image2_path = "%s/000%s.nii.gz" %(indirectory,i)
     image2 = nib.load(image2_path)
+    idx=0
+    # We will save a data frame for each threshold/image2 of the image
+    similarity_metrics = pandas.DataFrame(columns=ordered_column_names)
+    single_metrics = dict()
     # Only proceed if image dimensions are equal, and in same space
     if ((image1.shape == image2.shape) and np.all(image1.get_affine() == image2.get_affine())):
       thresholded2 = IT.threshold_abs(image2)
@@ -81,7 +81,6 @@ for t in range(0,len(thresholds1)):
         except: print "ERROR: %s and %s" %(label1,label2)
     else:
       print "ERROR: %s and %s are not the same shape!" %(image2_path,image_path)
-
-  # Save the similarity metrics to file
-  similarity_metrics.to_csv("%s/000%s_pairwise_metrics.tsv" %(output_directory,label1),sep="\t")
-  pickle.dump(single_metrics,open("%s/000%s_single_metrics.pkl" %(output_directory,label1),"wb"))
+    # Save the similarity metrics to file
+    similarity_metrics.to_csv("%s/000%s_pairwise_metrics.tsv" %(output_directory,label1),sep="\t")
+    pickle.dump(single_metrics,open("%s/000%s_single_metrics.pkl" %(output_directory,label1),"wb"))

@@ -37,4 +37,4 @@ for i in inputs["ID"]:
   filey.writelines("#SBATCH --mem=64000\n")
   filey.writelines("/home/vsochat/python-lapack-blas/bin/python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment1_analysis1.py %s %s %s %s %s %s" %(image_id,indirectory,tmpdirectory,output_directory,standard,input_file))
   filey.close()
-  os.system("sbatch " + ".job/%s.job" %(image_id))
+  os.system("sbatch -p russpold " + ".job/%s.job" %(image_id))
