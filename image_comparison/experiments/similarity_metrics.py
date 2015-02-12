@@ -12,9 +12,15 @@ import os
 import numpy as np
 import nibabel as nib
 import image_transformations as IT
+
+import sys,ctypes
+_old_rtld = sys.getdlopenflags()
+sys.setdlopenflags(_old_rtld|ctypes.RTLD_GLOBAL)
 from nilearn.masking import apply_mask
 from scipy.spatial.distance import pdist
 from nipype.interfaces.nipy.utils import Similarity
+#--end other packages that need MKL
+sys.setdlopenflags(_old_rtld)
 
 # Mean Absolute Differences
 # Activation Scores
