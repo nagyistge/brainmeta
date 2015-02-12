@@ -74,11 +74,12 @@ for t in range(0,len(thresholds1)):
                                label1=label1,label2=label2,brain_mask=mask,tmpdir=tmpdirectory) 
         # order metric dictionary by our column names, add to data frame   
         similarity_metrics.loc[idx] = [pairwise_metrics[x] for x in ordered_column_names]
+        print similarity_metrics.loc[idx]
         single_metrics.update(single_metric)
         idx+=1
     else:
       print "ERROR: %s and %s are not the same shape! Exiting." %(image2_path,image_path)
 
-  # Save the similarity metrics to file
-  similarity_metrics.to_csv(output_metrics,sep="\t")
-  pickle.dump(single_metrics,open(output_single,"wb"))
+# Save the similarity metrics to file
+similarity_metrics.to_csv(output_metrics,sep="\t")
+pickle.dump(single_metrics,open(output_single,"wb"))
