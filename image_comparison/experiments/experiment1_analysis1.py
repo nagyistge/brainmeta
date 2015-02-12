@@ -30,7 +30,7 @@ image_id = sys.argv[1]
 indirectory = sys.argv[2]
 tmpdirectory = sys.argv[3]
 output_metrics = sys.argv[4]
-single_metrics = sys.argv[5]
+output_single = sys.argv[5]
 standard_mask = sys.argv[6]
 input_file = sys.argv[7]
 
