@@ -49,9 +49,8 @@ image1_labels = ["%s_thr_%s" %(image_id,thresh) for thresh in thresholds1]
 ordered_column_names = SM.get_column_labels()
 
 # Extract a column (list of similarity metrics) for each image vs original (index 0 == original)
-idx=0
 for t in range(0,len(thresholds1)):
-
+  idx=0
   # We will save a data frame for each threshold of the image
   similarity_metrics = pandas.DataFrame(columns=ordered_column_names)
   single_metrics = dict()
@@ -71,13 +70,15 @@ for t in range(0,len(thresholds1)):
         thresh2 = thresholds2[tt]
         image2 = thresholded2[thresh2]
         label2 = image2_labels[tt]
-        pairwise_metrics,single_metric = SM.run_all(image1=image1,image2=image2,
+        try:
+          pairwise_metrics,single_metric = SM.run_all(image1=image1,image2=image2,
                                label1=label1,label2=label2,brain_mask=mask,tmpdir=tmpdirectory) 
-        # order metric dictionary by our column names, add to data frame   
-        similarity_metrics.loc[idx] = [pairwise_metrics[x] for x in ordered_column_names]
-        print similarity_metrics.loc[idx]
-        single_metrics.update(single_metric)
-        idx+=1
+          # order metric dictionary by our column names, add to data frame   
+          similarity_metrics.loc[idx] = [pairwise_metrics[x] for x in ordered_column_names]
+          print similarity_metrics.loc[idx]
+          single_metrics.update(single_metric)
+          idx+=1
+        except: print "ERROR: %s and %s" %(label1,label2)
     else:
       print "ERROR: %s and %s are not the same shape!" %(image2_path,image_path)
 
