@@ -45,7 +45,7 @@ def get_column_labels():
   return ["covariance","correlation_coefficient","correlation_ratio","correlation_ratio_norm",
           "mutual_information_norm","mutual_information","cosine",
           "activation_differences","euclidean","minkowski","cityblock","seuclidean",
-          "sqeuclidean","kulsinki","chebyshev","canberra","braycurtis","mahalanobis",
+          "sqeuclidean","chebyshev","canberra","braycurtis","mahalanobis",
           "wminkowski","hamming","yule","matching","dice","kulsinski","rogerstanimoto",
           "russellrao","sokalmichener"]
 
@@ -75,7 +75,7 @@ def run_pairwise(data,image1,image2,brain_mask,label1,label2,tmpdir):
   metrics["cosine"] = cosine_metric(data[0],data[1])
   metrics["activation_differences"] = activation_differences(data[0],data[1])
   distances = ["euclidean","minkowski","cityblock","seuclidean","sqeuclidean",
-               "kulsinki","chebyshev","canberra","braycurtis","mahalanobis",
+               "chebyshev","canberra","braycurtis","mahalanobis",
                "wminkowski"]  
   for dist in distances:
     metrics["%s" %(dist)] = pdist(data,dist)[0]
