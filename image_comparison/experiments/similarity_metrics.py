@@ -9,13 +9,12 @@ For experiment1: all image input are nibabel, Z maps, already registered to brai
 '''
 
 import os
-import numpy as np
-import nibabel as nib
-import image_transformations as IT
-
 import sys,ctypes
 _old_rtld = sys.getdlopenflags()
 sys.setdlopenflags(_old_rtld|ctypes.RTLD_GLOBAL)
+import numpy as np
+import nibabel as nib
+import image_transformations as IT
 from nilearn.masking import apply_mask
 from scipy.spatial.distance import pdist
 from nipype.interfaces.nipy.utils import Similarity

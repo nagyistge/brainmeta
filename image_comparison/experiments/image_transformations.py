@@ -8,11 +8,16 @@ The image should already be a Z score, nibabel object
 @data 2/2015
 '''
 
+import sys,ctypes
+_old_rtld = sys.getdlopenflags()
+sys.setdlopenflags(_old_rtld|ctypes.RTLD_GLOBAL)
 import numpy as np
 import nibabel as nib
 from nilearn.masking import apply_mask
 from scipy.spatial.distance import pdist
 from nipy.algorithms.registration import histogram_registration
+#--end other packages that need MKL
+sys.setdlopenflags(_old_rtld)
 
 # Thresholding and Segmentation (return entire images) ------------------------------------------------
 
