@@ -76,8 +76,8 @@ def run_pairwise(data,image1,image2,brain_mask,label1,label2,tmpdir):
   metrics = dict()
 
   # We need to generate temporary images to use Similarity module
-  image1_tmp = IT.make_tmp_nii(image1,tmp_file_prefix="%s/%s" %(tmpdir,label1))
-  image2_tmp = IT.make_tmp_nii(image2,tmp_file_prefix="%s/%s" %(tmpdir,label2))
+  image1_tmp = IT.make_tmp_nii(image1,tmp_file_prefix="%s/%s_vs_%s1" %(tmpdir,label1,label2))
+  image2_tmp = IT.make_tmp_nii(image2,tmp_file_prefix="%s/%s_vs_%s2" %(tmpdir,label1,label2))
   mask_tmp = IT.make_tmp_nii(brain_mask,tmp_file_prefix="%s/%s_%s_mask" %(tmpdir,label1,label2))
   
   # Comparison metrics [continuous]

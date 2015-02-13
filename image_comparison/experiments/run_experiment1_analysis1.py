@@ -5,6 +5,7 @@
 # for different thresholds, to be used for higher level analysis
 
 import os
+import sys
 import pandas
 basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment1"
 #basedir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON"
@@ -23,7 +24,9 @@ inputs = pandas.read_csv(input_file,sep=input_delim)
 
 # Prepare and submit a job for each
 for i in inputs["ID"]:
+for i in tmp:
   image_id = i
+  sys.sleep(1)
   output_directory = "%s/%s" %(outdirectory,image_id)
   if not os.path.exists(output_directory):
     os.mkdir(output_directory)
@@ -33,8 +36,8 @@ for i in inputs["ID"]:
   filey.writelines("#SBATCH --job-name=%s\n" %(image_id))
   filey.writelines("#SBATCH --output=.out/%s.out\n" %(image_id))
   filey.writelines("#SBATCH --error=.out/%s.err\n" %(image_id))
-  filey.writelines("#SBATCH --time=1-00:00\n")
+  filey.writelines("#SBATCH --time=2-00:00\n")
   filey.writelines("#SBATCH --mem=64000\n")
   filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment1_analysis1.py %s %s %s %s %s %s" %(image_id,indirectory,tmpdirectory,output_directory,standard,input_file))
   filey.close()
-  os.system("sbatch " + ".job/%s.job" %(image_id))
+  os.system("sbatch -p russpold " + ".job/%s.job" %(image_id))
