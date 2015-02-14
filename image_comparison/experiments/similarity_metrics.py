@@ -18,7 +18,7 @@ import sklearn.metrics as skm
 import image_transformations as IT
 from nilearn.masking import apply_mask
 from scipy.spatial.distance import pdist
-from nipype.interfaces.nipy.utils import Similarity
+from nipype.algorithms.metrics import Similarity
 #--end other packages that need MKL
 sys.setdlopenflags(_old_rtld)
 
@@ -70,6 +70,7 @@ def run_single(image1):
   metrics = dict()
   metrics["standard_deviation"] = standard_deviation(image1)
   metrics["variance"] = variance(image1)
+  return metrics
 
 def run_pairwise(data,image1,image2,brain_mask,label1,label2,tmpdir):
 
@@ -154,6 +155,7 @@ def correlation_coefficient(image1_file,image2_file,mask_file):
     return res.outputs.similarity
   except: return None
 
+
 # Correlation Coefficient Without Centering (cosine)
 def cosine_metric(image1,image2):
   print "Calculating cosine for %s and %s" %(image1,image2)
@@ -175,6 +177,7 @@ def correlation_ratio(image1_file,image2_file,mask_file):
     return res.outputs.similarity
   except: return None
 
+
 def correlation_ratio_norm(image1_file,image2_file,mask_file):
   '''L1 based correlation ratio'''
   print "Calculating correlation ratio norm for %s and %s" %(image1_file,image2_file)
@@ -188,6 +191,7 @@ def correlation_ratio_norm(image1_file,image2_file,mask_file):
     res = similarity.run() # doctest: +SKIP 
     return res.outputs.similarity
   except: return None
+
 
 # Mutual Information
 def mutual_information(image1_file,image2_file,mask_file):
@@ -205,6 +209,7 @@ def mutual_information(image1_file,image2_file,mask_file):
   except: return None
 
 
+
 # Normalized Mutual Information
 def mutual_information_norm(image1_file,image2_file,mask_file):
   '''normalized mutual information'''
@@ -219,6 +224,7 @@ def mutual_information_norm(image1_file,image2_file,mask_file):
     res = similarity.run() # doctest: +SKIP  
     return res.outputs.similarity
   except: return None
+
 
 # Activation Scores
 def activation_differences(image1,image2):

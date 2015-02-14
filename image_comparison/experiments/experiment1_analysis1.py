@@ -61,9 +61,9 @@ for t in range(0,len(thresholds1)):
     # We will save a data frame for each threshold/image2 of the image
     similarity_metrics = pandas.DataFrame(columns=ordered_column_names)
     #single_metrics = dict()
-    row_index = []
     # Only proceed if image dimensions are equal, and in same space
     if ((image1.shape == image2.shape) and np.all(image1.get_affine() == image2.get_affine())):
+      row_index = []
       thresholded2 = IT.threshold_abs(image2)
       thresholds2 = np.sort(thresholded2.keys())
       image2_labels = ["%s_thr_%s" %(i,th) for th in thresholds2]
