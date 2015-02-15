@@ -1,0 +1,212 @@
+---
+title: "Similarity Metric Distributions"
+author: "Vanessa Sochat"
+date: "02/14/2015"
+output: html_document
+---
+
+This R Markdown will explore the distributions of scores for each of a set of reasonable similarity metrics for one unthresholded map for a set of 16 different thresholds. First let's link to all our metrics, in case we need:
+
+ - [covariance](https://github.com/vsoch/brainmeta/blob/master/image_comparison/experiments/similarity_metrics.py#L122)
+ - [correlation coefficient](https://github.com/nipy/nipy/blob/master/nipy/algorithms/registration/similarity_measures.py#L144)
+ - [correlation ratio](https://github.com/nipy/nipy/blob/master/nipy/algorithms/registration/similarity_measures.py#L171)
+ - [correlation ratio norm](https://github.com/nipy/nipy/blob/master/nipy/algorithms/registration/similarity_measures.py#L194)
+ - [mutual information norm](https://github.com/nipy/nipy/blob/master/nipy/algorithms/registration/similarity_measures.py#L129)
+ - [mutual information](https://github.com/nipy/nipy/blob/master/nipy/algorithms/registration/similarity_measures.py#L95)
+ - [cosine](https://github.com/scipy/scipy/blob/master/scipy/spatial/distance.py#L290)
+ - [euclidean](https://github.com/scipy/scipy/blob/master/scipy/spatial/distance.py#L222)
+ - [standardized euclidean](https://github.com/scipy/scipy/blob/master/scipy/spatial/distance.py#L448)
+ - [squared euclidean](https://github.com/scipy/scipy/blob/master/scipy/spatial/distance.py#L249)
+ - [chebyshev](https://github.com/scipy/scipy/blob/master/scipy/spatial/distance.py#L570)
+ - [canberra](https://github.com/scipy/scipy/blob/master/scipy/spatial/distance.py#L612)
+ - [braycurtis](https://github.com/scipy/scipy/blob/master/scipy/spatial/distance.py#L577)
+ - [linear kernel](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/metrics/pairwise.py#L662)
+ - [l1 kernel (taxicab/manhattan)](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/metrics/pairwise.py#L426)
+ - [l2 kernel (euclidean)](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/metrics/pairwise.py#L136)
+ - [sigmoid kernel](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/metrics/pairwise.py#L711)
+ - [polynomail kernel](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/metrics/pairwise.py#L680)
+ - [rbf kernel](https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/metrics/pairwise.py#L740)
+ 
+I computed a lot of kernels, but I don't totally understand them, so I'm not comfortable using them.  Now we will read in our data:
+
+```{r}
+metrics = c("ID","covariance","correlation_coefficient","correlation_ratio","correlation_ratio_norm","mutual_information_norm","mutual_information","cosine","euclidean","minkowski","cityblock","seuclidean","sqeuclidean","chebyshev","canberra","braycurtis")
+
+metric_df = read.csv("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/compiled_scores/134_0.0.tsv",sep="\t",stringsAsFactors=FALSE)
+metric_df = metric_df[,which(colnames(metric_df) %in% metrics)]
+```
+
+Let's visualize the distribution of each
+
+```{r}
+for (m in 2:ncol(metric_df)){
+  metric = metric_df[!is.na(metric_df[,m]),m]
+  hist(metric,col=sample(colours(),1),main=colnames(metric_df)[m],breaks=100)
+}
+```
+
+This is exciting because the distributions look so different! Let's create a vector that will have the ranked scores. We basically need to know which direction == more similar, and if we need to take an absolute value. I need some help with doing cosine - the values range from 0 to 2 (I believe they are in radians) and I interpret this as 1.5 radians == ~90 degrees, so technically values closer to 2 should be less similar, but the plot shows the opposite distribution to what I would expect. (Because in this space a value of 0 would == 0 degrees == pointing in same direction).
+
+But actually, now that I'm looking at the euclidean distances, the cosine pattern could be reasonable. According to these metrics, there are much fewer pairs that are VERY different (on right side of plot), many that are "kind of" different (big clump in the middle), and a medium number of more similar (left).  These metrics are probably just pretty bad toward this goal - we will see :)
+
+I also realize that chebyshev possibly makes no sense (it is the maximum of the vectors distance in any direction, which means that the "gold standard" will always be equal to the actual).
+
+Also - [canberra distance](http://en.wikipedia.org/wiki/Canberra_distance) is a metric for comparing ranked lists - I could use this possibly in scoring.
+
+
+```{r}
+# This function will return a list of ranked scores with names corresponding to image ids
+do_ranking = function(scores,labels,ranking_type){
+  
+  names(scores) = labels
+  
+  # High negative or positive = more similar
+  if (ranking_type == "abs_high"){
+    return(sort(abs(scores),decreasing=TRUE))
+  # Low / negative == more similar  
+  } else if (ranking_type == "low") {
+    return(sort(scores,decreasing=FALSE))
+  # 0 == similar, positive or negative high values not  
+  } else if (ranking_type == "abs_low") {
+    return(sort(abs(scores),decreasing=FALSE))    
+  # Standard sorting (high value == more similar)  
+  } else {
+    return(sort(scores,decreasing=TRUE))
+  }  
+}
+
+metric_names = metrics[2:length(metrics)]
+metrics_sorted = c()
+metrics_sorted["covariance"] = list(do_ranking(metric_df[,"covariance"],metric_df[,"ID"],"abs_high")) 
+metrics_sorted["correlation_coefficient"] = list(do_ranking(metric_df[,"correlation_coefficient"],metric_df[,"ID"],"abs_high"))
+metrics_sorted["correlation_ratio"] = list(do_ranking(metric_df[,"correlation_ratio"],metric_df[,"ID"],"abs_high"))
+metrics_sorted["correlation_ratio_norm"] = list(do_ranking(metric_df[,"correlation_ratio_norm"],metric_df[,"ID"],"abs_high"))
+metrics_sorted["mutual_information"] = list(do_ranking(metric_df[,"mutual_information"],metric_df[,"ID"],"abs_high"))
+metrics_sorted["mutual_information_norm"] = list(do_ranking(metric_df[,"mutual_information_norm"],metric_df[,"ID"],"abs_high"))
+metrics_sorted["cosine"] = list(do_ranking(metric_df[,"cosine"],metric_df[,"ID"],"low"))
+metrics_sorted["euclidean"] = list(do_ranking(metric_df[,"euclidean"],metric_df[,"ID"],"low"))
+metrics_sorted["sqeuclidean"] = list(do_ranking(metric_df[,"sqeuclidean"],metric_df[,"ID"],"low"))
+#metrics_sorted["seuclidean"] = list(do_ranking(metric_df[,"seuclidean"],metric_df[,"ID"],"low"))
+metrics_sorted["chebyshev"] = list(do_ranking(metric_df[,"chebyshev"],metric_df[,"ID"],"low"))
+metrics_sorted["minkowski"] = list(do_ranking(metric_df[,"minkowski"],metric_df[,"ID"],"low"))
+metrics_sorted["cityblock"] = list(do_ranking(metric_df[,"cityblock"],metric_df[,"ID"],"low"))
+metrics_sorted["canberra"] = list(do_ranking(metric_df[,"canberra"],metric_df[,"ID"],"low"))
+metrics_sorted["braycurtis"] = list(do_ranking(metric_df[,"braycurtis"],metric_df[,"ID"],"low"))
+```
+
+
+### Goals of the analysis
+
+We want to identify kinds of metrics that are most robust to changes in thresholding across large sets of images.  This means that if I have image A, I can define a "gold standard" comparison of image A to image B as some metric applied to compare the unthresholded maps in entirety.  This will result in a score.  A comparison metric that is robust to changes in thresholding means that thresholding image A should not drastically change the metric.  
+
+
+
+### Assumptions of the experiment
+
+- We have selected a group of metrics that are reasonable.  Reasonable means that we aren't coming up with nonsense, and we are using already well-established metrics.
+- We cannot compare the scores themselves between metrics, so we will compare change in rankings.
+
+
+
+### Goals of this visualization
+
+I will be using this workbook to help visualize the gold standard ranking for one of the 144 query images, and to develop a scoring algorithm. Then I can implement this algorithm across all 144 images, and summarize the result.
+
+
+
+### Defining the gold standard
+Now that we have ALL the values sorted, for each list of metrics, we can pull out the values thresholded at 0.0 to define the "gold standard" lists. Let's write a function to do it:
+
+```{r}
+get_gold_standard = function(metric_sorted,image_id) {
+  nothreshidx = grep("*0.0$",names(metric_sorted[[1]]))
+  gs_set = metric_sorted[[1]][nothreshidx]
+  # Here we can do a sanity check that the first value is the image we are looking at!
+  if (!grepl(as.character(image_id),names(gs_set)[1])){
+    cat("ERROR: first image is not most similar for metric",names(metric_sorted),"\n")
+  } else {
+    plot(gs_set,pch=19,col=heat.colors(length(gs_set)),main=paste("Ordered scores for GS",names(metric_sorted)))   
+    # Now we will fit the ranking to a color scale - we don't care about values anymore (for now)
+    # We will assume that a slight threshold on an image would rank it just below the image w/o threshold
+    gs_image_id = gsub("_thr_0.0","",names(gs_set))
+    gs_labels = c()
+    # Derive the labels from the data in the case of any nans eliminating options
+    for (id in gs_image_id){
+      thresholds = sort(gsub(paste(id,"_thr_",sep=""),"",names(metric_sorted[[1]][grep(id,names(metric_sorted[[1]]))])))
+      gs_labels = c(gs_labels,paste(id,"_thr_",thresholds,sep=""))
+    }
+    gs_order = seq(1,length(gs_labels))
+    names(gs_order) = gs_labels
+    # But now we need to account for 
+    return(list(gs_order))
+  }  
+}
+```
+
+The function above will output a vector of number rankings according to the similiarty metric calculated for unthresholded maps, with additional spaces to allow for each thresholding. 
+
+```{r}
+gs = c()
+image_id=134
+for (m in 1:length(metrics_sorted)){
+  metric_name = names(metrics_sorted[m])
+  gs[metric_name] = get_gold_standard(metrics_sorted[m],image_id)
+}
+
+```
+
+This is interesting and cool - we can see immediately that the metrics traditionally used to compare images (mutual information, cosine coefficient, and not the standard distance metrics from scipy) do a "better job" (at least based on these basic visualizations) to have fewer top ranked scores.  Another note: I am getting an error for seuclidean that "ERROR: first image is not most similar for metric seuclidean" so I'll skip it for now. I'm getting the same error for covariance - I'll need to check if this is ok.
+
+### Calculating a score
+Now we have, for each metric, a gold standard, and the actual list. We can now do two things:
+
+1. write a basic function to calculate a score. I am going to start super simple - I will sum the distances that each actual image@ particular threshold is away from the gold standard.
+2. Visually compare each metric ordering vs. the gold standard - two columns for each metric
+
+```{r}
+metric_names = names(gs)
+
+for (m in metric_names){
+  gold_standard = gs[[m]]
+  actual_order = metrics_sorted[[m]]
+  colors = rev(heat.colors(length(gold_standard)))
+  idx = match(names(actual_order),names(gold_standard))
+  actual_order = gold_standard[idx]
+  data = rbind(gold_standard,actual_order)
+  rownames(data) = c("GS","ACTUAL")
+  image(data,xaxt="n",col=colors,main=m,xlab=c("GS vs ACTUAL"))
+}
+
+```
+
+Now let's write a super simple scoring function - we want to know the average displacement that we are off. I can imagine doing this in different ways - perhaps adding weights to be less severe if images move around within the same openfmri study, or taking thresholding into account.  This error function is very important because it must reflect the goals of the researcher, which may be to find similar studies, or to disregard study and only return the most similar images across all of them.
+
+
+```{r}
+calculate_average_error = function(gold_standard,actual_order){
+  return(sum(abs(gold_standard - actual_order))/length(actual_order))
+}
+
+errors = c()
+for (m in metric_names){
+  gold_standard = gs[[m]]
+  actual_order = metrics_sorted[[m]]
+  colors = rev(heat.colors(length(gold_standard)))
+  idx = match(names(actual_order),names(gold_standard))
+  actual_order = gold_standard[idx]
+  error = calculate_average_error(gold_standard,actual_order)
+  cat(m,": ",error,"\n",sep="")
+  errors[m] = error
+}
+plot(sort(errors),pch=19,col="tomato",ylab="Average Error",xlab="metrics",main="Similarity Metric Errors, Mean Displacement from GS")
+text(sort(errors),names(sort(errors)),cex=.5)
+```
+
+Wow, not what I expected. I haven't checked this over in detail yet because I need to work on a presentation for a few hours.  First, we can throw away chebyshev because its a maximum distance, so in any case (including the gold standard) it will return the maximum distance between the two vectors. So image A vs image B at any other threshold is likely to return the same thing as long as a highly different voxel is still in the mask. 
+
+I'm not surprised that standard distance metrics (euclidean, manhatten, etc) are rather bad. We could see this looking at the distributions even before calculating error.  I am, however, pretty surprised by mutual information, which does a pretty good job registering images, but (according to this analysis) can get rather mixed up when the images are thresholded. I would hypothesize that it has something to do with the smaller set of values in that other images get moved up in the list simply because the distributions can be better matched. Again, this would need testing!
+
+The Braycurtis is the sum of the differences of the vectors divided by the sum of the added vectors. I need to think about this one too.  Actually, I need to synthesize all of these - today my goal was just to start doing some basic visualization of these metrics for one unthresholded image, 134! :)
+
+### Next steps
+I need to make my presentation first, but next I'd like to assess the orderings based on images in the same study, and the level of thresholding. I think we might see patterns related to study, and to the level of thresholding. Stay tuned!
