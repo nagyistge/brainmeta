@@ -89,7 +89,7 @@ for mr2 in thresholded:
   idx+=1
 
 # Save all data to output dictionary
-output = {"ids":inputs.ID.tolist(),"pearson_gs":pearsons,"mr_vs_thresh_pearson_pd":pearsons_pd,
+output = {"ids":inputs.ID.tolist(),"pearson_gs":pearsons_gs,"mr_vs_thresh_pearson_pd":pearsons_pd,
           "mr_vs_thresh_pearson_pi":pearsons_pi,"mr_vs_thresh_pearson_bm":pearsons_bm,"sizes":sizes}
 
 pickle.dump(output,open("%s/000%s_masking_scores.pkl" %(outdirectory,image_id),"wb"))
