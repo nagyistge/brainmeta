@@ -78,7 +78,7 @@ idx = 0
 print "Calculating mask varieties [PD,PI,BM] vs thresholded..."
 for mr2 in thresholded:
   pdmask = IT.get_pairwise_deletion_mask(mr1,mr2,brain_mask)
-  pimask = get_pairwise_inclusion_mask(mr1,mr2,brain_mask)
+  pimask = IT.get_pairwise_inclusion_mask(mr1,mr2,brain_mask)
   datapd = apply_mask([mr1,mr2],pdmask)  
   datapi = apply_mask([mr1,mr2],pimask)  
   databm = apply_mask([mr1,mr2],brain_mask)  
