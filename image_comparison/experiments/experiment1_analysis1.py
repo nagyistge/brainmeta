@@ -32,6 +32,7 @@ tmpdirectory = sys.argv[3]
 output_directory = sys.argv[4]
 standard_mask = sys.argv[5]
 input_file = sys.argv[6]
+threshold = sys.argv[7]
 
 # Load other image paths
 inputs = pandas.read_csv(input_file,sep="\t")
@@ -41,7 +42,7 @@ original = nib.load(image_path)
 mask = nib.load(standard_mask)
 
 # Produce thresholdings (these are all Z score maps, this includes original image (thresh 0))
-thresholded1 = IT.threshold_abs(original,thresholds=[0.0])
+thresholded1 = IT.threshold_abs(original,thresholds=[threshold])
 thresholds1 = np.sort(thresholded1.keys())
 image1_labels = ["%s_thr_%s" %(image_id,thresh) for thresh in thresholds1]
 
