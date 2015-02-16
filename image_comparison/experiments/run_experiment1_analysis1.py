@@ -19,15 +19,14 @@ input_file = "%s/openfmri_labels.tsv" %(basedir)
 input_delim = "\t"
 
 # Here is the threshold to run
-threshold = 0.0
+threshold = 1.0
 
 # Read in input file
 inputs = pandas.read_csv(input_file,sep=input_delim)
 # IMAGE_ID should correspond to integer ID
 
 # Prepare and submit a job for each
-for i in missing:
-  image_id = i
+for image_id in missing:
   time.sleep(1)
   output_directory = "%s/%s" %(outdirectory,image_id)
   if not os.path.exists(output_directory):
