@@ -49,7 +49,7 @@ inputs = pandas.read_csv(input_file,sep=input_delim)
 # Read in all images - these similarities will be gold standard
 image_path = "%s/000%s.nii.gz" %(indirectory,image_id)
 mr1 = nib.load(image_path)
-mrs = [nib.load(ii) for ii in inputs.ID]
+mrs = [nib.load("%s/000%s.nii.gz" %(indirectory,ii)) for ii in inputs.ID]
 
 # We also want the maps thresholded
 thresholded = []
