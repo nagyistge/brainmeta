@@ -22,10 +22,8 @@ input_delim = "\t"
 inputs = pandas.read_csv(input_file,sep=input_delim)
 # IMAGE_ID should correspond to integer ID
 
-empty = [115,116,117,118,119,120,121,122,123,124,125,126,127,129,130,131,132,142,143,144,145,146,147,148,149,150,151,152,153,154,155,173,174,175,177,178,179,180,181,299,300,303,305,306,307,308,309,311,436,437,439,440,441,442,443,446,449,451,452,454,456,457,459,460,461,463,464,466,472,526,528,529,530,531,532,533,534,535,536,538,539,540,542,543,544]
-
 # Prepare and submit a job for each
-for i in empty:
+for i in missing:
   image_id = i
   time.sleep(1)
   output_directory = "%s/%s" %(outdirectory,image_id)

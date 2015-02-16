@@ -41,7 +41,7 @@ original = nib.load(image_path)
 mask = nib.load(standard_mask)
 
 # Produce thresholdings (these are all Z score maps, this includes original image (thresh 0))
-thresholded1 = IT.threshold_abs(original)
+thresholded1 = IT.threshold_abs(original,thresholds=[0.0])
 thresholds1 = np.sort(thresholded1.keys())
 image1_labels = ["%s_thr_%s" %(image_id,thresh) for thresh in thresholds1]
 
