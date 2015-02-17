@@ -16,7 +16,7 @@ inputs = pandas.read_csv(input_file,sep=input_delim)
 
 # We are going to do these one at a time!
 # thresholds = [0.0,0.5,1.0,1.5,1.65,1.7,1.75,1.8,1.85,1.9,1.96,2,2.58,3,3.5,4.0]
-thresholds = [1.0]
+thresholds = [4.0]
 
 # Generate a set of all that we should have
 should_have = set([ "%s_%s" %(thresh,ii) for thresh in thresholds for ii in inputs.ID])

@@ -19,7 +19,7 @@ input_file = "%s/openfmri_labels.tsv" %(basedir)
 input_delim = "\t"
 
 # Here is the threshold to run
-threshold = 1.0
+thresholds = 4.0
 
 # Read in input file
 inputs = pandas.read_csv(input_file,sep=input_delim)
@@ -39,6 +39,6 @@ for image_id in missing:
   filey.writelines("#SBATCH --error=.out/%s.err\n" %(image_id))
   filey.writelines("#SBATCH --time=2-00:00\n")
   filey.writelines("#SBATCH --mem=64000\n")
-  filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment1_analysis1.py %s %s %s %s %s %s %s" %(image_id,indirectory,tmpdirectory,output_directory,standard,input_file,threshold))
+  filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment1_analysis1.py %s %s %s %s %s %s %s" %(image_id,indirectory,tmpdirectory,output_directory,standard,input_file,thresholds))
   filey.close()
   os.system("sbatch -p russpold " + ".job/%s.job" %(image_id))

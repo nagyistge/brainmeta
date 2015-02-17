@@ -1,0 +1,305 @@
+---
+title: "How does masking strategy influence similarity?"
+author: "Vanessa Sochat"
+date: "02/16/2015"
+output: html_document
+---
+
+This experiment will assess the impact of the following masking strategies on the calculation of a similarity metric, (pearson's r):
+
+ - [pairwise deletion strategy](https://github.com/vsoch/brainmeta/blob/master/image_comparison/experiments/image_transformations.py#L45): taking the intersection of nonzero, nonnan voxels
+ - [pairwise inclusion strategy](https://github.com/vsoch/brainmeta/blob/master/image_comparison/experiments/image_transformations.py#L59): taking the union of nonzero, nonnan voxels in either mask
+ - brainmask only: all voxels within an MNI template brain mask
+
+
+#### Scripts
+If needed, the analysis scripts are availabe:
+
+ - [experiment2_masking](https://github.com/vsoch/brainmeta/blob/master/image_comparison/experiments/experiment2_masking1.py): the main analysis script, run for each image individually
+ - [experiment2_compile](https://github.com/vsoch/brainmeta/blob/master/image_comparison/experiments/experiment2_compile2.py): compiles results into single files (for use now!)
+
+
+#### Goals of the experiment
+
+We want to assess how different masking strategies, including pairwise deletion, pairwise inclusion, and a standard brain mask, impact the calculation of a reasonable similarity metric, pearson's r.  This is a solid starting analysis (that perhaps should have been done first) because we have clear expectations about what the output should look like:  introducing "faux zeros" into the calculation, as is done with both pairwise inclusion and brain mask, I hypothsize will "dilute" the result - meaning the variance will decrease, and overall correlation scores will be weaker. We (think) that pairwise deletion with thresholed maps will do best to preserve the "gold standard" differences (unthresholded vs unthrehsolded)
+
+#### Overview of Methods
+There will be three parts to this experiment. 
+
+- Part I: Are there differences in the distributions of scores? We will be exploratory and visually look at the changes in the scores between the strategies using heatmaps (color), box and whisker plots, and density plots.
+- Part II: Will look at differences in the mask sizes
+- Part III: Are there differences in the ranking of the maps? (This is arguably the most important - we want to know if a masking strategy changes the "top matches" for any given map!)  We will use Kendall's tau and spearman's rho to assess the change in rankings.
+
+### Methods
+
+###### Data and Variables
+- Define "data" [*data*] as 144 unthrehsolded Z score brain maps from ~9 openfmri experiments in NeuroVault
+- Define "gold standard"" [*gs*] as pairwise comparisons between unthresholded maps
+- Define "thresholded maps" as *thresh* that is >= a Z score of 1.96, or <= a Z score of -1.96
+
+This threshold was chosen as it corresponds to a p-value of 0.05, commonly used in analyses with Z score maps.
+
+- Define "similarity metric" *pearson* as pearsons r implemented in scipy
+- Define "pairwise deletion" *pd* as intersection of nonzero, nonnan voxels between two images
+- Define "pairwise inclusion" *pi* as union of nonzero, nonnan voxels between two images
+- Define "brain mask" *bm* as all voxels in the standard MNI brain mask template
+
+
+###### Intended Outputs
+
+First we will generate the following data matrices (output):
+
+ - *gs*: [144x144] where each *gs*i,*gs*j corresponds to *pearson* between *data*i and *data*j
+ - **Pairwise deletion similarities** [144x144] where each i,j corresponds to *pearson* between *data*i and *thresh*j with *pd* strategy
+ - **Pairwise inclusion similarities** [144x144] where each i,j corresponds to *pearson* between *data*i and *thresh*j with *pi* strategy
+ - **Brain mask similarities** [144x144] where each i,j corresponds to *pearson* between *data*i and *thresh*j with *bm* strategy
+- **bm vs pd mask sizes** [144x144] where each i,j corresponds to difference in voxels used in *bm* vs *pd* masking strategies
+- **pi vs pd mask sizes** [144x144] where each i,j corresponds to difference in voxels used in *pi* vs *pd* masking strategies
+- **bm vs pi mask sizes** [144x144] where each i,j corresponds to difference in voxels used in *bm* vs *pi* masking strategies
+
+
+###### Procedure
+
+For each *di* of *data*:
+  For each *strategy* of *pd*,*pi*,*bm*:
+    Calculate *pearson* for *di* using *strategy* against all *thresh*
+    
+# Part I
+
+First we will look at the overall differences in the distributions of the scores when we have the three masking strategies. First, we need to read in all of our data.
+
+###### Matrix Preparation
+
+```{r}
+# Read in the input files
+indir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores"
+
+# Similarity Scores
+pearson_pd = read.csv(paste(indir,"/144_masking_pd.tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
+pearson_pi = read.csv(paste(indir,"/144_masking_pi.tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
+pearson_bm = read.csv(paste(indir,"/144_masking_bm.tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
+pearson_gs = read.csv(paste(indir,"/144_masking_gs.tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
+
+# Mask Size Differences
+pd_vs_pi = read.csv(paste(indir,"/144_pd_vs_pi_sizediff.tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
+pd_vs_bm = read.csv(paste(indir,"/144_pd_vs_bm_sizediff.tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
+bm_vs_pi = read.csv(paste(indir,"/144_pi_vs_bm_sizediff.tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
+
+# Write a function to format the data frames
+format_df = function(df){
+  colnames(df)[1] = "ID"
+  colnames(df) = gsub("X","",colnames(df))
+  rownames(df) = df[,1]
+  df = df[,-1]
+  return(df)
+}
+
+# Format all dataframes
+pearson_gs = format_df(pearson_gs)
+pearson_pd = format_df(pearson_pd)
+pearson_pi = format_df(pearson_pi)
+pearson_bm = format_df(pearson_bm)
+pd_vs_pi = format_df(pd_vs_pi)
+pd_vs_bm = format_df(pd_vs_bm)
+bm_vs_pi = format_df(bm_vs_pi)
+```
+
+###### Visualizing Pearson Scores with Heatmaps
+
+Just for fun / visualization, what do the scores look like?
+```{r}
+library(pheatmap)
+
+# Here is the gold standard, we will save the row/col ordering
+gs = pheatmap(pearson_gs,main="Gold Standard Pearson Scores for Pairwise Unthresholded Maps")
+col_index = gs$tree_col$order
+row_index = gs$tree_row$order
+  
+# Reorder our remaining data according to the indices above
+pearson_pd = pearson_pd[row_index,col_index]
+pearson_pi = pearson_pi[row_index,col_index]
+pearson_bm = pearson_bm[row_index,col_index]
+
+# Now use pheatmap (with no clustering to preserve ordering)
+pheatmap(pearson_pd,main="Pairwise Deletion Pearson Scores for Unthresholded vs +/-1.96 maps",cluster_rows=FALSE,cluster_cols=FALSE)
+pheatmap(pearson_pi,main="Pairwise Inclusion Pearson Scores for Unthresholded vs +/-1.96 maps",cluster_rows=FALSE,cluster_cols=FALSE)
+pheatmap(pearson_bm,main="Pairwise Brain Mask Pearson Scores for Unthresholded vs +/-1.96 maps",cluster_rows=FALSE,cluster_cols=FALSE)
+```
+ 
+Wow, right off the bat we see that the pairwise deletion have more intense values (darker reds and blues) that are indicative of stronger correlation scores. Could it be that the hypothesis that zeros "dilute" the scores is true?  Let's quickly look at differences, first from the gold standard:
+
+###### Visualizing Pearson Score Differences with Heatmaps
+
+```{r}
+# Calculate differences and convert to Z scores
+
+# Pairwise Deletion vs Gold Standard
+differences = abs(pearson_gs - pearson_pd)
+meand = mean(rowMeans(differences))
+std = sd(apply(differences,1,sd))
+pheatmap((differences-meand)/std,main="Gold Standard - Pairwise Deletion, Z Scores",cluster_rows=FALSE,cluster_cols=FALSE)
+
+# Pairwise Inclusion vs Gold Standard
+differences = abs(pearson_gs - pearson_pi)
+meand = mean(rowMeans(differences))
+std = sd(apply(differences,1,sd))
+pheatmap((differences-meand)/std,main="Gold Standard - Pairwise Inclusion, Z Scores",cluster_rows=FALSE,cluster_cols=FALSE)
+
+# Pairwise Deletion vs Brain Mask
+differences = abs(pearson_gs - pearson_bm)
+meand = mean(rowMeans(differences))
+std = sd(apply(differences,1,sd))
+pheatmap((differences-meand)/std,main="Gold Standard - Brain Mask, Z Scores",cluster_rows=FALSE,cluster_cols=FALSE)
+
+# Pairwise Inclusion vs Pairwise Deletion
+differences = abs(pearson_pd - pearson_pi)
+meand = mean(rowMeans(differences))
+std = sd(apply(differences,1,sd))
+pheatmap((differences-meand)/std,main="Pairwise Deletion - Pairwise Inclusion, Z Scores",cluster_rows=FALSE,cluster_cols=FALSE)
+```
+
+Overall, I don't see much difference between pairwise inclusion and using a brain mask. I also don't see huge differences between pairwise deletion and inclusion, although there are a few scattered points that have darker reds to be concerned about.  Let's use box and whisker plots to better demonstrate the differences in the distributions.
+
+###### Visualizing Pearson Score Differences with Box and Whisker
+
+We need our data in a flat file format.
+
+```{r}
+library(reshape2)
+gs_vector = as.vector(as.matrix(pearson_gs))
+pd_vector = as.vector(as.matrix(pearson_pd))
+pi_vector = as.vector(as.matrix(pearson_pi))
+bm_vector = as.vector(as.matrix(pearson_bm))
+
+pearsons_df = data.frame(GS=gs_vector,PD=pd_vector,PI=pi_vector,BM=bm_vector)
+pearsons_flat =  melt(pearsons_df)
+
+head(pearsons_flat)
+
+# Now plot!
+library(ggplot2)
+plot.new() #ggplot2 and RMarkdown bug
+gp = ggplot(pearsons_flat, aes(variable,value,fill=variable)) 
+gp + geom_boxplot() + ylab("Pearsons R") + title("Pearson Correlations for Different Masking Strategies")
+```
+
+These plots are not very convincing to show differences, because we don't have a sense of how the distributions are shaped. Let's try density plots.
+
+###### Visualizing Pearson Score Differences with Density Plots
+
+```{r}
+plot.new() #ggplot2 and RMarkdown bug
+gp = ggplot(pearsons_flat,aes(x=value, fill=variable)) + geom_density(alpha=0.25)
+gp + title("Comparing Density Plots of Pearson Correlations") + ylab("Density") + xlab("Pearsons R")
+```
+
+There are marginal differences in the actual distributions of the overall scores, and likely the means would be significantly different with a two sample T test (if done for a paper).  We can see that pairwise deletion is most in line with the gold standard distribution, and PI and BM have more "diluted" values (closer to 0)
+
+# Part II
+
+Next we will look at the overall mask sizes.
+
+```{r}
+pd_vs_bm_vector = as.vector(as.matrix(pd_vs_bm))
+pd_vs_pi_vector = as.vector(as.matrix(pd_vs_pi))
+bm_vs_pi_vector = as.vector(as.matrix(bm_vs_pi))
+
+mask_df = data.frame(pd_vs_bm_vector,pd_vs_pi_vector,bm_vs_pi_vector)
+mask_flat = melt(mask_df)
+plot.new() #ggplot2 and RMarkdown bug
+gp = ggplot(mask_flat,aes(x=variable, y=value,fill=variable)) + geom_boxplot(alpha=0.25)
+gp + title("Comparing Density Plots of Differences in Mask Sizes") + ylab("Differences in Mask Sizes") + xlab("")
+```
+
+As I would have expected, there aren't much differences in size for the brain mask versus pairwise inclusion strategies (lots of extra zeros introduced by either of the maps). There are substantial size differences for pairwise deletion versus the other two.
+
+# Part III
+This is the most important part.  We were just looking at overall distributions of scores, but what we are really interested in is if by using a different masksing strategy, the *ranking* of the scores changes.  Here is where we can test the "rank scoring" procedure that was being developed for experiment 1.  This time, however, we will use Kendall's Tau and spearman's rho to assess changes in the lists. I have read about both these metrics, and it seems that rho generally returns higher scores, however is more sensitive to "big" changes (eg, a ranking in end position moving to top of list will decrease score much more than Kendall's tau). I don't need to worry about using A,B,or C because we will not have any case of two items having the same ranking.
+
+To reiterate the procedure:
+
+- Define the gold standard ranking *gsr* as the ranking of unthresholded image, *data*i versus all other unthresholded images, *data*j. 
+- Define a strategy ranking *pdr* or *pir* or *bmr* as the ranking of unthresholded image, *data*i versus all thresholded images, thresh*j
+
+For each *gsr* and each masking strategy *pd*,*pi*,and *bm*
+  Compare *gsr* with each of *pdr*,*pir*,and *bmr* by calculating spearman's rho and Kendall's Tau
+  Save these values in lists, then look at result! Boom!
+  
+```{r}
+# We will save our results in a data frame with format
+# imageid strategy rho rho-pvalue tau tau-pvalue
+results = c()
+
+# For each *gsr* and each masking strategy *pd*,*pi*,and *bm*
+for (g in 1:nrow(pearson_gs)){
+  rowname = rownames(pearson_gs)[g]
+  gsr = as.numeric(names(sort(abs(pearson_gs[g,]),decreasing=TRUE)))
+  pdr = as.numeric(names(sort(abs(pearson_pd[g,]),decreasing=TRUE)))
+  pir = as.numeric(names(sort(abs(pearson_pi[g,]),decreasing=TRUE)))
+  bmr = as.numeric(names(sort(abs(pearson_bm[g,]),decreasing=TRUE)))
+  # PAIRWISE DELETION
+  rho = cor.test(gsr, pdr, method = c("spearman"), conf.level = 0.95)
+  tau = cor.test(gsr, pdr, method = c("kendall"), conf.level = 0.95)
+  row = cbind(rowname,"PD",rho$p.value,rho$estimate,tau$p.value,tau$estimate)
+  results = rbind(results,row)
+  # PAIRWISE INCLUSION
+  rho = cor.test(gsr, pir, method = c("spearman"), conf.level = 0.95)
+  tau = cor.test(gsr, pir, method = c("kendall"), conf.level = 0.95)
+  row = cbind(rowname,"PI",rho$p.value,rho$estimate,tau$p.value,tau$estimate)
+  results = rbind(results,row)
+  # BRAIN MASK
+  rho = cor.test(gsr, bmr, method = c("spearman"), conf.level = 0.95)
+  tau = cor.test(gsr, bmr, method = c("kendall"), conf.level = 0.95)
+  row = cbind(rowname,"BM",rho$p.value,rho$estimate,tau$p.value,tau$estimate)
+  results = rbind(results,row)
+}
+colnames(results) = c("imageid","strategy","rho-pvalue","rho","tau-pvalue","tau")
+rownames(results) = seq(1,nrow(results))
+results = as.data.frame(results,stringsAsFactors=FALSE)
+head(results)
+```
+
+Finally, we need to separate this huge data frame into each separate analysis (determined by the mask type) and then correct for multiple comparisons, and see if there are any images with significant differences in the score rankings.
+
+```{r}
+pd_result = results[results$strategy=="PD",]
+pi_result = results[results$strategy=="PI",]
+bm_result = results[results$strategy=="BM",]
+
+# Correct each of rho and tau separately
+# We have to convert to character --> numeric because stupid R made them factors!
+
+# PAIRWISE DELETION
+hist(p.adjust(as.numeric(as.character(pd_result[,3])),method="fdr"),main="Rho FDR P-Values for PD",col="tomato") # Rho
+hist(p.adjust(as.numeric(as.character(pd_result[,5])),method="fdr"),main="Tau FDR P-Values for PD",col="violet") # Tau
+
+# PAIRWISE INCLUSION
+hist(p.adjust(as.numeric(as.character(pi_result[,3])),method="fdr"),main="Rho FDR P-Values for PI",col="tomato") # Rho
+hist(p.adjust(as.numeric(as.character(pi_result[,5])),method="fdr"),main="Tau FDR P-Values for PI",col="violet") # Tau
+
+# BRAIN MASK
+hist(p.adjust(as.numeric(as.character(bm_result[,3])),method="fdr"),main="Rho FDR P-Values for BM",col="tomato") # Rho
+hist(p.adjust(as.numeric(as.character(bm_result[,5])),method="fdr"),main="Tau FDR P-Values for BM",col="violet") # Tau
+```
+
+Finally, create a table of counts of images that are significantly different
+
+```{r}
+counts = rbind(table(p.adjust(as.numeric(as.character(pd_result[,3])),method="fdr") <= 0.05),
+               table(p.adjust(as.numeric(as.character(pd_result[,5])),method="fdr") <= 0.05),
+               table(p.adjust(as.numeric(as.character(pi_result[,3])),method="fdr") <= 0.05),
+               table(p.adjust(as.numeric(as.character(pi_result[,5])),method="fdr") <= 0.05),
+               table(p.adjust(as.numeric(as.character(bm_result[,3])),method="fdr") <= 0.05),
+               table(p.adjust(as.numeric(as.character(bm_result[,5])),method="fdr") <= 0.05))
+rownames(counts) = c("PD_RHO","PD_TAU","PI_RHO","PI_TAU","BM_RHO","RM_TAU")
+colnames(counts) = c("NOT_SIG","SIG_DIFF")
+counts
+```
+
+
+# Conclusions
+
+- There are marginal differences in the actual distributions of the overall scores, and likely the means would be significantly different with a two sample T test.  We can see that pairwise deletion is most in line with the gold standard distribution, and PI and BM have more "diluted" values (closer to 0)
+- There are fewer than 1% of total maps (2 to 11 out of 144) that DO have significant differences in their similarity rankings based on comparing a "gold standard" score (untresholded vs. unthresholded) ranking vs. a "masking strategy" done with a thresholded map at Z=1.96.
+
+If I were writing this into a paper, I would next look specifically at the maps with the significant differences to better understand what is driving this result!
