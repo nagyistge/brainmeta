@@ -15,18 +15,22 @@ input_file = "%s/openfmri_labels.tsv" %(basedir)
 input_delim = "\t"
 inputs = pandas.read_csv(input_file,sep=input_delim)
 
+# We will run for a set of thresholds
+thresholds = [1.96,2.58,3.02]
+
 # Prepare and submit a job for each
-for image_id in inputs.ID:
-  outfile = "%s/000%s_masking_scores.pkl" %(outdirectory,image_id)
-  if not os.path.exists(outfile):
-    filey = ".job/%s_masking.job" %(image_id)
-    filey = open(filey,"w")
-    filey.writelines("#!/bin/bash\n")
-    filey.writelines("#SBATCH --job-name=%s\n" %(image_id))
-    filey.writelines("#SBATCH --output=.out/%s.out\n" %(image_id))
-    filey.writelines("#SBATCH --error=.out/%s.err\n" %(image_id))
-    filey.writelines("#SBATCH --time=2-00:00\n")
-    filey.writelines("#SBATCH --mem=64000\n")
-    filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment2_masking.py %s" %(image_id))
-    filey.close()
-    os.system("sbatch -p russpold " + ".job/%s_masking.job" %(image_id))
+for thresh in thresholds:
+  for image_id in inputs.ID:
+    outfile = "%s/thresh_%s/000%s_masking_scores_thresh_%s.pkl" %(outdirectory,thresh,image_id,thresh)
+    if not os.path.exists(outfile):
+      filey = ".job/%s_masking_%s.job" %(image_id,thresh)
+      filey = open(filey,"w")
+      filey.writelines("#!/bin/bash\n")
+      filey.writelines("#SBATCH --job-name=%s\n" %(image_id))
+      filey.writelines("#SBATCH --output=.out/%s.out\n" %(image_id))
+      filey.writelines("#SBATCH --error=.out/%s.err\n" %(image_id))
+      filey.writelines("#SBATCH --time=2-00:00\n")
+      filey.writelines("#SBATCH --mem=64000\n")
+      filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment2_masking.py %s %s" %(image_id,thresh))
+      filey.close()
+      os.system("sbatch -p russpold " + ".job/%s_masking_%s.job" %(image_id,thresh))

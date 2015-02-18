@@ -11,7 +11,7 @@
 # pairwise deletion [voxels in both mask] 
 
 # 1: Define 144 unthresholded Z score images
-# 2: Threshold at 1.96 (equivalent to p=0.05 level)
+# 2: Threshold at 1.96, 2.58, 3.02 (equivalent to p=0.05, 0.005, 0.001 levels)
 # 3: Calculate pearsonr similarity for each masking strategy
 # 4: Plot differences in scores comparing strategies
 
@@ -28,6 +28,7 @@ from scipy.stats import pearsonr
 from nilearn.masking import apply_mask
 
 image_id = sys.argv[1]
+threshold = sys.argv[2]
 
 basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment1"
 outdirectory = "%s/masking_scores" %(basedir)
@@ -39,9 +40,6 @@ brain_mask = nib.load(standard)
 # Input file
 input_file = "%s/openfmri_labels.tsv" %(basedir)
 input_delim = "\t"
-
-# Here is the threshold for p=0.05
-threshold = 1.96
 
 # Read in input file
 inputs = pandas.read_csv(input_file,sep=input_delim)
@@ -92,4 +90,4 @@ for mr2 in thresholded:
 output = {"ids":inputs.ID.tolist(),"pearson_gs":pearsons_gs,"mr_vs_thresh_pearson_pd":pearsons_pd,
           "mr_vs_thresh_pearson_pi":pearsons_pi,"mr_vs_thresh_pearson_bm":pearsons_bm,"sizes":sizes}
 
-pickle.dump(output,open("%s/000%s_masking_scores.pkl" %(outdirectory,image_id),"wb"))
+pickle.dump(output,open("%s/000%s_masking_scores_thresh_%s.pkl" %(outdirectory,image_id,threshold),"wb"))
