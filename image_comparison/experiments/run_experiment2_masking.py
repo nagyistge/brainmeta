@@ -31,6 +31,6 @@ for thresh in thresholds:
       filey.writelines("#SBATCH --error=.out/%s.err\n" %(image_id))
       filey.writelines("#SBATCH --time=2-00:00\n")
       filey.writelines("#SBATCH --mem=64000\n")
-      filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment2_masking.py %s %s" %(image_id,thresh))
+      filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment2_masking1.py %s %s" %(image_id,thresh))
       filey.close()
       os.system("sbatch -p russpold " + ".job/%s_masking_%s.job" %(image_id,thresh))
