@@ -28,7 +28,7 @@ from scipy.stats import pearsonr
 from nilearn.masking import apply_mask
 
 image_id = sys.argv[1]
-threshold = sys.argv[2]
+threshold = float(sys.argv[2])
 
 basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment1"
 outdirectory = "%s/masking_scores" %(basedir)
