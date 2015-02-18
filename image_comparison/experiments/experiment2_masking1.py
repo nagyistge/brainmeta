@@ -90,4 +90,4 @@ for mr2 in thresholded:
 output = {"ids":inputs.ID.tolist(),"pearson_gs":pearsons_gs,"mr_vs_thresh_pearson_pd":pearsons_pd,
           "mr_vs_thresh_pearson_pi":pearsons_pi,"mr_vs_thresh_pearson_bm":pearsons_bm,"sizes":sizes}
 
-pickle.dump(output,open("%s/000%s_masking_scores_thresh_%s.pkl" %(outdirectory,image_id,threshold),"wb"))
+pickle.dump(output,open("%s/thresh_%s/000%s_masking_scores_thresh_%s.pkl" %(outdirectory,threshold,image_id,threshold),"wb"))
