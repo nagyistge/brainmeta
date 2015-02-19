@@ -45,9 +45,11 @@ def anatomical_rois(image1,atlas):
 def get_pairwise_deletion_mask(image1,image2,mask):
   '''return pandas data frame with only intersection of brain masked, non zero voxels'''
   if image1.shape == image2.shape:
+    image1_data = image1.get_data()
+    image2_data = image2.get_data()
     pdmask = np.zeros(image1.shape)
-    pdmask[(np.squeeze(image1.get_data() != 0)) * (np.isnan(np.squeeze(image1.get_data())) == False)] += 1
-    pdmask[(np.squeeze(image2.get_data() != 0)) * (np.isnan(np.squeeze(image2.get_data())) == False)] += 1
+    pdmask[(np.squeeze(image1_data != 0)) * (np.isnan(np.squeeze(image1_data)) == False)] += 1
+    pdmask[(np.squeeze(image2_data != 0)) * (np.isnan(np.squeeze(image2_data)) == False)] += 1
     pdmask[pdmask != 2] = 0
     pdmask[pdmask == 2] = 1
     pdmask = np.logical_and(pdmask, mask.get_data()).astype(int)
@@ -56,12 +58,14 @@ def get_pairwise_deletion_mask(image1,image2,mask):
 
 
 # Mask includes union of nonzero voxels in both images
-def get_pairwise_inclusion_mask(image1,image2,mask):
+def get_pairwise_inclusion_mask(image1,image2,mask,absolute_value=False):
   '''return pandas data frame with union of brain masked, non zero voxels'''
   if image1.shape == image2.shape:
+    image1_data = image1.get_data()
+    image2_data = image2.get_data()
     pimask = np.zeros(image1.shape)
-    pimask[(np.squeeze(image1.get_data() != 0)) * (np.isnan(np.squeeze(image1.get_data())) == False)] += 1
-    pimask[(np.squeeze(image2.get_data() != 0)) * (np.isnan(np.squeeze(image2.get_data())) == False)] += 1
+    pimask[(np.squeeze(image1_data != 0)) * (np.isnan(np.squeeze(image1_data)) == False)] += 1
+    pimask[(np.squeeze(image2_data != 0)) * (np.isnan(np.squeeze(image2_data)) == False)] += 1
     pimask[pimask != 0] = 1
     pimask = np.logical_and(pimask, mask.get_data()).astype(int)
     pimask_img = nib.Nifti1Image(pimask,affine=mask.get_affine(),header=mask.get_header())

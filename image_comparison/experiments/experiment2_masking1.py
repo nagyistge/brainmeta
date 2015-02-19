@@ -29,6 +29,7 @@ from nilearn.masking import apply_mask
 
 image_id = sys.argv[1]
 threshold = float(sys.argv[2])
+absolute_value = bool(sys.argv[3])
 
 basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment1"
 outdirectory = "%s/masking_scores" %(basedir)
@@ -48,7 +49,7 @@ inputs = pandas.read_csv(input_file,sep=input_delim)
 image_path = "%s/000%s.nii.gz" %(indirectory,image_id)
 mr1 = nib.load(image_path)
 mrs = [nib.load("%s/000%s.nii.gz" %(indirectory,ii)) for ii in inputs.ID]
-
+  
 # We also want the maps thresholded
 thresholded = []
 for mr in mrs:
@@ -56,6 +57,7 @@ for mr in mrs:
   
 # Calculate "gold standard" list of pearson scores
 # These are unthresholded maps vs. unthresholded maps
+# No absolute value is taken!
 pearsons_gs = []
 print "Calculating gold standard for %s..." %(mr1)
 for mr2 in mrs:
@@ -70,11 +72,24 @@ pearsons_pd = []
 pearsons_pi = []
 pearsons_bm = []
 
+# If we are thresholding only positive
+if absolute_value:
+  mr1_data = mr1.get_data()
+  mr1_data[mr1_data<0] = 0
+  mr1 = nib.Nifti1Image(mr1_data,affine=mr1.get_affine(),header=mr1.get_header())
+
 # We also will save sizes of each
 sizes = pandas.DataFrame(columns=["pd","pi","bm"])
 idx = 0
 print "Calculating mask varieties [PD,PI,BM] vs thresholded..."
 for mr2 in thresholded:
+
+  # If we are thresholding only positive
+  if absolute_value:
+    mr2_data = mr1.get_data()
+    mr2_data[mr2_data<0] = 0
+    mr2 = nib.Nifti1Image(mr2_data,affine=mr2.get_affine(),header=mr2.get_header())
+
   pdmask = IT.get_pairwise_deletion_mask(mr1,mr2,brain_mask)
   pimask = IT.get_pairwise_inclusion_mask(mr1,mr2,brain_mask)
   datapd = apply_mask([mr1,mr2],pdmask)  
