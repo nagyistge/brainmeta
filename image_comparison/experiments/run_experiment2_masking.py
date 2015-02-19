@@ -27,7 +27,7 @@ for thresh in thresholds:
   for image_id in inputs.ID:
     # if the output directory doesn't exist, make it
     topdir = "%s/thresh_%s_%s" %(outdirectory,thresh,absolute_value)
-    if not os.path(topdir): os.mkdir(topdir)
+    if not os.path.exists(topdir): os.mkdir(topdir)
     outfile = "%s/000%s_masking_scores_thresh_%s.pkl" %(topdir,image_id,thresh)
     if not os.path.exists(outfile):
       filey = ".job/%s_masking_%s.job" %(image_id,thresh)

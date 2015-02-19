@@ -50,7 +50,7 @@ input_delim = "\t"
 inputs = pandas.read_csv(input_file,sep=input_delim)
 
 # Remove our query image
-inputs = inputs[inputs.index!=int(image_id)]
+inputs = inputs[inputs.ID!=int(image_id)]
 
 # Read in all images - these similarities will be gold standard
 image_path = "%s/000%s.nii.gz" %(indirectory,image_id)
