@@ -13,7 +13,7 @@ import nibabel as nib
 from glob import glob
 
 # For each threshold
-thresholds = [1.96,2.58,3.02]
+thresholds = [1.96,2.58]
 
 for thresh in thresholds:
   inputs = glob("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores/thresh_%s/*.pkl" %(thresh))

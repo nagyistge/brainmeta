@@ -2,18 +2,18 @@ library(reshape2)
 library(ggplot2)
 
 # Write a function to read in the files for a particular threshold.
-read_inputs = function(indir,thresh) {
+read_inputs = function(indir,thresh,abs_value) {
   
   # Similarity Scores
-  pearson_pd = read.csv(paste(indir,"/144_masking_pd_",thresh,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
-  pearson_pi = read.csv(paste(indir,"/144_masking_pi_",thresh,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
-  pearson_bm = read.csv(paste(indir,"/144_masking_bm_",thresh,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
-  pearson_gs = read.csv(paste(indir,"/144_masking_gs_",thresh,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
+  pearson_pd = read.csv(paste(indir,"/144_masking_pd_",thresh,"_",abs_value,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
+  pearson_pi = read.csv(paste(indir,"/144_masking_pi_",thresh,"_",abs_value,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
+  pearson_bm = read.csv(paste(indir,"/144_masking_bm_",thresh,"_",abs_value,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
+  pearson_gs = read.csv(paste(indir,"/144_masking_gs_",thresh,"_",abs_value,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
   
   # Mask Size Differences
-  pd_vs_pi = read.csv(paste(indir,"/144_pd_vs_pi_sizediff_",thresh,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
-  pd_vs_bm = read.csv(paste(indir,"/144_pd_vs_bm_sizediff_",thresh,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
-  bm_vs_pi = read.csv(paste(indir,"/144_pi_vs_bm_sizediff_",thresh,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)  
+  pd_vs_pi = read.csv(paste(indir,"/144_pd_vs_pi_sizediff_",thresh,"_",abs_value,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
+  pd_vs_bm = read.csv(paste(indir,"/144_pd_vs_bm_sizediff_",thresh,"_",abs_value,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)
+  bm_vs_pi = read.csv(paste(indir,"/144_pi_vs_bm_sizediff_",thresh,"_",abs_value,".tsv",sep=""),sep="\t",stringsAsFactors=FALSE)  
   
   result = list(bm_vs_pi=bm_vs_pi,pd_vs_pi=pd_vs_pi,pd_vs_bm=pd_vs_bm,pearson_gs=pearson_gs,pearson_bm=pearson_bm,pearson_pi=pearson_pi,pearson_pd=pearson_pd)
   return(result)

@@ -16,7 +16,10 @@ input_delim = "\t"
 inputs = pandas.read_csv(input_file,sep=input_delim)
 
 # We will run for a set of thresholds
-thresholds = [1.96,2.58,3.02]
+thresholds = [1.96,2.58]
+
+# We will limit to only positive values
+absolute_value = True
 
 # Prepare and submit a job for each
 for thresh in thresholds:
@@ -31,6 +34,6 @@ for thresh in thresholds:
       filey.writelines("#SBATCH --error=.out/%s_%s.err\n" %(image_id,thresh))
       filey.writelines("#SBATCH --time=2-00:00\n")
       filey.writelines("#SBATCH --mem=64000\n")
-      filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment2_masking1.py %s %s" %(image_id,thresh))
+      filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment2_masking1.py %s %s %s" %(image_id,thresh,absolute_value))
       filey.close()
       os.system("sbatch -p russpold " + ".job/%s_masking_%s.job" %(image_id,thresh))
