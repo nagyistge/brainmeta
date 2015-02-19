@@ -32,6 +32,17 @@ def threshold_abs(image1,thresholds=[0.0,0.5,1.0,1.5,1.65,1.7,1.75,1.8,1.85,1.9,
     thresholded[thresh] = new_image
   return thresholded
 
+def threshold_pos(image1,thresholds=[0.0,0.5,1.0,1.5,1.65,1.7,1.75,1.8,1.85,1.9,1.96,2,2.58,3,3.5,4.0]):
+  '''threshold the image at a range of Z score thresholds, including only high positive values.'''
+  thresholded = dict()
+  data = image1.get_data()
+  for thresh in thresholds:
+    tmp = np.zeros(image1.shape)  
+    tmp[data >= thresh] = data[data >= thresh]  
+    new_image = nib.Nifti1Image(tmp,affine = image1.get_affine(),header=image1.get_header())
+    thresholded[thresh] = new_image
+  return thresholded
+
 
 # Segment to group of anatomical ROIs
 def anatomical_rois(image1,atlas):

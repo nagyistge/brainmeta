@@ -45,6 +45,9 @@ input_delim = "\t"
 # Read in input file
 inputs = pandas.read_csv(input_file,sep=input_delim)
 
+# Remove our query image
+inputs = inputs[inputs.index!=int(image_id)]
+
 # Read in all images - these similarities will be gold standard
 image_path = "%s/000%s.nii.gz" %(indirectory,image_id)
 mr1 = nib.load(image_path)
@@ -53,7 +56,8 @@ mrs = [nib.load("%s/000%s.nii.gz" %(indirectory,ii)) for ii in inputs.ID]
 # We also want the maps thresholded
 thresholded = []
 for mr in mrs:
-  thresholded.append(IT.threshold_abs(mr,thresholds=[threshold])[threshold])
+  if absolute_value: thresholded.append(IT.threshold_abs(mr,thresholds=[threshold])[threshold])
+  else: thresholded.append(IT.threshold_pos(mr,thresholds=[threshold])[threshold])
   
 # Calculate "gold standard" list of pearson scores
 # These are unthresholded maps vs. unthresholded maps
@@ -72,34 +76,42 @@ pearsons_pd = []
 pearsons_pi = []
 pearsons_bm = []
 
-# If we are thresholding only positive
-if absolute_value:
-  mr1_data = mr1.get_data()
-  mr1_data[mr1_data<0] = 0
-  mr1 = nib.Nifti1Image(mr1_data,affine=mr1.get_affine(),header=mr1.get_header())
+# Edge cases:
+# No surviving voxels for pdmask: we append 0
+# Thresholded image is 0: all correlations 0
+# Fewer than 3 remaining voxels to compare: we append 0
 
 # We also will save sizes of each
 sizes = pandas.DataFrame(columns=["pd","pi","bm"])
 idx = 0
 print "Calculating mask varieties [PD,PI,BM] vs thresholded..."
 for mr2 in thresholded:
-
-  # If we are thresholding only positive
-  if absolute_value:
-    mr2_data = mr1.get_data()
-    mr2_data[mr2_data<0] = 0
-    mr2 = nib.Nifti1Image(mr2_data,affine=mr2.get_affine(),header=mr2.get_header())
-
-  pdmask = IT.get_pairwise_deletion_mask(mr1,mr2,brain_mask)
-  pimask = IT.get_pairwise_inclusion_mask(mr1,mr2,brain_mask)
-  datapd = apply_mask([mr1,mr2],pdmask)  
-  datapi = apply_mask([mr1,mr2],pimask)  
-  databm = apply_mask([mr1,mr2],brain_mask)  
-  pearsons_pd.append(pearsonr(datapd[0],datapd[1])[0])
-  pearsons_pi.append(pearsonr(datapi[0],datapi[1])[0])
-  pearsons_bm.append(pearsonr(databm[0],databm[1])[0])
-  sizes.loc[idx] = [len(datapd[0]),len(datapi[0]),len(databm[0])]
-  idx+=1
+  # If the image is empty thresholded, we must append zeros by default
+  if len(np.unique(mr2.get_data()))==1:
+    pearsons_bm.append(0)
+    pearsons_pi.append(0)
+    pearsons_pd.append(0)
+  else:
+    pdmask = IT.get_pairwise_deletion_mask(mr1,mr2,brain_mask)
+    pimask = IT.get_pairwise_inclusion_mask(mr1,mr2,brain_mask)
+    # Calculate correlation if there is overlap, otherwise it is 0
+    if len(np.unique(pdmask.get_data())) == 2:
+      datapd = apply_mask([mr1,mr2],pdmask) 
+      # We need at least 3 values
+      if np.shape(datapd)[1] > 2: pearsons_pd.append(pearsonr(datapd[0],datapd[1])[0])
+      else: pearsons_pd.append(0)
+    else: pearsons_pd.append(0)
+    # Calculate correlation if there is overlap, otherwise it is 0
+    if len(np.unique(pimask.get_data())) == 2:
+      datapi = apply_mask([mr1,mr2],pimask)  
+      # We need at least 3 values
+      if np.shape(datapi)[1] > 2: pearsons_pi.append(pearsonr(datapi[0],datapi[1])[0])
+      else: pearsons_pi.append(0)
+    else: pearsons_pi.append(0)
+    databm = apply_mask([mr1,mr2],brain_mask)  
+    pearsons_bm.append(pearsonr(databm[0],databm[1])[0])
+    sizes.loc[idx] = [len(datapd[0]),len(datapi[0]),len(databm[0])]
+    idx+=1
 
 # Save all data to output dictionary
 output = {"ids":inputs.ID.tolist(),"pearson_gs":pearsons_gs,"mr_vs_thresh_pearson_pd":pearsons_pd,
