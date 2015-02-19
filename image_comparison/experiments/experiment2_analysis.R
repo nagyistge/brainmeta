@@ -2,6 +2,10 @@
 
 # 1. Prepare data matrices
 source("../experiments/experiment2_functions.R")
+suppressPackageStartupMessages=TRUE
+indir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores"  
+setwd(indir)
+
 thresholds = c(1.96,2.58)
 abs_values = c("pos","pos_neg")
 
@@ -24,11 +28,11 @@ savedir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/img/all"
 for (thresh in thresholds){
   for (abs_v in abs_values){
     plot_result(results[[paste(abs_v,thresh,sep="_")]],thresh)
-    ggsave(paste(savedir,"/pearson_density_",thresh,".png",sep=""))
+    ggsave(paste(savedir,"/pearson_density_",thresh,"_",abs_v,".png",sep=""))
     plot_result(results[[paste(abs_v,thresh,sep="_")]],thresh,"violin")
-    ggsave(paste(savedir,"/pearson_violin_",thresh,".png",sep=""))
+    ggsave(paste(savedir,"/pearson_violin_",thresh,"_",abs_v,".png",sep=""))
     plot_result(results[[paste(abs_v,thresh,sep="_")]],thresh,"boxplot")
-    ggsave(paste(savedir,"/pearson_boxplot_",thresh,".png",sep=""))
+    ggsave(paste(savedir,"/pearson_boxplot_",thresh"_",abs_v,,".png",sep=""))
   }
 }
 

@@ -16,15 +16,19 @@ input_delim = "\t"
 inputs = pandas.read_csv(input_file,sep=input_delim)
 
 # We will run for a set of thresholds
-thresholds = [1.96,2.58]
+#thresholds = [1,1.65,1.96,2.58,3.02]
+thresholds = [0.5,1.0,1.5,1.65,1.7,1.75,1.8,1.85,1.9,1.96,2,2.58,3.02,3.5,4.0]
 
-# We will limit to only positive values
-absolute_value = True
+# Do not limit to only positive values
+absolute_value = False
 
 # Prepare and submit a job for each
 for thresh in thresholds:
   for image_id in inputs.ID:
-    outfile = "%s/thresh_%s/000%s_masking_scores_thresh_%s.pkl" %(outdirectory,thresh,image_id,thresh)
+    # if the output directory doesn't exist, make it
+    topdir = "%s/thresh_%s_%s" %(outdirectory,thresh,absolute_value)
+    if not os.path(topdir): os.mkdir(topdir)
+    outfile = "%s/000%s_masking_scores_thresh_%s.pkl" %(topdir,image_id,thresh)
     if not os.path.exists(outfile):
       filey = ".job/%s_masking_%s.job" %(image_id,thresh)
       filey = open(filey,"w")
