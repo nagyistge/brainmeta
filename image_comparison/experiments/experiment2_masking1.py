@@ -29,7 +29,11 @@ from nilearn.masking import apply_mask
 
 image_id = sys.argv[1]
 threshold = float(sys.argv[2])
-absolute_value = bool(sys.argv[3])
+absolute_value = sys.argv[3]
+
+# Make sure we have boolean
+if absolute_value == "True": absolute_value = True
+else: absolute_value = False
 
 basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment1"
 outdirectory = "%s/masking_scores" %(basedir)
