@@ -51,6 +51,7 @@ inputs = pandas.read_csv(input_file,sep=input_delim)
 
 # Remove our query image
 inputs = inputs[inputs.ID!=int(image_id)]
+image_ids = inputs.ID
 
 # Read in all images - these similarities will be gold standard
 image_path = "%s/000%s.nii.gz" %(indirectory,image_id)
@@ -87,8 +88,8 @@ pearsons_bm = []
 
 # We also will save sizes of each
 sizes = pandas.DataFrame(columns=["pd","pi","bm"])
-idx = 0
 print "Calculating mask varieties [PD,PI,BM] vs thresholded..."
+idx = 0
 for mr2 in thresholded:
   # If the image is empty thresholded, we must append zeros by default
   if len(np.unique(mr2.get_data()))==1:
@@ -114,9 +115,8 @@ for mr2 in thresholded:
     else: pearsons_pi.append(0)
     databm = apply_mask([mr1,mr2],brain_mask)  
     pearsons_bm.append(pearsonr(databm[0],databm[1])[0])
-    sizes.loc[idx] = [len(datapd[0]),len(datapi[0]),len(databm[0])]
+    sizes.loc[image_ids[idx]] = [len(datapd[0]),len(datapi[0]),len(databm[0])]
     idx+=1
-
 # Save all data to output dictionary
 output = {"ids":inputs.ID.tolist(),"pearson_gs":pearsons_gs,"mr_vs_thresh_pearson_pd":pearsons_pd,
           "mr_vs_thresh_pearson_pi":pearsons_pi,"mr_vs_thresh_pearson_bm":pearsons_bm,"sizes":sizes}
