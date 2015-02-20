@@ -90,6 +90,7 @@ pearsons_bm = []
 sizes = pandas.DataFrame(columns=["pd","pi","bm"])
 print "Calculating mask varieties [PD,PI,BM] vs thresholded..."
 idx = 0
+size_ids = []
 for mr2 in thresholded:
   # If the image is empty thresholded, we must append zeros by default
   if len(np.unique(mr2.get_data()))==1:
@@ -115,10 +116,12 @@ for mr2 in thresholded:
     else: pearsons_pi.append(0)
     databm = apply_mask([mr1,mr2],brain_mask)  
     pearsons_bm.append(pearsonr(databm[0],databm[1])[0])
-    sizes.loc[image_ids[idx]] = [len(datapd[0]),len(datapi[0]),len(databm[0])]
-    idx+=1
+    sizes.loc[idx] = [len(datapd[0]),len(datapi[0]),len(databm[0])]
+    size_ids.append(image_ids[idx])
+  idx+=1
 # Save all data to output dictionary
 output = {"ids":inputs.ID.tolist(),"pearson_gs":pearsons_gs,"mr_vs_thresh_pearson_pd":pearsons_pd,
-          "mr_vs_thresh_pearson_pi":pearsons_pi,"mr_vs_thresh_pearson_bm":pearsons_bm,"sizes":sizes}
+          "mr_vs_thresh_pearson_pi":pearsons_pi,"mr_vs_thresh_pearson_bm":pearsons_bm,
+          "sizes":sizes,"size_ids":size_ids}
 
 pickle.dump(output,open("%s/thresh_%s_%s/000%s_masking_scores_thresh_%s.pkl" %(outdirectory,threshold,absolute_value,image_id,threshold),"wb"))
