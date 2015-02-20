@@ -31,7 +31,7 @@ for input_folder in input_folders:
   input_ids.sort()
   column_labels = input_ids + ["thresh","pos_only"]
   # Load the first to get image ids and order
-  pearson_gs = pandas.DataFrame(columns=column_labels)
+  pearson_gs = pandas.DataFrame(columns=input_ids)
   pearson_pd = pandas.DataFrame(columns=column_labels)
   pearson_pi = pandas.DataFrame(columns=column_labels)
   pearson_bm = pandas.DataFrame(columns=column_labels)
@@ -49,33 +49,42 @@ for input_folder in input_folders:
     pearson_pd.loc[input_id,tmp["ids"]] = tmp["mr_vs_thresh_pearson_pd"]
     pearson_bm.loc[input_id,tmp["ids"]] = tmp["mr_vs_thresh_pearson_bm"]
     # Save all mask sizes differences, again will be nan for image vs itself.
-    pd_size.loc[input_id,tmp["sizes"].index.tolist()] = tmp["sizes"]["pd"].tolist()
-    pi_size.loc[input_id,tmp["sizes"].index.tolist()] = tmp["sizes"]["pi"].tolist()
-    bm_size.loc[input_id,tmp["sizes"].index.tolist()] = tmp["sizes"]["bm"].tolist()
+    pd_size.loc[input_id,tmp["size_ids"]] = tmp["sizes"]["pd"].tolist()
+    pi_size.loc[input_id,tmp["size_ids"]] = tmp["sizes"]["pi"].tolist()
+    bm_size.loc[input_id,tmp["size_ids"]] = tmp["sizes"]["bm"].tolist()
   # Add thresholding and directions
   pd_size["thresh"] = thresh; pd_size["pos_only"] = only_pos
   pi_size["thresh"] = thresh; pi_size["pos_only"] = only_pos
   bm_size["thresh"] = thresh; bm_size["pos_only"] = only_pos
-  pearson_gs["thresh"] = thresh; pearson_gs["pos_only"] = only_pos
   pearson_pd["thresh"] = thresh; pearson_pd["pos_only"] = only_pos
   pearson_bm["thresh"] = thresh; pearson_bm["pos_only"] = only_pos
   pearson_pi["thresh"] = thresh; pearson_pi["pos_only"] = only_pos
   # Append to lists
-  pearsons_gs.append(pearsons_gs)
-  pearsons_pd.append(pearsons_pd)
-  pearsons_pi.append(pearsons_pi)
-  pearsons_bm.append(pearsons_bm)
+  pearsons_gs.append(pearson_gs)
+  pearsons_pd.append(pearson_pd)
+  pearsons_pi.append(pearson_pi)
+  pearsons_bm.append(pearson_bm)
   pd_sizes.append(pd_size)
   pi_sizes.append(pi_size)
   bm_sizes.append(bm_size)
 
 # Finally, merge them into one!
+pearsons_bm = pandas.tools.merge.concat(pearsons_bm,axis=0)
+pearsons_pi = pandas.tools.merge.concat(pearsons_pi,axis=0)
+pearsons_pd = pandas.tools.merge.concat(pearsons_pd,axis=0)
+bm_sizes = pandas.tools.merge.concat(bm_sizes,axis=0)
+pd_sizes = pandas.tools.merge.concat(pd_sizes,axis=0)
+pi_sizes = pandas.tools.merge.concat(pi_sizes,axis=0)
+
+# We only need one version of the gold standard - but it's a sanity check that they are all the same
+pearsons_gs = pearsons_gs[0]
 
 # Save all data matrices to file
-pearsons_gs.to_csv("144_masking_gs_%s.tsv" %(thresh),sep="\t")
-pearsons_pd.to_csv("144_masking_pd_%s.tsv" %(thresh),sep="\t")
-pearsons_pi.to_csv("144_masking_pi_%s.tsv" %(thresh),sep="\t")
-pearsons_bm.to_csv("144_masking_bm_%s.tsv" %(thresh),sep="\t")
-pd_vs_bm.to_csv("144_pd_vs_bm_sizediff_%s.tsv" %(thresh),sep="\t")
-pi_vs_bm.to_csv("144_pi_vs_bm_sizediff_%s.tsv" %(thresh),sep="\t")
-pd_vs_pi.to_csv("144_pd_vs_pi_sizediff_%s.tsv" %(thresh),sep="\t")
+os.chdir("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_all/")
+pearsons_gs.to_csv("144_masking_gs.tsv",sep="\t")
+pearsons_pd.to_csv("144_masking_pd.tsv",sep="\t")
+pearsons_pi.to_csv("144_masking_pi.tsv",sep="\t")
+pearsons_bm.to_csv("144_masking_bm.tsv",sep="\t")
+bm_sizes.to_csv("144_bm_sizes.tsv",sep="\t")
+pd_sizes.to_csv("144_pd_sizes.tsv",sep="\t")
+pi_sizes.to_csv("144_pi_sizes.tsv",sep="\t")
