@@ -152,5 +152,5 @@ for m in range(0,len(mrs)):
 # Save all data to output file
 output = {"ids":inputs.ID.tolist(),"pd_correlations":pd_correlations,
           "pi_correlations":pi_correlations,"bm_correlations":bm_correlations,
-          "pd_sizes":pd_sizes,"pi_sizes":pi_sizes,"bm_sizes":bm_sizes,"num_regions",num_regions}
+          "pd_sizes":pd_sizes,"pi_sizes":pi_sizes,"bm_sizes":bm_sizes,"num_regions":num_regions}
 pickle.dump(output,open(outfile,"wb"))
