@@ -44,10 +44,19 @@ def threshold_pos(image1,thresholds=[0.0,0.5,1.0,1.5,1.65,1.7,1.75,1.8,1.85,1.9,
   return thresholded
 
 
-# Segment to group of anatomical ROIs
-def anatomical_rois(image1,atlas):
-  '''segment image for all regions defined by some atlas'''
-  print "WRITE ME"
+# Segment to only include some region of interest
+def get_masked_images(images,roi):
+  '''segment image for all regions defined by some roi
+     roi should be the data matrix, not a nibabel image
+  '''
+  if not isinstance(images,list): images = [images]
+  masked = []
+  for image in images:
+    tmp = np.zeros(image.shape)
+    tmp[roi==1] = image.get_data()[roi==1]
+    new_img = nib.Nifti1Image(tmp,header=image.get_header(),affine=image.get_affine())
+    masked.append(new_img)
+  return masked
 
 
 # Masking ---------------------------------------------------------------------------------------------
