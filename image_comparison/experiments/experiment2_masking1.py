@@ -70,8 +70,7 @@ for mr in mrs:
 pearsons_gs = []
 print "Calculating gold standard for %s..." %(mr1)
 for mr2 in mrs:
-  pdmask = IT.get_pairwise_deletion_mask(mr1,mr2,brain_mask)
-  data = apply_mask([mr1,mr2],pdmask)  
+  data = apply_mask([mr1,mr2],brain_mask)  
   pearsons_gs.append(pearsonr(data[0],data[1])[0])
 
 # Now calculate same image vs thresholded maps:

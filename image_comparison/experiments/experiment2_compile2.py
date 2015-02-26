@@ -15,7 +15,6 @@ from glob import glob
 input_folders = glob("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_all/*")
 
 # We will save all results to these lists
-pearsons_gs = []
 pearsons_pd = []
 pearsons_pi = []
 pearsons_bm = []
@@ -31,7 +30,6 @@ for input_folder in input_folders:
   input_ids.sort()
   column_labels = input_ids + ["thresh","pos_only"]
   # Load the first to get image ids and order
-  pearson_gs = pandas.DataFrame(columns=input_ids)
   pearson_pd = pandas.DataFrame(columns=column_labels)
   pearson_pi = pandas.DataFrame(columns=column_labels)
   pearson_bm = pandas.DataFrame(columns=column_labels)
@@ -44,7 +42,6 @@ for input_folder in input_folders:
     print "Processing %s" %i
     input_id = int(i.replace("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_all/thresh_%s_%s/000" %(thresh,only_pos),"").replace("_masking_scores_thresh_%s.pkl" %(thresh),""))
     tmp = pickle.load(open(i,"rb"))
-    pearson_gs.loc[input_id,tmp["ids"]] = tmp["pearson_gs"]
     pearson_pi.loc[input_id,tmp["ids"]] = tmp["mr_vs_thresh_pearson_pi"]
     pearson_pd.loc[input_id,tmp["ids"]] = tmp["mr_vs_thresh_pearson_pd"]
     pearson_bm.loc[input_id,tmp["ids"]] = tmp["mr_vs_thresh_pearson_bm"]
@@ -60,7 +57,6 @@ for input_folder in input_folders:
   pearson_bm["thresh"] = thresh; pearson_bm["pos_only"] = only_pos
   pearson_pi["thresh"] = thresh; pearson_pi["pos_only"] = only_pos
   # Append to lists
-  pearsons_gs.append(pearson_gs)
   pearsons_pd.append(pearson_pd)
   pearsons_pi.append(pearson_pi)
   pearsons_bm.append(pearson_bm)
@@ -76,12 +72,8 @@ bm_sizes = pandas.tools.merge.concat(bm_sizes,axis=0)
 pd_sizes = pandas.tools.merge.concat(pd_sizes,axis=0)
 pi_sizes = pandas.tools.merge.concat(pi_sizes,axis=0)
 
-# We only need one version of the gold standard - but it's a sanity check that they are all the same
-pearsons_gs = pearsons_gs[0]
-
 # Save all data matrices to file
 os.chdir("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_all/")
-pearsons_gs.to_csv("144_masking_gs.tsv",sep="\t")
 pearsons_pd.to_csv("144_masking_pd.tsv",sep="\t")
 pearsons_pi.to_csv("144_masking_pi.tsv",sep="\t")
 pearsons_bm.to_csv("144_masking_bm.tsv",sep="\t")

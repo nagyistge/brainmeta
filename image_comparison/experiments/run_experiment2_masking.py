@@ -17,10 +17,10 @@ inputs = pandas.read_csv(input_file,sep=input_delim)
 
 # We will run for a set of thresholds
 #thresholds = [1,1.65,1.96,2.58,3.02]
-thresholds = [0.5,1.0,1.5,1.65,1.7,1.75,1.8,1.85,1.9,1.96,2.0,2.58,3.02,3.5,4.0]
+thresholds = [0.0,0.5,1.0,1.5,1.65,1.7,1.75,1.8,1.85,1.9,1.96,2.0,2.58,3.02,3.5,4.0]
 
 # Do not limit to only positive values
-absolute_value = False
+absolute_value = True
 
 # Prepare and submit a job for each
 for thresh in thresholds:
