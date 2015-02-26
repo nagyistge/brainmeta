@@ -71,7 +71,7 @@ get_single_result = function(image_id,results,pos_only="False") {
 }
 
 
-plot_result = function(res,thresh,direction="False",plot_type="density") {
+plot_result = function(res,thresh,direction="True",plot_type="density") {
   
   pd = res$pd[res$pd$pos_only==direction,-which(colnames(res$pd)=="pos_only")]
   pi = res$pi[res$pd$pos_only==direction,-which(colnames(res$pi)=="pos_only")]
@@ -98,7 +98,7 @@ plot_result = function(res,thresh,direction="False",plot_type="density") {
   flat$value = as.numeric(flat$value)
  
   if (plot_type=="density"){
-    return(ggplot(flat,aes(x=value, fill=variable)) + geom_density(alpha=0.25) + ylab("Density") + xlab(paste("Pearsons R, Threshold",thresh)) + ylim(0,9))
+    return(ggplot(flat,aes(x=value, fill=variable)) + geom_density(alpha=0.25) + ylab("Density") + xlab(paste("Pearsons R, Threshold",thresh)) + ylim(0,6.5))
   } else {
     return(ggplot(flat,aes(x=variable, y=value,fill=variable)) + geom_boxplot(alpha=0.25) + ylab("Pearsons R") + xlab(paste("Threshold",thresh)) + ylim(-1,1))    
   }
@@ -210,7 +210,11 @@ get_masksize_comparisons = function(df,thresh,pos_only="False"){
 }
 
 
-plot_pval = function(df,thresh,savedir){
+plot_pval = function(df,thresh,savedir,fdr){
+  
+  # A value exactly == 0 actually means no significant difference
+  df$rho_pvalue[df$rho_pvalue==0] = 1
+  df$tau_pvalue[df$tau_pvalue==0] = 1
   
   # Rho
   df[which(df$strategy=="BM"),3] = p.adjust(as.numeric(as.character(df[which(df$strategy=="BM"),3]),method="fdr"))
@@ -240,15 +244,15 @@ plot_pval = function(df,thresh,savedir){
     if (!("FALSE" %in% names(tabley))) {
       tabley["FALSE"] = 0
     }    
-    return(tabley)
+    return(tabley[c("TRUE","FALSE")])
   }
   
-  counts = rbind(generate_count_table(rho,"PD",0.001),
-                 generate_count_table(tau,"PD",0.001),
-                 generate_count_table(rho,"PI",0.001),
-                 generate_count_table(tau,"PI",0.001),
-                 generate_count_table(rho,"BM",0.001),
-                 generate_count_table(tau,"BM",0.001))
+  counts = rbind(generate_count_table(rho,"PD",fdr),
+                 generate_count_table(tau,"PD",fdr),
+                 generate_count_table(rho,"PI",fdr),
+                 generate_count_table(tau,"PI",fdr),
+                 generate_count_table(rho,"BM",fdr),
+                 generate_count_table(tau,"BM",fdr))
                  
   counts = cbind(c("PD_RHO","PD_TAU","PI_RHO","PI_TAU","BM_RHO","BM_TAU"),counts)
   counts = as.data.frame(counts,stringsAsFactors=FALSE)

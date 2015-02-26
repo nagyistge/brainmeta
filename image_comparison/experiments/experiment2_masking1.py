@@ -66,12 +66,24 @@ for mr in mrs:
   
 # Calculate "gold standard" list of pearson scores
 # These are unthresholded maps vs. unthresholded maps
-# No absolute value is taken!
-pearsons_gs = []
-print "Calculating gold standard for %s..." %(mr1)
-for mr2 in mrs:
-  data = apply_mask([mr1,mr2],brain_mask)  
-  pearsons_gs.append(pearsonr(data[0],data[1])[0])
+# This means an absolute value == True, and thresh is 0
+if absolute_value:
+  if threshold == 0.0:
+    input_ids = inputs.ID.tolist()
+    for m in range(0,len(thresholded)):
+      print "Processing %s of %s" %(m,len(thresholded))
+      image_id1 = input_ids[m]
+      mr1 = thresholded[m]
+      single_result = []
+      for mm in range(0,len(thresholded)):
+        image_id2 = input_ids[mm]
+        mr2 = thresholded[mm]
+        if image_id1 != image_id2:
+          data = apply_mask([mr1,mr2],brain_mask)  
+          single_result.append(pearsonr(data[0],data[1])[0])
+        else: single_result.append(1)
+      pearsons_gs.loc[image_id1] = single_result 
+    pickle.dump(pearsons_gs,open("%s/gs_masking_scores_thresh_%s_%s.pkl" %(outdirectory,threshold,absolute_value),"wb"))
 
 # Now calculate same image vs thresholded maps:
 
@@ -119,7 +131,7 @@ for mr2 in thresholded:
     size_ids.append(image_ids[idx])
   idx+=1
 # Save all data to output dictionary
-output = {"ids":inputs.ID.tolist(),"pearson_gs":pearsons_gs,"mr_vs_thresh_pearson_pd":pearsons_pd,
+output = {"ids":inputs.ID.tolist(),"mr_vs_thresh_pearson_pd":pearsons_pd,
           "mr_vs_thresh_pearson_pi":pearsons_pi,"mr_vs_thresh_pearson_bm":pearsons_bm,
           "sizes":sizes,"size_ids":size_ids}
 
