@@ -261,6 +261,42 @@ plot_pval = function(df,thresh,savedir,fdr){
   return(counts)
 }
 
+plot_pval_region = function(df,n_roi,savedir,fdr){
+  
+  # A value exactly == 0 actually means no significant difference
+  df$tau_pvalue[df$tau_pvalue==0] = 1
+  
+  # Tau
+  df[which(df$strategy=="BM"),] = p.adjust(as.numeric(as.character(df[which(df$strategy=="BM"),3]),method="fdr"))
+  df[which(df$strategy=="PI"),3] = p.adjust(as.numeric(as.character(df[which(df$strategy=="PI"),3]),method="fdr"))
+  df[which(df$strategy=="PD"),3] = p.adjust(as.numeric(as.character(df[which(df$strategy=="PD"),3]),method="fdr"))
+  
+  tau = data.frame(variable=df$strategy,value=as.numeric(df$tau_pvalue),stringsAsFactors=FALSE)
+  tau$value = as.numeric(tau$value)
+  
+  generate_count_table = function(dat,label,fdr_thresh){
+    tabley = table(dat$value[which(dat$variable==label)] <= fdr_thresh)
+    if (!("TRUE" %in% names(tabley))) {
+      tabley["TRUE"] = 0
+    }
+    if (!("FALSE" %in% names(tabley))) {
+      tabley["FALSE"] = 0
+    }    
+    return(tabley[c("TRUE","FALSE")])
+  }
+  
+  counts = rbind(generate_count_table(tau,"PD",fdr),
+                 generate_count_table(tau,"PI",fdr),
+                 generate_count_table(tau,"BM",fdr))
+  
+  counts = cbind(c("PD_TAU","PI_TAU","BM_TAU"),counts)
+  counts = as.data.frame(counts,stringsAsFactors=FALSE)
+  colnames(counts) = c("STRATEGY","SIG_DIFF","NOT_SIG")
+  counts[,"perc_diff"] = as.numeric(counts$SIG_DIFF) / (as.numeric(counts$SIG_DIFF) + as.numeric(counts$NOT_SIG))
+  return(counts)
+}
+
+
 # Write a function to format the data frames
 format_df = function(df){
   colnames(df)[1] = "ID"
