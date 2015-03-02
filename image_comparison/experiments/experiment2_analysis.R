@@ -400,7 +400,7 @@ df = as.data.frame(df)
 df$mask.size = as.numeric(as.character(df$mask.size))
 save(df,file=paste(datadir,"/dist_masksizes_flat_df.Rda",sep=""))
 
-subset = df[df$pos_only=="False",-which(colnames(df)=="pos_only")]
+subset = df[df$pos_only=="True",-which(colnames(df)=="pos_only")]
 tmp = ddply(subset, c("thresh","strategy"), summarise, mask.size.mean=mean(mask.size),mask.size.min = min(mask.size), mask.size.max=max(mask.size))
 
 # Here we are looking at the mean pearsons (+/- one standard deviation)
@@ -409,7 +409,7 @@ ggplot(tmp, aes(x=thresh, y=mask.size.mean, ymin=mask.size.min, ymax=mask.size.m
   title("Mask Sizes at Different +/- Thresholds") +
   geom_ribbon(alpha=0.25,linetype=0) +
   xlab("Threshold +/-") +
-  ylab("Mask Size")
+  ylab("Mask Size (voxels)")
 ggsave(paste(savedir,"/mask_sizes_atthresh_posneg.png",sep=""))
 
 subset = df[df$pos_only=="True",-which(colnames(df)=="pos_only")]

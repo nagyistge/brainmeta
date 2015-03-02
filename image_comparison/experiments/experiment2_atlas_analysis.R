@@ -288,3 +288,109 @@ ggplot(sizes_flat, aes(x=n_roi,y=value,color=strategy)) +
   xlab("number of regions (coverage)") + 
   facet_wrap(~strategy)
 ggsave(paste(savedir,"/tau_sigdiff_masksizes_fdr05.png",sep=""))
+
+# Let's express the number of voxels as a percentage of the brain mask, so we can apply globally to different sizes / sampled images
+brainmask_size = unique(sizes_flat$value[sizes_flat$strategy=="BM"])
+sizes_flat$value = as.numeric(as.character(sizes_flat$value/brainmask_size))
+ggplot(sizes_flat, aes(x=n_roi,y=value,color=strategy)) +
+  geom_line(size=2,alpha=0.25,stat="identity") +
+  ylab("total size of parcellation (% of brain mask)") + 
+  xlab("number of regions (coverage)") + 
+  facet_wrap(~strategy)
+ggsave(paste(savedir,"/tau_sigdiff_maskpersizes_fdr05.png",sep=""))
+
+# Read in the threshold report for all neurovault images!
+brainmask_size = unique(sizes_flat$value[sizes_flat$strategy=="BM"])
+subset = sizes_flat[sizes_flat$strategy=="PD",]
+subset$value = as.numeric(as.character(subset$value/brainmask_size))
+subset = subset[,-c(1,2,4)]
+# Get the mean for each size
+ss = unique(subset$n_roi)
+df=c()
+for (s in ss){
+  sub = subset[which(subset$n_roi==s),]
+  df=rbind(df,cbind(s,mean(sub$value)))
+}
+
+# Here is where we can load pvalues associated with each threshold (n_roi) in "testadjust" variable
+load(paste(datadir,"/wilcox_ind_regional_tests_all_fdr.Rda",sep=""))
+adjusted_bm = testadjust[which(testadjust$strategy=="bm"),] 
+adjusted_pd = testadjust[which(testadjust$strategy=="pd"),]
+adjusted_pi = testadjust[which(testadjust$strategy=="pi"),]
+
+# Here we will save data frames of single fdr for each based on the real data
+bm_q=c()
+pd_q=c()
+pi_q=c()
+
+thresh_report = read.csv("/home/vanessa/Desktop/Z/threshold_report.tsv",sep="\t")
+for (it in 1:1000){
+  for (t in 1:nrow(thresh_report)){
+    percent_nonzero = thresh_report$percent_nonzero[t]
+    # Find the most similar sized value (smallest squared distance)
+    tmp = abs(df[,2] - percent_nonzero)
+    idx = which(tmp==min(tmp))[1]
+    nroi = df[idx,1]
+    # Now we sample a pvalue from the distribution of 144 images with masking type and n_roi
+    bm_q=c(bm_q,sample(adjusted_bm$p.value[which(adjusted_bm$n_roi==nroi)],1))  
+    pd_q=c(pd_q,sample(adjusted_pd$p.value[which(adjusted_pd$n_roi==nroi)],1))  
+    pi_q=c(pi_q,sample(adjusted_pi$p.value[which(adjusted_pi$n_roi==nroi)],1))  
+  }
+}
+
+# Calculate percentage of times:
+bm_perc_diff = length(which(bm_q<=0.05)) / length(bm_q)
+pd_perc_diff = length(which(pd_q<=0.05)) / length(pd_q)
+pi_perc_diff = length(which(pi_q<=0.05)) / length(pi_q)
+
+# What if we remove the bad ones?
+good_maps = thresh_report[thresh_report$percent_nonzero >= 0.5,]
+# Here we will save data frames of single fdr for each based on the real data
+bm_q=c()
+pd_q=c()
+pi_q=c()
+
+for (it in 1:1000){
+  for (t in 1:nrow(good_maps)){
+    percent_nonzero = good_maps$percent_nonzero[t]
+    # Find the most similar sized value (smallest squared distance)
+    tmp = abs(df[,2] - percent_nonzero)
+    idx = which(tmp==min(tmp))[1]
+    nroi = df[idx,1]
+    # Now we sample a pvalue from the distribution of 144 images with masking type and n_roi
+    bm_q=c(bm_q,sample(adjusted_bm$p.value[which(adjusted_bm$n_roi==nroi)],1))  
+    pd_q=c(pd_q,sample(adjusted_pd$p.value[which(adjusted_pd$n_roi==nroi)],1))  
+    pi_q=c(pi_q,sample(adjusted_pi$p.value[which(adjusted_pi$n_roi==nroi)],1))  
+  }
+}
+length(which(bm_q<=0.05)) / length(bm_q)
+length(which(pd_q<=0.05)) / length(pd_q)
+length(which(pi_q<=0.05)) / length(pi_q)
+
+# Now let's look at thresholding for ALL neurovault images!
+thresh_report = read.csv("/home/vanessa/Desktop/NV/774_threshold_report.tsv",sep="\t")
+mean(thresh_report$percent_nonzero)
+sd(thresh_report$percent_nonzero)
+
+bm_q=c()
+pd_q=c()
+pi_q=c()
+
+for (it in 1:1000){
+  for (t in 1:nrow(good_maps)){
+    percent_nonzero = good_maps$percent_nonzero[t]
+    # Find the most similar sized value (smallest squared distance)
+    tmp = abs(df[,2] - percent_nonzero)
+    idx = which(tmp==min(tmp))[1]
+    nroi = df[idx,1]
+    # Now we sample a pvalue from the distribution of 144 images with masking type and n_roi
+    bm_q=c(bm_q,sample(adjusted_bm$p.value[which(adjusted_bm$n_roi==nroi)],1))  
+    pd_q=c(pd_q,sample(adjusted_pd$p.value[which(adjusted_pd$n_roi==nroi)],1))  
+    pi_q=c(pi_q,sample(adjusted_pi$p.value[which(adjusted_pi$n_roi==nroi)],1))  
+  }
+}
+length(which(bm_q<=0.05)) / length(bm_q)
+length(which(pd_q<=0.05)) / length(pd_q)
+length(which(pi_q<=0.05)) / length(pi_q)
+
+
