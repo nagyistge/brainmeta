@@ -50,7 +50,7 @@ input_delim = "\t"
 inputs = pandas.read_csv(input_file,sep=input_delim)
 
 # Remove our query image
-inputs = inputs[inputs.ID!=int(image_id)]
+#inputs = inputs[inputs.ID!=int(image_id)]
 image_ids = inputs.ID.tolist()
 
 # Read in all images - these similarities will be gold standard
@@ -68,7 +68,7 @@ for mr in mrs:
 # These are unthresholded maps vs. unthresholded maps
 # This means an absolute value == True, and thresh is 0
 if absolute_value:
-  pearsons_gs = pandas.DataFrame(columns=input_ids.tolist())
+  pearsons_gs = pandas.DataFrame(columns=image_ids)
   if threshold == 0.0:
     input_ids = inputs.ID.tolist()
     for m in range(0,len(thresholded)):
