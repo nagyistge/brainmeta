@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------------
 # Experiment 2 Masking:
 
-# Here I want to do a simple experiment to show how pearson correlations change with 
+# Here I want to do a simple experiment to show how pearson (or spearman) correlations change with 
 # three masking strategies:
 
 # brain mask [everything in brain mask]
@@ -24,7 +24,7 @@ import numpy as np
 import nibabel as nib
 import similarity_metrics as SM
 import image_transformations as IT
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 from nilearn.masking import apply_mask
 
 image_id = sys.argv[1]
@@ -36,7 +36,7 @@ if absolute_value == "True": absolute_value = True
 else: absolute_value = False
 
 basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment1"
-outdirectory = "%s/masking_scores" %(basedir)
+outdirectory = "%s/masking_scores_spearman" %(basedir)
 indirectory = "%s/mr" %(basedir)
 tmpdirectory = "%s/tmp" %(basedir)
 standard = "%s/standard/MNI152_T1_2mm_brain_mask.nii.gz" %(basedir)
@@ -64,7 +64,7 @@ for mr in mrs:
   if absolute_value: thresholded.append(IT.threshold_abs(mr,thresholds=[threshold])[threshold])
   else: thresholded.append(IT.threshold_pos(mr,thresholds=[threshold])[threshold])
   
-# Calculate "gold standard" list of pearson scores
+# Calculate "gold standard" list of pearson/spearman scores
 # These are unthresholded maps vs. unthresholded maps
 # This means an absolute value == True, and thresh is 0
 if absolute_value:
@@ -80,7 +80,7 @@ if absolute_value:
         mr2 = thresholded[mm]
         if image_id1 != image_id2:
           data = apply_mask([mr1,mr2],brain_mask)  
-          single_result.append(pearsonr(data[0],data[1])[0])
+          single_result.append(spearmanr(data[0],data[1])[0])
         else: single_result.append(1)
       pearsons_gs.loc[image_id1] = single_result 
     pickle.dump(pearsons_gs,open("%s/gs_masking_scores_thresh_%s_%s.pkl" %(outdirectory,threshold,absolute_value),"wb"))
@@ -115,18 +115,18 @@ for mr2 in thresholded:
     if len(np.unique(pdmask.get_data())) == 2:
       datapd = apply_mask([mr1,mr2],pdmask) 
       # We need at least 3 values
-      if np.shape(datapd)[1] > 2: pearsons_pd.append(pearsonr(datapd[0],datapd[1])[0])
+      if np.shape(datapd)[1] > 2: pearsons_pd.append(spearmanr(datapd[0],datapd[1])[0])
       else: pearsons_pd.append(0)
     else: pearsons_pd.append(0)
     # Calculate correlation if there is overlap, otherwise it is 0
     if len(np.unique(pimask.get_data())) == 2:
       datapi = apply_mask([mr1,mr2],pimask)  
       # We need at least 3 values
-      if np.shape(datapi)[1] > 2: pearsons_pi.append(pearsonr(datapi[0],datapi[1])[0])
+      if np.shape(datapi)[1] > 2: pearsons_pi.append(spearmanr(datapi[0],datapi[1])[0])
       else: pearsons_pi.append(0)
     else: pearsons_pi.append(0)
     databm = apply_mask([mr1,mr2],brain_mask)  
-    pearsons_bm.append(pearsonr(databm[0],databm[1])[0])
+    pearsons_bm.append(spearmanr(databm[0],databm[1])[0])
     sizes.loc[idx] = [len(datapd[0]),len(datapi[0]),len(databm[0])]
     size_ids.append(image_ids[idx])
   idx+=1
