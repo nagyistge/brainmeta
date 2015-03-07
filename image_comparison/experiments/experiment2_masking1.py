@@ -68,6 +68,7 @@ for mr in mrs:
 # These are unthresholded maps vs. unthresholded maps
 # This means an absolute value == True, and thresh is 0
 if absolute_value:
+  pearsons_gs = pandas.DataFrame(columns=input_ids.tolist())
   if threshold == 0.0:
     input_ids = inputs.ID.tolist()
     for m in range(0,len(thresholded)):
