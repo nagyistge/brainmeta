@@ -1,14 +1,18 @@
 #!/usr/bin/python
 
 # ---------------------------------------------------------------------------------
-# Experiment 2 Masking: Assessing Variance in Scores As we Increase Coverage (using Random Sampling)
+# Experiment 2 Masking: Assessing Variance in Scores As we Increase Coverage (using ROIs)
 
 # Algorithm
 
-# We will sample a certain percentage of the regions after the imputation / masking strategy.
+# We will sample N ROIs at a time. I.e., if we have 150 regions, randomly sample 5 each time (and then you can systematically vary the number of regions, which is a proxy for increasing the amount of coverage).
+
+# We will get a distribution of r's for each of N images, for each set of ROIs, for each approach (PD vs. PI).
 
 # For each unthresholded brain map, Xi
-#  For a level of coverage (represented by a random sampling percentage)
+#  For a level of coverage (represented by a number of rois, N)
+#    Introduce noise to the process [which means] for each other map in X:
+#      randomly sample N of the regions
 #      and calculate pearson r for each sample vs. Xi
  
 import os
@@ -19,15 +23,22 @@ import random
 import numpy as np
 import nibabel as nib
 from glob import glob
-from scipy.stats import pearsonr, spearmanr
+from scipy.stats import pearsonr
 import image_transformations as IT
 from nilearn.masking import apply_mask
 
-percent_sample = float(sys.argv[1]) # eg, 0.2
-input_file = sys.argv[2]       # mr image input file
-outfile = sys.argv[3]          # output pickle file
-standard = sys.argv[4]         # standard image
-gs_file = sys.argv[5]          # gold standard file (will be created if doesn't exist)
+# Atlas to use for regions
+atlas_nifti = sys.argv[1]
+num_regions = int(sys.argv[2]) # eg, 2
+atlas_file = sys.argv[3]       # file with list of atlas regions
+input_file = sys.argv[4]       # mr image input file
+outfile = sys.argv[5]          # output pickle file
+standard = sys.argv[6]         # standard image
+gs_file = sys.argv[7]          # gold standard file (will be created if doesn't exist)
+
+# Read in the atlas image and file
+atlas = nib.load(atlas_nifti)
+atlas_labels = pandas.read_csv(atlas_file,sep="\t",header=None)
 
 # Read in our brain map paths
 inputs = pandas.read_csv(input_file,sep="\t")
@@ -59,10 +70,17 @@ if not os.path.exists(gs_file):
     for mm in range(0,len(mrs)):
       mr2 = mrs[mm]
       data = apply_mask([mr1,mr2],brain_mask) 
-      gs_single[mm] = spearmanr(data[0],data[1])[0]
+      gs_single[mm] = pearsonr(data[0],data[1])[0]
     gs_correlations.loc[m] = gs_single
   gs_correlations.index = inputs.ID
   gs_correlations.to_csv(gs_file,sep="\t")
+
+
+# For each unthresholded brain map, Xi
+#  For a level of coverage (represented by a number of rois, N)
+#    Introduce noise to the process [which means] for each other map in X:
+#      randomly sample N of the regions
+#      and calculate pearson r for each sample vs. Xi
 
 
 # For each unthresholded brain map, Xi
@@ -79,7 +97,7 @@ for m in range(0,len(mrs)):
   pd_size_single = []
   pi_size_single = [] 
   image_ids = []
-  # For each other image, randomly sample the percentage of voxels
+  # For each other image, randomly sample N regions
   for mm in range(0,len(mrs)):
     image2_id = inputs.ID[mm]
     # Don't compare images to themselves
@@ -87,47 +105,42 @@ for m in range(0,len(mrs)):
       image_ids.append(image2_id)
       print "Calculating for %s vs %s" %(image1_id,image2_id)
       mr2 = mrs[mm] # this is an unthresholded image
-      # Prepare pd and pi masks
-      pdmask = IT.get_pairwise_deletion_mask(mr1,mr2,brain_mask)
-      pimask = IT.get_pairwise_inclusion_mask(mr1,mr2,brain_mask)      
-      # Make random voxel mask
-      empty_nii = np.zeros(brain_mask.shape)
-      x,y,z = np.where(brain_mask.get_data()==1)
-      idx = zip(x,y,z)
-      np.random.shuffle(idx) # mix it up! shake it up!
-      if p != 1.0: # if threshold is 1, we take all voxels 
-        number_voxels = int(np.floor(p * len(idx)))
-        random_idx = idx[0:number_voxels]
-        random_idx = self.unzip(random_idx)
-        empty_nii[random_idx] = 1
-      else: empty_nii[brain_mask.get_data()==1] = 1
-      # For each of brain mask, pdmask, and pimask, combine with random selection
-      pdmask_sub = np.logical_and(pdmask, empty_nii).astype(int)
-      pimask_sub = np.logical_and(pimask, empty_nii).astype(int)
-      brain_mask_sub = np.logical_and(brain_mask, empty_nii).astype(int)  
+      # Select a random set of N masks
+      roi_labels = random.sample(xrange(len(atlas_labels[2])), num_regions)
+      roi_labels = atlas_labels[2][roi_labels].tolist()
+      # Create binary mask
+      roi = np.zeros(atlas.shape)
+      for roi_label in roi_labels:
+        roi[atlas.get_data() == int(roi_label)] = 1
       # How many total voxels?
-      pi_size_single.append(len(np.where(pimask_sub[pimask_sub==1])[0]))
-      pd_size_single.append(len(np.where(pdmask_sub[pdmask_sub==1])[0]))
-      bm_size_single.append(len(np.where(brain_mask_sub[brain_mask_sub==1])[0]))
-
+      region_size = len(roi[roi==1])
+      roi_sizes.append(region_size)
+      # Mask the image with the region
+      masked_mr = IT.get_masked_images(mr2,roi)[0]
+      pdmask = IT.get_pairwise_deletion_mask(mr1,masked_mr,brain_mask)
+      pimask = IT.get_pairwise_inclusion_mask(mr1,masked_mr,brain_mask)      
+      # Save the sizes of the masks
+      pi_size_single.append(len(np.where(pimask.get_data()==1)[0]))
+      pd_size_single.append(len(np.where(pdmask.get_data()==1)[0]))
+      bm_size_single.append(len(np.where(brain_mask.get_data()==1)[0])) # always the same
       # PAIRWISE DELETION
       # Calculate correlation if there is overlap, otherwise it is 0
-      if len(np.unique(pdmask_sub.get_data())) == 2:
-        datapd = apply_mask([mr1,mr2],pdmask_sub) 
+      if len(np.unique(pdmask.get_data())) == 2:
+        datapd = apply_mask([mr1,masked_mr],pdmask) 
         # We need at least 3 values
-        if np.shape(datapd)[1] > 2: pd_single.append(spearmanr(datapd[0],datapd[1])[0])
+        if np.shape(datapd)[1] > 2: pd_single.append(pearsonr(datapd[0],datapd[1])[0])
         else: pd_single.append(0)
       else: pd_single.append(0)
       # PAIRWISE INCLUSION
       # Calculate correlation if there is overlap, otherwise it is 0
-      if len(np.unique(pimask_sub.get_data())) == 2:
-        datapi = apply_mask([mr1,mr2],pimask_sub)  
+      if len(np.unique(pimask.get_data())) == 2:
+        datapi = apply_mask([mr1,masked_mr],pimask)  
         # We need at least 3 values
-        if np.shape(datapi)[1] > 2: pi_single.append(spearmanr(datapi[0],datapi[1])[0])
+        if np.shape(datapi)[1] > 2: pi_single.append(pearsonr(datapi[0],datapi[1])[0])
         else: pi_single.append(0)
       else: pi_single.append(0)
-      databm = apply_mask([mr1,mr2],brain_mask_sub)  
-      bm_single.append(spearmanr(databm[0],databm[1])[0])
+      databm = apply_mask([mr1,masked_mr],brain_mask)  
+      bm_single.append(pearsonr(databm[0],databm[1])[0])
   # Add each to our data frames
   pd_correlations.loc[image1_id,image_ids] = pd_single
   pi_correlations.loc[image1_id,image_ids] = pi_single

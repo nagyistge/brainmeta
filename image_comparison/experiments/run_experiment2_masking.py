@@ -10,7 +10,7 @@ import pandas
 
 # Input file
 basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment1"
-outdirectory = "%s/masking_scores" %(basedir)
+outdirectory = "%s/masking_scores_spearman" %(basedir)
 input_file = "%s/openfmri_labels.tsv" %(basedir)
 input_delim = "\t"
 inputs = pandas.read_csv(input_file,sep=input_delim)
