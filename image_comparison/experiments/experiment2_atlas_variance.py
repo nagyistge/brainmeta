@@ -113,9 +113,9 @@ for m in range(0,len(mrs)):
       pd_size_single.append(len(np.where(pdmask_sub[pdmask_sub==1])[0]))
       bm_size_single.append(len(np.where(brain_mask_sub[brain_mask_sub==1])[0]))
       # Make into nifti images
-      pdmask_sub = nibabel.nifti1.Nifti1Image(pdmask_sub,affine=brain_mask.get_affine(),header=brain_mask.get_header())
-      pimask_sub = nibabel.nifti1.Nifti1Image(pimask_sub,affine=brain_mask.get_affine(),header=brain_mask.get_header())
-      brain_mask_sub = nibabel.nifti1.Nifti1Image(brain_mask_sub,affine=brain_mask.get_affine(),header=brain_mask.get_header())
+      pdmask_sub = nib.nifti1.Nifti1Image(pdmask_sub,affine=brain_mask.get_affine(),header=brain_mask.get_header())
+      pimask_sub = nib.nifti1.Nifti1Image(pimask_sub,affine=brain_mask.get_affine(),header=brain_mask.get_header())
+      brain_mask_sub = nib.nifti1.Nifti1Image(brain_mask_sub,affine=brain_mask.get_affine(),header=brain_mask.get_header())
       # PAIRWISE DELETION
       # Calculate correlation if there is overlap, otherwise it is 0
       if len(np.unique(pdmask_sub.get_data())) == 2:
