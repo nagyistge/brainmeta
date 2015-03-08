@@ -36,4 +36,4 @@ for percent_sample in percentages:
     filey.writelines("#SBATCH --mem=64000\n")
     filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment2_atlas_variance.py %s %s %s %s %s" %(percent_sample,input_file,outfile,standard,gs_file))
     filey.close()
-    os.system("sbatch -p russpold " + ".job/coverage_%s.job" %(num_regions))
+    os.system("sbatch -p russpold " + ".job/coverage_%s.job" %(percent_sample))

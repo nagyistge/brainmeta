@@ -95,8 +95,8 @@ for m in range(0,len(mrs)):
       x,y,z = np.where(brain_mask.get_data()==1)
       idx = zip(x,y,z)
       np.random.shuffle(idx) # mix it up! shake it up!
-      if p != 1.0: # if threshold is 1, we take all voxels 
-        number_voxels = int(np.floor(p * len(idx)))
+      if percent_sample != 1.0: # if threshold is 1, we take all voxels 
+        number_voxels = int(np.floor(percent_sample * len(idx)))
         random_idx = idx[0:number_voxels]
         random_idx = self.unzip(random_idx)
         empty_nii[random_idx] = 1
