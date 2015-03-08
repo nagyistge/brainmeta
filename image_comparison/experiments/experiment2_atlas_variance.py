@@ -112,10 +112,13 @@ for m in range(0,len(mrs)):
       pi_size_single.append(len(np.where(pimask_sub[pimask_sub==1])[0]))
       pd_size_single.append(len(np.where(pdmask_sub[pdmask_sub==1])[0]))
       bm_size_single.append(len(np.where(brain_mask_sub[brain_mask_sub==1])[0]))
-
+      # Make into nifti images
+      pdmask_sub = nibabel.nifti1.Nifti1Image(pdmask_sub,affine=brain_mask.get_affine(),header=brain_mask.get_header())
+      pimask_sub = nibabel.nifti1.Nifti1Image(pimask_sub,affine=brain_mask.get_affine(),header=brain_mask.get_header())
+      brain_mask_sub = nibabel.nifti1.Nifti1Image(brain_mask_sub,affine=brain_mask.get_affine(),header=brain_mask.get_header())
       # PAIRWISE DELETION
       # Calculate correlation if there is overlap, otherwise it is 0
-      if len(np.unique(pdmask_sub)) == 2:
+      if len(np.unique(pdmask_sub.get_data())) == 2:
         datapd = apply_mask([mr1,mr2],pdmask_sub) 
         # We need at least 3 values
         if np.shape(datapd)[1] > 2: pd_single.append(spearmanr(datapd[0],datapd[1])[0])
@@ -123,7 +126,7 @@ for m in range(0,len(mrs)):
       else: pd_single.append(0)
       # PAIRWISE INCLUSION
       # Calculate correlation if there is overlap, otherwise it is 0
-      if len(np.unique(pimask_sub)) == 2:
+      if len(np.unique(pimask_sub.get_data())) == 2:
         datapi = apply_mask([mr1,mr2],pimask_sub)  
         # We need at least 3 values
         if np.shape(datapi)[1] > 2: pi_single.append(spearmanr(datapi[0],datapi[1])[0])
