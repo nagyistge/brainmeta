@@ -1,13 +1,15 @@
 # First, read in all input files
 
-input_files =list.files("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_all",pattern="144*")
-datadir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_all"
+input_files =list.files("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_spearman",pattern="144*")
+datadir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_spearman"
 setwd(datadir)
-gs_file = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/atlas_scores_all/gs_comparisons.tsv"
+gs_file = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_spearman/gs_masking_scores_thresh_0.0_True.tsv"
 
 # IMPORTANT: the pos_only variable corresponds to "absolute_value" in the running scripts, and "True" means
 # that we include both negative and positive values. "False" would mean including only positive values.
 # For most / all analyses, we want pos_only == "True"
+# NOTE: this second round is "spearman scores" but since it would introduce a lot of error to change variable names
+# (and add nothing) I'm leaving the variables named as "pearson"
 pearsons_gs = read.csv(gs_file,sep="\t",row.names=1)
 pearsons_gs = as.matrix(pearsons_gs)
 diag(pearsons_gs) = NA
@@ -17,8 +19,6 @@ pearsons_bm = read.csv(input_files[2],sep="\t")
 pd_sizes = read.csv(input_files[5],sep="\t")
 pi_sizes = read.csv(input_files[6],sep="\t")
 bm_sizes = read.csv(input_files[1],sep="\t")
-#ts_means = read.csv(input_files[8],sep="\t")
-#ts_sds = read.csv(input_files[9],sep="\t")
 
 thresholds = unique(pearsons_pd$thresh)
 setwd("/home/vanessa/Documents/Dropbox/Code/Python/brainmeta/image_comparison/experiments")
@@ -29,10 +29,10 @@ results = list(gs=pearsons_gs,pd=pearsons_pd[,-1],pi=pearsons_pi[,-1],bm=pearson
 
 # QUALITATIVE ASSESSMENT (look at change in mean scores for all images over thresholds)
 # First we will look at density plots of the pearson scores
-savedir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/img/all"
+savedir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/img/spearman"
 for (thresh in thresholds){
   plot_result(results,thresh,"True")
-  ggsave(paste(savedir,"/pearson_density_posonly",thresh,".png",sep=""))
+  ggsave(paste(savedir,"/spearman_density_posneg",thresh,".png",sep=""))
 }
 
 # Next we will look at boxplots of pearson scores
@@ -91,21 +91,21 @@ plot.new()
 # Put them all together and plot
 ALL = as.data.frame(rbind(GS,PD,PI,BM),stringsAsFactors=FALSE)
 ALL$pearsonr = as.numeric(ALL$pearsonr)
-save(ALL,file=paste(datadir,"/all_pearsons_posonly.Rda",sep=""))
+save(ALL,file=paste(datadir,"/all_spearmans_posneg.Rda",sep=""))
 ALLSUM = ddply(ALL, c("masking","thresh"), summarise, mpearsonr = mean(pearsonr), up=get_ci(pearsonr,"upper"), down=get_ci(pearsonr,"lower"))
 ggplot(ALLSUM, aes(x=thresh, group=masking,y=mpearsonr,ymin=down,ymax=up,fill=masking,colour=masking)) + 
   geom_line(size=1.5) + 
   geom_ribbon(alpha=0.15,linetype=0) +
   xlab("Threshold +/-") +
-  ylab("Pearsons R") + title("Pearson Scores with Different Masking Strategies")
-ggsave(paste(savedir,"/pearson_timeseries_posonly.png",sep=""))
-save(ALLSUM,file=paste(datadir,"/allsum_pearsons_posonly.Rda",sep=""))
-ggplot(ALL,aes(x=pearsonr, fill=masking)) + geom_density(alpha=0.25) + ylab("Density") + xlab("Pearsons R") + facet_wrap(~thresh)
-ggsave(paste(savedir,"/pearson_densities_posonly.png",sep=""))
+  ylab("Spearman's Rho") + title("Spearman Scores with Different Strategies for Handling Missing Data")
+ggsave(paste(savedir,"/spearman_timeseries_posneg.png",sep=""))
+save(ALLSUM,file=paste(datadir,"/allsum_spearman_posneg.Rda",sep=""))
+ggplot(ALL,aes(x=pearsonr, fill=masking)) + geom_density(alpha=0.25) + ylab("Density") + xlab("Spearman's Rho") + facet_wrap(~thresh)
+ggsave(paste(savedir,"/spearman_densities_posneg.png",sep=""))
 
 # Save a version that only goes up to 3.02 threshold
-ggplot(ALL[which(ALL$thresh<3.03),],aes(x=pearsonr, fill=masking)) + geom_density(alpha=0.25) + ylab("Density") + xlab("Pearsons R") + facet_wrap(~thresh)
-ggsave(paste(savedir,"/pearson_densities_lt3.png",sep=""))
+ggplot(ALL[which(ALL$thresh<3.03),],aes(x=pearsonr, fill=masking)) + geom_density(alpha=0.25) + ylab("Density") + xlab("Spearman's Rho") + facet_wrap(~thresh)
+ggsave(paste(savedir,"/spearman_densities_lt3.png",sep=""))
 
 # QUANTITATIVE ASSESSMENT (look at change in distribution of scores for each image)
 # we want to know "how often" it looks different, or we get weird results.
@@ -116,7 +116,7 @@ ggsave(paste(savedir,"/pearson_densities_lt3.png",sep=""))
 # We will save all results into a data frame, and correct for multiple comparisons within thresholds and masking strategies
 # Then we can calculate the percentage of the time, for each strategy and threshold, that we have sig. different result
 # We could then represent an actual database based on the content and estimate the % of time / threshold we get different results from gs
-pos_only="False"
+pos_only="True"
 results = list(gs=pearsons_gs,pd=pearsons_pd,pi=pearsons_pi,bm=pearsons_bm)
 image_ids = rownames(results[["gs"]])
 plot_single = FALSE
@@ -146,7 +146,7 @@ for (image_id in image_ids){
   }
   # We will do wilcox test to determine when we have significantly different means
   df_gs = df[df$strategy=="GS",]
-  df_gs = df_gs$value[df_gs$thresh==0.00]
+  df_gs = df_gs$value[df_gs$thresh==3.50] # these are all the same, doesn't matter
   for (thresh in thresholds){
     df_pd = df[df$strategy=="PD",]
     df_pd = df_pd$value[df_pd$thresh==thresh]  
@@ -202,7 +202,7 @@ tmp$ci.low = as.numeric(tmp$ci.low)
 tmp$ci.high = as.numeric(tmp$ci.high)
 tmp = tmp[,-6]
 tmp = melt(tmp,id.vars=c("strategy","thresh","ci.low","ci.high"))
-write.table(tmp,file=paste(datadir,"/wilcox_tests_uncorrected_withci_all.tsv",sep=""),sep="\t",row.names=FALSE)
+write.table(tmp,file=paste(datadir,"/wilcox_tests_corrected_withci_all.tsv",sep=""),sep="\t",row.names=FALSE)
 
 # Significantly different means
 tmp[which(tmp$value<0.05),]
@@ -226,18 +226,18 @@ for (thresh in unique(test$thresh)){
 }
 
 save(testadjust,file=paste(datadir,"/wilcox_tests_all_fdr.Rda",sep=""))
-colnames(per_sigdiff) = c("pd.percent_diff","pi.percent_diff","bm.percent_diff","thresh")
+colnames(per_sigdiff) = c("pairwise.deletion","pairwise.inclusion","brain.masking","thresh")
 per_sigdiff = per_sigdiff[ order(per_sigdiff[,4]), ]
 save(per_sigdiff,file=paste(datadir,"/wilcox_tests_per_sigdiff_fdr05.Rda",sep=""))
 write.table(per_sigdiff,file=paste(datadir,"/wilcox_tests_per_sigdiff_fdr05.tsv",sep=""),sep="\t",row.names=FALSE)
 tmp = melt(as.data.frame(per_sigdiff),id.vars=c("thresh"))
 colnames(tmp) = c("threshold","masking.strategy","value")
-ggplot(tmp,aes(x=threshold,y=value,group=masking.strategy,colour=masking.strategy)) + geom_line(size=1) + ylab("% different from base standard")
-ggsave(paste(savedir,"/percent_pearsonmeans_sigdiff_fdr05.png",sep=""))
-
-# Part B: use region parcellation as a proxy for coverage - when I threshold an image, number of voxels decreases
-
-# TODO: need to do this analysis!
+ggplot(tmp,aes(x=threshold,y=value,group=masking.strategy,colour=masking.strategy)) + 
+  geom_line(size=1) + 
+  ylab("% different from base standard") +
+  xlab("threshold +/-") +
+  theme(text = element_text(size=20))
+ggsave(paste(savedir,"/percent_spearmanmeans_sigdiff_fdr05.png",sep=""))
 
 # PART II: Assessing significant differences in ORDERING / RANKING of similar images
 # We will save our results in a data frame with format
@@ -251,9 +251,9 @@ for (abs_v in abs_values){
     # For each *gsr* and each masking strategy *pd*,*pi*,and *bm*
     for (g in 1:nrow(pearsons_gs)){
       rowname = rownames(pearsons_gs)[g]
-      gsr = seq(1,ncol(pearsons_gs)-1)
+      gsr = seq(1,ncol(pearsons_gs))
       # Names of gsr correspond with the image id associated with the ranking
-      names(gsr) = gsub("X","",(names(sort(abs(pearsons_gs[g,]),decreasing=TRUE))))
+      names(gsr) = c(rowname,gsub("X","",(names(sort(abs(pearsons_gs[g,]),decreasing=TRUE)))))
       # For each of pdr,pir,bmr, we get order based on the names in gsr
       pdr = get_similar(pearsons_pd,rowname,thresh,abs_v)
       pdr = gsr[pdr]      
@@ -326,25 +326,15 @@ subset$STRATEGY[subset$STRATEGY == "PD_TAU"] = "PD"
 subset$STRATEGY[subset$STRATEGY == "PI_TAU"] = "PI"
 ggplot(subset, aes(x=thresh,y=perc_diff,color=STRATEGY)) +
    geom_line(size=2,alpha=0.25,stat="identity") +
-   ylab("% significantly different rankings") + xlab("threshold") + facet_wrap(~STRATEGY)
+   ylab("% significantly different rankings") + 
+   xlab("threshold +/-") + 
+  facet_wrap(~STRATEGY) +
+  theme(text = element_text(size=20))
 ggsave(paste(savedir,"/tau_sigdiff_posonly_fdr05.png",sep=""))
-
-subset = rho[rho$pos_only=="True",]
-ggplot(subset, aes(x=thresh,y=perc_diff,color=STRATEGY)) + geom_line(size=2,alpha=0.25,stat="identity") + title("Percentage Significantly Different Images, RHO") + ylab("percent") + xlab("") + facet_wrap(~ STRATEGY) + scale_x_continuous(breaks=unique(subset$thresh),labels=unique(subset$thresh))
-ggsave(paste(savedir,"/rho_sigdiff_posonly.png",sep=""))
-
-
-# Finally plot the percentages
-subset = tau[tau$pos_only=="False",]
-ggplot(subset, aes(x=thresh,y=perc_diff,color=STRATEGY)) + geom_line(size=2,alpha=0.25,stat="identity") + title("Percentage Significantly Different Images, RHO") + ylab("percent") + xlab("") + facet_wrap(~ STRATEGY) + scale_x_continuous(breaks=unique(subset$thresh),labels=unique(subset$thresh))
-ggsave(paste(savedir,"/tau_sigdiff_all.png",sep=""))
-
-subset = tau[tau$pos_only=="True",]
-ggplot(subset, aes(x=thresh,y=perc_diff,color=STRATEGY)) + geom_line(size=2,alpha=0.25,stat="identity") + title("Percentage Significantly Different Images, RHO") + ylab("percent") + xlab("") + facet_wrap(~ STRATEGY) + scale_x_continuous(breaks=unique(subset$thresh),labels=unique(subset$thresh))
-ggsave(paste(savedir,"/tau_sigdiff_posonly.png",sep=""))
 
 # Finally, we want to see how the mask sizes change
 # First we will look at the means
+# DID NOT USE THIS IN PAPER ----------------
 ncomps_all = c()
 for (abs_v in abs_values){
   ncomps_means = c()
@@ -359,7 +349,8 @@ for (abs_v in abs_values){
   colnames(ncomps_means) = c("pairwise.deletion","pairwise.inclusion","brain.mask")
   ncomps_all[[abs_v]] = ncomps_means
 }
-save(ncomps_all,file=paste(datadir,"/mean_comparison_counts.Rda",sep=""))
+save(ncomps_all,file=paste(datadir,"/mean_sizes_comparison_counts.Rda",sep=""))
+# END DID NOT USE THIS IN PAPER ----------------
 
 # Now we will look at the distributions of values themselves!
 ncomps_all = c()
@@ -400,26 +391,26 @@ df = as.data.frame(df)
 df$mask.size = as.numeric(as.character(df$mask.size))
 save(df,file=paste(datadir,"/dist_masksizes_flat_df.Rda",sep=""))
 
-subset = df[df$pos_only=="False",-which(colnames(df)=="pos_only")]
-tmp = ddply(subset, c("thresh","strategy"), summarise, mask.size.mean=mean(mask.size),mask.size.min = min(mask.size), mask.size.max=max(mask.size))
-
-# Here we are looking at the mean pearsons (+/- one standard deviation)
-ggplot(tmp, aes(x=thresh, y=mask.size.mean, ymin=mask.size.min, ymax=mask.size.max,colour=strategy,fill=strategy,group=strategy)) + 
-  geom_line(size=1) + 
-  title("Mask Sizes at Different + Thresholds") +
-  geom_ribbon(alpha=0.25,linetype=0) +
-  xlab("Threshold +") +
-  ylab("Mask Size (voxels)")
-ggsave(paste(savedir,"/mask_sizes_atthresh_pos.png",sep=""))
-
 subset = df[df$pos_only=="True",-which(colnames(df)=="pos_only")]
 tmp = ddply(subset, c("thresh","strategy"), summarise, mask.size.mean=mean(mask.size),mask.size.min = min(mask.size), mask.size.max=max(mask.size))
 
 # Here we are looking at the mean pearsons (+/- one standard deviation)
 ggplot(tmp, aes(x=thresh, y=mask.size.mean, ymin=mask.size.min, ymax=mask.size.max,colour=strategy,fill=strategy,group=strategy)) + 
   geom_line(size=1) + 
-  title("Mask Sizes at Different + Thresholds") +
+  title("Mask Sizes at Different Thresholds +") +
   geom_ribbon(alpha=0.25,linetype=0) +
   xlab("Threshold +") +
-  ylab("Mask Size")
+  ylab("Mask Size (voxels)") 
 ggsave(paste(savedir,"/mask_sizes_atthresh_posonly.png",sep=""))
+
+# Now plot percentage of voxels
+total_size = max(df$mask.size)
+subset$mask.size = subset$mask.size / total_size
+tmp = ddply(subset, c("thresh","strategy"), summarise, mask.size.mean=mean(mask.size),mask.size.min = min(mask.size), mask.size.max=max(mask.size))
+ggplot(tmp, aes(x=thresh, y=mask.size.mean, ymin=mask.size.min, ymax=mask.size.max,colour=strategy,fill=strategy,group=strategy)) + 
+  geom_line(size=1) + 
+  title("Mask Sizes at Different Thresholds +/-") +
+  geom_ribbon(alpha=0.25,linetype=0) +
+  xlab("Threshold +") +
+  ylab("% Non-missing") 
+ggsave(paste(savedir,"/mask_percsizes_atthresh_posneg.png",sep=""))

@@ -12,7 +12,7 @@ import numpy as np
 import nibabel as nib
 from glob import glob
 
-input_folders = glob("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_all/*")
+input_folders = glob("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_spearman/*")
 
 # We will save all results to these lists
 pearsons_pd = []
@@ -26,7 +26,7 @@ for input_folder in input_folders:
   inputs = glob("%s/*.pkl" %input_folder)
   thresh = os.path.split(input_folder)[1].split("_")[1]
   only_pos = os.path.split(input_folder)[1].split("_")[2]
-  input_ids =  [int(i.replace("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_all/thresh_%s_%s/000" %(thresh,only_pos),"").replace("_masking_scores_thresh_%s.pkl" %(thresh),"")) for i in inputs]
+  input_ids =  [int(i.replace("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_spearman/thresh_%s_%s/000" %(thresh,only_pos),"").replace("_masking_scores_thresh_%s.pkl" %(thresh),"")) for i in inputs]
   input_ids.sort()
   column_labels = input_ids + ["thresh","pos_only"]
   # Load the first to get image ids and order
@@ -40,7 +40,7 @@ for input_folder in input_folders:
   # Each row corresponds to one image, there will be nan for images vs. themselves
   for i in inputs:
     print "Processing %s" %i
-    input_id = int(i.replace("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_all/thresh_%s_%s/000" %(thresh,only_pos),"").replace("_masking_scores_thresh_%s.pkl" %(thresh),""))
+    input_id = int(i.replace("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_spearman/thresh_%s_%s/000" %(thresh,only_pos),"").replace("_masking_scores_thresh_%s.pkl" %(thresh),""))
     tmp = pickle.load(open(i,"rb"))
     pearson_pi.loc[input_id,tmp["ids"]] = tmp["mr_vs_thresh_pearson_pi"]
     pearson_pd.loc[input_id,tmp["ids"]] = tmp["mr_vs_thresh_pearson_pd"]
@@ -73,7 +73,7 @@ pd_sizes = pandas.tools.merge.concat(pd_sizes,axis=0)
 pi_sizes = pandas.tools.merge.concat(pi_sizes,axis=0)
 
 # Save all data matrices to file
-os.chdir("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_all/")
+os.chdir("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/masking_scores_spearman/")
 pearsons_pd.to_csv("144_masking_pd.tsv",sep="\t")
 pearsons_pi.to_csv("144_masking_pi.tsv",sep="\t")
 pearsons_bm.to_csv("144_masking_bm.tsv",sep="\t")

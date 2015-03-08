@@ -84,10 +84,18 @@ plot_result = function(res,thresh,direction="True",plot_type="density") {
   bm = as.vector(as.matrix(bm[bm$thresh==thresh,-which(colnames(bm)=="thresh")]))
   
   # Remove nans (comparisons to self)
-  pd = pd[-which(is.na(pd))]
-  gs = gs[-which(is.na(gs))]
-  pi = pi[-which(is.na(pi))]
-  bm = bm[-which(is.na(bm))]
+  if (length(which(is.na(pd)))!=0){
+    pd = pd[-which(is.na(pd))]    
+  }
+  if (length(which(is.na(gs)))!=0){
+    gs = gs[-which(is.na(gs))]
+  }
+  if (length(which(is.na(pi)))!=0){
+    pi = pi[-which(is.na(pi))]
+  }
+  if (length(which(is.na(bm)))!=0){  
+    bm = bm[-which(is.na(bm))]
+  }
   
   pd = flatten(pd,"PD")
   gs = flatten(gs,"GS")
@@ -98,9 +106,9 @@ plot_result = function(res,thresh,direction="True",plot_type="density") {
   flat$value = as.numeric(flat$value)
  
   if (plot_type=="density"){
-    return(ggplot(flat,aes(x=value, fill=variable)) + geom_density(alpha=0.25) + ylab("Density") + xlab(paste("Pearsons R, Threshold",thresh)) + ylim(0,6.5))
+    return(ggplot(flat,aes(x=value, fill=variable)) + geom_density(alpha=0.25) + ylab("Density") + xlab(paste("Spearman's Rho, Threshold",thresh)) + ylim(0,6.5))
   } else {
-    return(ggplot(flat,aes(x=variable, y=value,fill=variable)) + geom_boxplot(alpha=0.25) + ylab("Pearsons R") + xlab(paste("Threshold",thresh)) + ylim(-1,1))    
+    return(ggplot(flat,aes(x=variable, y=value,fill=variable)) + geom_boxplot(alpha=0.25) + ylab("Spearman's Rho") + xlab(paste("Threshold",thresh)) + ylim(-1,1))    
   }
 }
 
@@ -117,7 +125,9 @@ flatten_data = function(df,pos_only="False",label){
   for (t in ts){
     sub = subset[which(subset$thresh==t),-which(colnames(subset)%in%c("pos_only","thresh","X"))]
     vector = as.vector(as.matrix(sub))
-    vector = vector[-which(is.na(vector))]
+    if (length(which(is.na(vector))!=0)){
+      vector = vector[-which(is.na(vector))]
+    }
     ALL = rbind(ALL,cbind(vector,rep(t,length(vector))))    
   }
   ALL = cbind(ALL,rep(label,nrow(ALL)))
@@ -140,7 +150,9 @@ get_similar = function(df,id,thresh,pos_only="False"){
   subset = df[which(df$X==id),]
   subset = subset[which(subset$pos_only==pos_only),-which(colnames(subset)%in%c("X","pos_only"))]  
   subset = subset[which(subset$thresh==thresh),-which(colnames(subset)%in%c("thresh"))]  
-  subset = subset[-which(is.na(subset))]
+  if (length(which(is.na(subset)))!=0) {
+    subset = subset[-which(is.na(subset))]
+  }
   labels = gsub("X","",names(subset))
   subset = as.numeric(subset)
   names(subset) = labels
