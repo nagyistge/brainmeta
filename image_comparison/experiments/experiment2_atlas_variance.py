@@ -115,7 +115,7 @@ for m in range(0,len(mrs)):
 
       # PAIRWISE DELETION
       # Calculate correlation if there is overlap, otherwise it is 0
-      if len(np.unique(pdmask_sub.get_data())) == 2:
+      if len(np.unique(pdmask_sub)) == 2:
         datapd = apply_mask([mr1,mr2],pdmask_sub) 
         # We need at least 3 values
         if np.shape(datapd)[1] > 2: pd_single.append(spearmanr(datapd[0],datapd[1])[0])
@@ -123,7 +123,7 @@ for m in range(0,len(mrs)):
       else: pd_single.append(0)
       # PAIRWISE INCLUSION
       # Calculate correlation if there is overlap, otherwise it is 0
-      if len(np.unique(pimask_sub.get_data())) == 2:
+      if len(np.unique(pimask_sub)) == 2:
         datapi = apply_mask([mr1,mr2],pimask_sub)  
         # We need at least 3 values
         if np.shape(datapi)[1] > 2: pi_single.append(spearmanr(datapi[0],datapi[1])[0])
@@ -142,5 +142,5 @@ for m in range(0,len(mrs)):
 # Save all data to output file
 output = {"ids":inputs.ID.tolist(),"pd_correlations":pd_correlations,
           "pi_correlations":pi_correlations,"bm_correlations":bm_correlations,
-          "pd_sizes":pd_sizes,"pi_sizes":pi_sizes,"bm_sizes":bm_sizes,"num_regions":num_regions}
+          "pd_sizes":pd_sizes,"pi_sizes":pi_sizes,"bm_sizes":bm_sizes,"percent_sample":percent_sample}
 pickle.dump(output,open(outfile,"wb"))
