@@ -33,6 +33,9 @@ gs_file = sys.argv[5]          # gold standard file (will be created if doesn't 
 inputs = pandas.read_csv(input_file,sep="\t")
 mrs = [nib.load(i) for i in inputs.FILE]
 
+# Unzip functiom
+unzip = lambda l:tuple(zip(*l))
+
 # Get our standard brain mask
 brain_mask = nib.load(standard)
 
@@ -98,7 +101,7 @@ for m in range(0,len(mrs)):
       if percent_sample != 1.0: # if threshold is 1, we take all voxels 
         number_voxels = int(np.floor(percent_sample * len(idx)))
         random_idx = idx[0:number_voxels]
-        random_idx = self.unzip(random_idx)
+        random_idx = unzip(random_idx)
         empty_nii[random_idx] = 1
       else: empty_nii[brain_mask.get_data()==1] = 1
       # For each of brain mask, pdmask, and pimask, combine with random selection
