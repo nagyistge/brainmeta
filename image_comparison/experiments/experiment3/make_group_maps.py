@@ -51,4 +51,4 @@ subset = data[:,:,:,indices]
 affine = nii.get_affine()
 header = nii.get_header()
 nii_group = nibabel.Nifti1Image(subset,affine=affine,header=header) 
-nibabel.save(nii_group,file=output_nii)
+nibabel.save(nii_group,output_nii)
