@@ -6,6 +6,7 @@ import sys
 import nibabel
 import os
 import pandas
+import re
 
 group_id = sys.argv[1]
 contrast_name = sys.argv[2]
