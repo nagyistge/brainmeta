@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # ---------------------------------------------------------------------------------
-# Experiment 2 Masking: Assessing how variance changes with different levels of coverage (region based)
+# Experiment 2 Masking: Assessing how variance changes with different levels of coverage (sample based)
 
 # This script will compile results from piecewise analyses
 import os
@@ -12,13 +12,13 @@ import numpy as np
 import nibabel as nib
 from glob import glob
 
-input_files = glob("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/atlas_scores_all/region*.pkl")
+input_files = glob("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/random_sampling/sample*.pkl")
 
-gs_file = glob("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/atlas_scores_all/gs*.pkl")
-gs = pickle.load(open(gs_file[0],"rb"))
+gs_file = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/random_sampling/gs_masking_scores_thresh_0.0_True.pkl"
+gs = pickle.load(open(gs_file,"rb"))
 
 # We will save the masking strategy, number of rois, and size to the data frame
-column_labels = gs.columns.tolist() + ["strategy","n_roi"]
+column_labels = gs.columns.tolist() + ["strategy","percent_sample"]
 
 # We will save all results to these lists
 pearsons_pd = pandas.DataFrame(columns=column_labels)
@@ -30,7 +30,7 @@ bm_sizes = pandas.DataFrame(columns=column_labels)
 
 for i in range(0,len(input_files)):
   input_file = input_files[i]
-  "Processing %s of %s" %(i,len(input_files))
+  print "Processing %s of %s" %(i,len(input_files))
   result = pickle.load(open(input_file,"rb"))
   result["pd_sizes"]["strategy"] = "PD"
   result["pi_sizes"]["strategy"] = "PI"
@@ -38,12 +38,12 @@ for i in range(0,len(input_files)):
   result["pi_correlations"]["strategy"] = "PI"
   result["pd_correlations"]["strategy"] = "PD"
   result["bm_correlations"]["strategy"] = "BM"
-  result["pd_sizes"]["n_roi"] = result["num_regions"]
-  result["pi_sizes"]["n_roi"] = result["num_regions"]
-  result["bm_sizes"]["n_roi"] = result["num_regions"]
-  result["pi_correlations"]["n_roi"] = result["num_regions"]
-  result["pd_correlations"]["n_roi"] = result["num_regions"]
-  result["bm_correlations"]["n_roi"] = result["num_regions"]
+  result["pd_sizes"]["percent_sample"] = result["percent_sample"]
+  result["pi_sizes"]["percent_sample"] = result["percent_sample"]
+  result["bm_sizes"]["percent_sample"] = result["percent_sample"]
+  result["pi_correlations"]["percent_sample"] = result["percent_sample"]
+  result["pd_correlations"]["percent_sample"] = result["percent_sample"]
+  result["bm_correlations"]["percent_sample"] = result["percent_sample"]
   pearsons_pd = pearsons_pd.append(result["pd_correlations"])
   pearsons_pi = pearsons_pi.append(result["pi_correlations"])
   pearsons_bm = pearsons_bm.append(result["bm_correlations"])
@@ -62,7 +62,7 @@ sizes = sizes.append(pi_sizes)
 sizes = sizes.append(bm_sizes)
 
 # Save all data matrices to file
-os.chdir("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/atlas_scores_all/")
-pearsons.to_csv("pearsons_all.tsv",sep="\t")
-gs.to_csv("pearsons_gs.tsv",sep="\t")
-sizes.to_csv("pearsons_sizes.tsv",sep="\t")
+os.chdir("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/random_sampling/")
+pearsons.to_csv("spearman_all.tsv",sep="\t")
+gs.to_csv("spearman_gs.tsv",sep="\t")
+sizes.to_csv("spearman_sizes.tsv",sep="\t")
