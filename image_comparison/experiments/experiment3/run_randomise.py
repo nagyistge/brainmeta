@@ -20,6 +20,7 @@ for root, dirnames, filenames in os.walk(search_directory):
       volumes.append(os.path.join(root, filename))
 
 volume_df = pandas.DataFrame(volumes)
+volume_df.columns = ["image_path"]
 volume_df.to_csv("%s/hcp_10groups_4Dlist.txt" %(doc_directory))
 
 for volume in volumes:
