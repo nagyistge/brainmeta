@@ -26,11 +26,11 @@ import image_transformations as IT
 from scipy.stats import pearsonr, spearmanr
 from nilearn.masking import apply_mask
 
-image_id = sys.argv[1]
-filename1 = sys.argv[2]
-threshold = float(sys.argv[3])
-direction = sys.argv[4]
-basedir = sys.argv[5]
+basedir = sys.argv[1]
+image_id = sys.argv[2]
+filename1 = sys.argv[3]
+threshold = float(sys.argv[4])
+direction = sys.argv[5]
 output_file = sys.argv[6]
 
 # Make sure we have boolean
