@@ -28,7 +28,7 @@ from nilearn.masking import apply_mask
 
 image_id = sys.argv[1]
 filename1 = sys.argv[2]
-threshold = float(sys.argv[4])
+threshold = float(sys.argv[3])
 direction = sys.argv[4]
 basedir = sys.argv[5]
 output_file = sys.argv[6]
