@@ -60,7 +60,7 @@ mr1 = nib.load(filename1)
 # Convert to Z score map
 group1 = inputs.groups[inputs.files==filename].tolist()[0]
 dof = len(groups[group1]) - 2
-mr1 = IT.to_Z(mr1,dof)
+mr1 = IT.t_to_z(mr1,dof)
   
 # We will threshold maps as we go, because it takes up too much memory to store 1720 maps
 # 3/12/2015: confirmed that thresholding at 0.0 is equivalent to original image
@@ -94,7 +94,7 @@ for filename2 in filenames:
   mr2 = nib.load(filename2)
   group2 = inputs.groups[inputs.files==filename2].tolist()[0]
   dof = len(groups[group2]) - 2
-  mr2 = IT.to_Z(mr2,dof)
+  mr2 = IT.t_to_z(mr2,dof)
   if absolute_value: mrthresh = IT.threshold_abs(mr2,thresholds=[threshold])[threshold]
   else: mrthresh = IT.threshold_pos(mr2,thresholds=[threshold])[threshold]
   # 3/12/2015: confirmed that first returns +/- values, second returns only positive  
