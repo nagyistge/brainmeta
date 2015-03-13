@@ -47,7 +47,7 @@ input_file = "%s/doc/hcp_groupmaps.tsv" %(basedir)
 inputs = pandas.read_csv(input_file,sep="\t")
 
 # Groups file tells us the dof for each group
-groups = pickle.load(open(groups,"rb"))
+groups = pickle.load(open(groups_pkl,"rb"))
 
 # Remove our query image
 #inputs = inputs[inputs.ID!=int(image_id)]
