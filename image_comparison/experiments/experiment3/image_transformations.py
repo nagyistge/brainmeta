@@ -25,6 +25,8 @@ sys.setdlopenflags(_old_rtld)
 def t_to_z(image1, dof):
   data = image1.get_data()
   p_values = t.sf(data, df = dof)
+  # A value of 1 will return a -inf in the map, so we must sub with 0.999999999999
+  p_values[p_values==1.0] = 0.9999999999
   z_values = norm.isf(p_values)
   Z_nii = nib.nifti1.Nifti1Image(z_values,affine=image1.get_affine(),header=image1.get_header())
   return Z_nii
