@@ -7,14 +7,17 @@
 import os
 import time
 import pandas
+import pickle
 
-# Input file
+# Input file with map paths
 basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment3"
 outdirectory = "%s/scores" %(basedir)
 input_file = "%s/doc/hcp_groupmaps.tsv" %(basedir)
 inputs = pandas.read_csv(input_file,sep="\t")
 
-# QUESTION: should convert to z score?
+# Our groups will tells us the number of degrees of freedom for each map
+groups = "%s/doc/hcp_10groups460_alltasks.pkl" %(basedir)
+
 # We will run for a set of thresholds
 thresholds = [0.0,0.5,1.0,1.5,1.65,1.7,1.75,1.8,1.85,1.9,1.96,2.0,2.58,3.02,3.5,4.0]
 thresholds = [0.0,0.5,1.0,1.5]
@@ -31,7 +34,7 @@ else:
 for thresh in thresholds:
   for groupmap in inputs.iterrows():
     image_id = groupmap[1].uid
-    filename = groupmap[1].files 
+    filename = groupmap[1].files
     # if the output directory doesn't exist, make it
     topdir = "%s/thresh_%s_%s" %(outdirectory,thresh,direction)
     if not os.path.exists(topdir): os.mkdir(topdir)
@@ -45,6 +48,6 @@ for thresh in thresholds:
       filey.writelines("#SBATCH --error=.out/%s_%s.err\n" %(image_id,thresh))
       filey.writelines("#SBATCH --time=2-00:00\n")
       filey.writelines("#SBATCH --mem=64000\n")
-      filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/test_thresholding.py %s %s %s %s %s %s" %(basedir,image_id,filename,thresh,direction,outfile))
+      filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/test_thresholding.py %s %s %s %s %s %s %s" %(basedir,image_id,filename,thresh,direction,outfile,groups))
       filey.close()
       os.system("sbatch -p russpold " + ".job/%s_masking_%s.job" %(image_id,thresh))

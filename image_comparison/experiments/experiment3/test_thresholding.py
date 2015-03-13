@@ -32,6 +32,7 @@ filename1 = sys.argv[3]
 threshold = float(sys.argv[4])
 direction = sys.argv[5]
 output_file = sys.argv[6]
+groups_pkl = sys.argv[7]
 
 # Make sure we have boolean
 if direction == "posneg": absolute_value = True
@@ -45,6 +46,9 @@ brain_mask = nib.load(standard)
 input_file = "%s/doc/hcp_groupmaps.tsv" %(basedir)
 inputs = pandas.read_csv(input_file,sep="\t")
 
+# Groups file tells us the dof for each group
+groups = pickle.load(open(groups,"rb"))
+
 # Remove our query image
 #inputs = inputs[inputs.ID!=int(image_id)]
 image_ids = inputs.uid.tolist()
@@ -53,9 +57,10 @@ filenames = inputs.files.tolist()
 # Read in main image
 mr1 = nib.load(filename1)
 
-# Convert to Z score - we create a mask for voxels that are absolutely == 0, and subtract mean, divide by sd
-# I am troubled by this because of the tiny percentage of "real zeros" that don't indicate outside the mask.
-mr1 = IT.to_Z(mr1)
+# Convert to Z score map
+group1 = inputs.groups[inputs.files==filename].tolist()[0]
+dof = len(groups[group1]) - 2
+mr1 = IT.to_Z(mr1,dof)
   
 # We will threshold maps as we go, because it takes up too much memory to store 1720 maps
 # 3/12/2015: confirmed that thresholding at 0.0 is equivalent to original image
@@ -69,34 +74,43 @@ spearman_pi = []
 spearman_bm = []
 
 # Edge cases:
-# No surviving voxels for pdmask: we append 0
-# Thresholded image is 0: all correlations 0
-# Fewer than 3 remaining voxels to compare: we append 0
+# No surviving voxels for pdmask: we append nan
+# Thresholded image is 0: all correlations nan
+# Fewer than 3 remaining voxels to compare: we append nan
+# Suggested by Russ 3/13/2015, and I agree
 
-# We also will save sizes of each - this can confirm if the comparison was possible, period
-# (to distinguish values of 0 == no correlation vs 0 == no comparison possible)
+# We also will save sizes of each, and a log to keep track of nan behavior
 sizes = pandas.DataFrame(columns=["pd","pi","bm"])
+nanlog_pd = []
+nanlog_pi = []
+nanlog_bm = []
 
 print "Calculating mask varieties [PD,PI,BM] vs thresholded..."
 idx = 0
 size_ids = []
 
 for filename2 in filenames:
-  # Load the image and calculate the thresholded version
+  # Load the image, convert to Z, and calculate the thresholded version
   mr2 = nib.load(filename2)
+  group2 = inputs.groups[inputs.files==filename2].tolist()[0]
+  dof = len(groups[group2]) - 2
+  mr2 = IT.to_Z(mr2,dof)
   if absolute_value: mrthresh = IT.threshold_abs(mr2,thresholds=[threshold])[threshold]
   else: mrthresh = IT.threshold_pos(mr2,thresholds=[threshold])[threshold]
   # 3/12/2015: confirmed that first returns +/- values, second returns only positive  
 
-  # If the image is empty thresholded, we must append zeros by default
+  # If the image is empty thresholded, we append NaN
   if len(np.unique(mrthresh.get_data()))==1:
-    pearsons_bm.append(0)
-    pearsons_pi.append(0)
-    pearsons_pd.append(0)
-    spearman_pd.append(0)
-    spearman_pd.append(0)
-    spearman_pd.append(0)
+    pearsons_bm.append(np.nan)
+    pearsons_pi.append(np.nan)
+    pearsons_pd.append(np.nan)
+    spearman_pd.append(np.nan)
+    spearman_pd.append(np.nan)
+    spearman_pd.append(np.nan)
     sizes.loc[idx] = [0,0,0]
+    nanlog_pi.append("nan_mrthresh_empty")
+    nanlog_pd.append("nan_mrthresh_empty")
+    nanlog_bm.append("nan_mrthresh_empty")
   else:
     # Generate a union (pi) and intersection (pd) mask
     pdmask = IT.get_pairwise_deletion_mask(mr1,mrthresh,brain_mask)
@@ -111,14 +125,17 @@ for filename2 in filenames:
       if np.shape(datapd)[1] > 2: 
         pearsons_pd.append(pearsonr(datapd[0],datapd[1])[0])
         spearman_pd.append(spearmanr(datapd[0],datapd[1])[0])
+        nanlog_pd.append("success")
       else: 
-        pearsons_pd.append(0)
-        spearman_pd.append(0)
+        pearsons_pd.append(np.nan)
+        spearman_pd.append(np.nan)
+        nanlog_pd.append("nan_fewer_3_values")
     
-    # Otherwise (no overlap) it is zero
+    # Otherwise (no overlap) it is nan
     else: 
-      pearsons_pd.append(0)
-      spearman_pd.append(0)
+      pearsons_pd.append(np.nan)
+      spearman_pd.append(np.nan)
+      nanlog_pd.append("nan_no_overlap")
     
     # PAIRWISE INCLUSION (union)
     # Calculate correlation if there is overlap
@@ -129,14 +146,17 @@ for filename2 in filenames:
       if np.shape(datapi)[1] > 2: 
         pearsons_pi.append(pearsonr(datapi[0],datapi[1])[0])
         spearman_pi.append(spearmanr(datapi[0],datapi[1])[0])
+        nanlog_pi.append("success")
       else: 
-        pearsons_pi.append(0)
-        spearman_pi.append(0)
+        pearsons_pi.append(np.nan)
+        spearman_pi.append(np.nan)
+        nanlog_pi.append("nan_fewer_3_values")
     
-    # Otherwise (no overlap) it is zero
+    # Otherwise (no overlap) it is nan
     else: 
-      pearsons_pi.append(0)
-      spearman_pi.append(0)
+      pearsons_pi.append(np.nan)
+      spearman_pi.append(np.nan)
+      nanlog_pi.append("nan_no_overlap")
 
     # BRAIN MASK
     databm = apply_mask([mr1,mrthresh],brain_mask)  
@@ -144,9 +164,11 @@ for filename2 in filenames:
     if np.shape(databm)[1] > 2: 
       pearsons_bm.append(pearsonr(databm[0],databm[1])[0])
       spearman_bm.append(spearmanr(databm[0],databm[1])[0])
+      nanlog_bm.append("success")
     else: 
-      pearsons_bm.append(0)
-      spearman_bm.append(0)    
+      pearsons_bm.append(np.nan)
+      spearman_bm.append(np.nan)    
+      nanlog_bm.append("nan_fewer_3_values")
 
     # Save sizes of all masks
     sizes.loc[idx] = [len(datapd[0]),len(datapi[0]),len(databm[0])]

@@ -15,20 +15,18 @@ import numpy as np
 import nibabel as nib
 from nilearn.masking import apply_mask
 from scipy.spatial.distance import pdist
+from scipy.stats import norm, t
 #--end other packages that need MKL
 sys.setdlopenflags(_old_rtld)
 
 # Convert to Z Scores (return entire images) ------------------------------------------------
-# Note: not comfortable doing this, needs discussion
-def to_Z(image1):
+# modified from chrisfilo 
+# http://nbviewer.ipython.org/urls/docs.google.com/uc/%3Fid%3D0B77zr9yIiKOTc0FCU0x6aHdIYTg%26export%3Ddownload
+def t_to_z(image1, dof):
   data = image1.get_data()
-  mask = np.zeros(data.shape)
-  mask[data!=0] = 1
-  themean = np.mean(data[mask==1])
-  thesd = np.std(data[mask==1])
-  Z = np.zeros(data.shape)
-  Z[mask==1] = (data[mask==1] - themean) / thesd
-  Z_nii = nib.nifti1.Nifti1Image(Z,affine=image1.get_affine(),header=image1.get_header())
+  p_values = t.sf(data, df = dof)
+  z_values = norm.isf(p_values)
+  Z_nii = nib.nifti1.Nifti1Image(z_values,affine=image1.get_affine(),header=image1.get_header())
   return Z_nii
 
 # Thresholding and Segmentation (return entire images) ------------------------------------------------
