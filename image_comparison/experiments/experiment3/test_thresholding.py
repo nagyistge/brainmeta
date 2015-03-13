@@ -52,6 +52,10 @@ filenames = inputs.files.tolist()
 
 # Read in main image
 mr1 = nib.load(filename1)
+
+# Convert to Z score - we create a mask for voxels that are absolutely == 0, and subtract mean, divide by sd
+# I am troubled by this because of the tiny percentage of "real zeros" that don't indicate outside the mask.
+mr1 = IT.to_Z(mr1)
   
 # We will threshold maps as we go, because it takes up too much memory to store 1720 maps
 # 3/12/2015: confirmed that thresholding at 0.0 is equivalent to original image
