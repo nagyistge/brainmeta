@@ -59,8 +59,8 @@ mr1 = nib.load(filename1)
 
 # Convert to Z score map
 group1 = inputs.groups[inputs.files==filename1].tolist()[0]
-dof = len(groups[group1]) - 2
-mr1 = IT.t_to_z(mr1,dof)
+df = len(groups[group1]) - 2
+mr1 = IT.t_to_z(mr1,df)
   
 # We will threshold maps as we go, because it takes up too much memory to store 1720 maps
 # 3/12/2015: confirmed that thresholding at 0.0 is equivalent to original image
@@ -183,6 +183,10 @@ output = {"uid":inputs.uid.tolist(),
           "mr_vs_thresh_spearman_pd":spearman_pd,
           "mr_vs_thresh_spearman_pi":spearman_pi,
           "mr_vs_thresh_spearman_bm":spearman_bm,
-          "sizes":sizes,"size_ids":size_ids}
+          "sizes":sizes,"size_ids":size_ids,
+          "nanlog_pd":nanlog_pd,
+          "nanlog_bm":nanlog_bm,
+          "nanlog_pi":nanlog_pi,
+          "mr_df":df}
 
 pickle.dump(output,open(output_file,"wb"))
