@@ -23,6 +23,7 @@ sys.setdlopenflags(_old_rtld)
 def to_Z(image1):
   data = image1.get_data()
   mask = np.zeros(data.shape)
+  mask = mask.get_data()
   mask[data!=0] = 1
   themean = np.mean(data[mask==1])
   thesd = np.std(data[mask==1])

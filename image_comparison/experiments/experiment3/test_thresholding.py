@@ -96,6 +96,7 @@ for filename2 in filenames:
     spearman_pd.append(0)
     spearman_pd.append(0)
     spearman_pd.append(0)
+    sizes.loc[idx] = [0,0,0]
   else:
     # Generate a union (pi) and intersection (pd) mask
     pdmask = IT.get_pairwise_deletion_mask(mr1,mrthresh,brain_mask)
@@ -162,4 +163,4 @@ output = {"uid":inputs.uid.tolist(),
           "mr_vs_thresh_spearman_bm":spearman_bm,
           "sizes":sizes,"size_ids":size_ids}
 
-pickle.dump(output,open(outfile,"wb"))
+pickle.dump(output,open(output_file,"wb"))
