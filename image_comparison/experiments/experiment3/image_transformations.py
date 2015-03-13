@@ -19,11 +19,10 @@ from scipy.spatial.distance import pdist
 sys.setdlopenflags(_old_rtld)
 
 # Convert to Z Scores (return entire images) ------------------------------------------------
-# Note: not comfortable doing this, will use tstat instead
+# Note: not comfortable doing this, needs discussion
 def to_Z(image1):
   data = image1.get_data()
   mask = np.zeros(data.shape)
-  mask = mask.get_data()
   mask[data!=0] = 1
   themean = np.mean(data[mask==1])
   thesd = np.std(data[mask==1])
