@@ -58,7 +58,7 @@ filenames = inputs.files.tolist()
 mr1 = nib.load(filename1)
 
 # Convert to Z score map
-group1 = inputs.groups[inputs.files==filename].tolist()[0]
+group1 = inputs.groups[inputs.files==filename1].tolist()[0]
 dof = len(groups[group1]) - 2
 mr1 = IT.t_to_z(mr1,dof)
   
