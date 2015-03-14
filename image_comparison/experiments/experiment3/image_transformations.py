@@ -19,18 +19,6 @@ from scipy.stats import norm, t
 #--end other packages that need MKL
 sys.setdlopenflags(_old_rtld)
 
-# Convert to Z Scores (return entire images) ------------------------------------------------
-# modified from chrisfilo 
-# http://nbviewer.ipython.org/urls/docs.google.com/uc/%3Fid%3D0B77zr9yIiKOTc0FCU0x6aHdIYTg%26export%3Ddownload
-def t_to_z(image1, dof):
-  data = image1.get_data()
-  p_values = t.sf(data, df = dof)
-  # A value of 1 will return a -inf in the map, so we must sub with 0.999999999999
-  p_values[p_values==1.0] = 0.9999999999
-  z_values = norm.isf(p_values)
-  Z_nii = nib.nifti1.Nifti1Image(z_values,affine=image1.get_affine(),header=image1.get_header())
-  return Z_nii
-
 # Thresholding and Segmentation (return entire images) ------------------------------------------------
 
 # Positive and negative thresholding
@@ -111,3 +99,40 @@ def make_tmp_nii(image1,tmp_file_prefix):
   image1_tmp = nib.Nifti1Image(image1.get_data(),affine=image1.get_affine(),header=image1.get_header())
   nib.save(image1_tmp,tmp_file)
   return tmp_file
+
+
+# Convert to Z Scores (return entire images) ------------------------------------------------
+def t_to_z(mr, dof):
+  
+  data = mr.get_data()
+
+  # Select just the nonzero voxels
+  nonzero = data[data!=0]
+
+  # We will store our results here
+  Z = np.zeros(len(nonzero))
+
+  # Select values less than or == 0, and greater than zero
+  c  = np.zeros(len(nonzero))
+  k1 = (nonzero <= c)
+  k2 = (nonzero > c)
+
+  # Subset the data into two sets
+  t1 = nonzero[k1]
+  t2 = nonzero[k2]
+
+  # Calculate p values for <=0
+  p_values_t1 = t.cdf(t1, df = dof)
+  z_values_t1 = norm.ppf(p_values_t1)
+
+  # Calculate p values for > 0
+  p_values_t2 = t.cdf(-t2, df = dof)
+  z_values_t2 = -norm.ppf(p_values_t2)
+  Z[k1] = z_values_t1
+  Z[k2] = z_values_t2
+
+  # Create new nifti
+  empty_nii = np.zeros(mr.shape)
+  empty_nii[mr.get_data()!=0] = Z
+  Z_nii_fixed = nib.nifti1.Nifti1Image(empty_nii,affine=mr.get_affine(),header=mr.get_header())
+  return Z_nii_fixed
