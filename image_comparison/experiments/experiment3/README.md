@@ -4,3 +4,9 @@
 - Prepare meta data files and logs for analysis (prep_make_group_maps.py)
 - Generate group maps (make_group_maps.py,run_make_group_maps.py)
 - Generate file list of group maps (prep_test_thresholding.py)
+- Generate pickle results for spearman and pearson at different thresholds (test_thresholding.py,run_test_thresholding.py)
+- Compile results (compile_threshold_results.py)
+
+
+### Extras
+- find_missing.py will identify thresholds and directions to re-run
