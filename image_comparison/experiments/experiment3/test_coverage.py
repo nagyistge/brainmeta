@@ -148,8 +148,8 @@ for row2 in inputs.iterrows():
 
 # Save all data to output file
 output = {"uids":image_ids,"mr1":image_id,"pd_pearsons":pd_pearsons,"pi_pearsons":pi_pearsons,
-          "bm_pearsons":bm_pearsons,"pd_spearmans":pd_spearmans,"pi_spearmans":pi_spearmans,
-          "bm_spearmans":bm_spearmans,"pd_sizes":pd_sizes,"pi_sizes":pi_sizes,"bm_sizes":bm_sizes,
+          "bm_pearsons":bm_pearsons,"pd_spearman":pd_spearman,"pi_spearman":pi_spearman,
+          "bm_spearmans":bm_spearman,"pd_sizes":pd_sizes,"pi_sizes":pi_sizes,"bm_sizes":bm_sizes,
           "percent_sample":percent_sample,"nanlog_pd":nanlog_pd,"nanlog_pi":nanlog_pi,
            "nanlog_bm":nanlog_bm}
 pickle.dump(output,open(outfile,"wb"))
