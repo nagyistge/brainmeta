@@ -6,7 +6,7 @@
 - Generate file list of group maps (prep_test_thresholding.py)
 - Generate pickle results for spearman and pearson at different thresholds (test_thresholding.py,run_test_thresholding.py)
 - Compile results (compile_threshold_results.py)
-
+- Analysis in R (threshold_analysis.R, helper_functions.R)
 
 ### Extras
 - find_missing.py will identify thresholds and directions to re-run

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # ---------------------------------------------------------------------------------
-# Experiment 2 Masking:
+# Experiment 2 Handling Missing Values:
 
 # This script will compile results from piecewise analyses
 import os
@@ -92,9 +92,9 @@ for input_folder in input_folders:
   pearsons_pd.append(pearson_pd)
   pearsons_pi.append(pearson_pi)
   pearsons_bm.append(pearson_bm)
-  spearmans_pd.append(pearson_pd)
-  spearmans_pi.append(pearson_pi)
-  spearmans_bm.append(pearson_bm)
+  spearmans_pd.append(spearman_pd)
+  spearmans_pi.append(spearman_pi)
+  spearmans_bm.append(spearman_bm)
   pd_sizes.append(pd_size)
   pi_sizes.append(pi_size)
   bm_sizes.append(bm_size)
