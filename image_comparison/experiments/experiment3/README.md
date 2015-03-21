@@ -10,3 +10,4 @@
 
 ### Extras
 - find_missing.py will identify thresholds and directions to re-run
+- filter_contrasts.py will remove "neg" contrasts, or inverse of the same (eg, faces-shapes == shapes-faces)
