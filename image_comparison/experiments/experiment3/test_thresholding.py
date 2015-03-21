@@ -105,12 +105,13 @@ for filename2 in filenames:
     pearsons_pi.append(np.nan)
     pearsons_pd.append(np.nan)
     spearman_pd.append(np.nan)
-    spearman_pd.append(np.nan)
-    spearman_pd.append(np.nan)
+    spearman_pi.append(np.nan)
+    spearman_bm.append(np.nan)
     sizes.loc[idx] = [0,0,0]
     nanlog_pi.append("nan_mrthresh_empty")
     nanlog_pd.append("nan_mrthresh_empty")
     nanlog_bm.append("nan_mrthresh_empty")
+    size_ids.append(image_ids[idx])
   else:
     # Generate a union (pi) and intersection (pd) mask
     pdmask = IT.get_pairwise_deletion_mask(mr1,mrthresh,brain_mask)
@@ -159,16 +160,21 @@ for filename2 in filenames:
       nanlog_pi.append("nan_no_overlap")
 
     # BRAIN MASK
-    databm = apply_mask([mr1,mrthresh],brain_mask)  
-    # We need at least 3 values
-    if np.shape(databm)[1] > 2: 
-      pearsons_bm.append(pearsonr(databm[0],databm[1])[0])
-      spearman_bm.append(spearmanr(databm[0],databm[1])[0])
-      nanlog_bm.append("success")
-    else: 
+    if len(np.unique(brain_mask.get_data())) == 2:
+      databm = apply_mask([mr1,mrthresh],brain_mask)  
+    
+      # We need at least 3 values
+      if np.shape(databm)[1] > 2: 
+        pearsons_bm.append(pearsonr(databm[0],databm[1])[0])
+        spearman_bm.append(spearmanr(databm[0],databm[1])[0])
+        nanlog_bm.append("success")
+      else: 
+        pearsons_bm.append(np.nan)
+        spearman_bm.append(np.nan)    
+        nanlog_bm.append("nan_fewer_3_values")
+    else:
       pearsons_bm.append(np.nan)
       spearman_bm.append(np.nan)    
-      nanlog_bm.append("nan_fewer_3_values")
 
     # Save sizes of all masks
     sizes.loc[idx] = [len(datapd[0]),len(datapi[0]),len(databm[0])]
