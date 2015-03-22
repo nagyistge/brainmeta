@@ -6,6 +6,7 @@ import os
 import time
 import pandas
 import numpy as np
+import subprocess
 import nibabel as nib
 import pickle
 
@@ -21,6 +22,10 @@ groups = "%s/doc/hcp_10groups460_alltasks.pkl" %(basedir)
 
 # Range of sampling percentages from 0.05 to 1.0
 percentages = np.divide(range(1,101),100.0)
+
+# Maximum number of jobs we are allowed, and username
+max_jobs = 5000
+username = "vsochat"
 
 for percent_sample in percentages:
   for groupmap in inputs.iterrows():
@@ -41,4 +46,8 @@ for percent_sample in percentages:
       filey.writelines("#SBATCH --mem=64000\n")
       filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/test_coverage.py %s %s %s %s %s" %(percent_sample,input_file,outfile,standard,image_id))
       filey.close()
-      os.system("sbatch -p russpold " + ".job/coverage_%s_%s.job" %(image_id,percent_sample))
+      proc = subprocess.Popen(["squeue -u %s | wc -l" %(username)], stdout=subprocess.PIPE, shell=True)
+      (out, err) = proc.communicate()
+      number_jobs = int(out.strip("\n"))
+      if number_jobs < max_jobs:
+        os.system("sbatch -p russpold " + ".job/coverage_%s_%s.job" %(image_id,percent_sample))

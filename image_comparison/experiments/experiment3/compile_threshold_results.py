@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------------
 # Experiment 2 Handling Missing Values:
 
-# This script will compile results from piecewise analyses
+# This script will compile results from piecewise analyses, likely needs big memory node
 import os
 import pandas
 import sys
@@ -12,7 +12,7 @@ import numpy as np
 import nibabel as nib
 from glob import glob
 
-input_folders = np.sort(glob("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/scores/*")).tolist()
+input_folders = np.sort(glob("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/scores/thresh*")).tolist()
 
 # We will save all results to these lists
 pearsons_pd = []  # pearsonr scores
@@ -112,9 +112,9 @@ spd = pandas.tools.merge.concat(spearmans_pd,axis=0)
 bmsizes = pandas.tools.merge.concat(bm_sizes,axis=0)
 pdsizes = pandas.tools.merge.concat(pd_sizes,axis=0)
 pisizes = pandas.tools.merge.concat(pi_sizes,axis=0)
-nanlogpd = pandas.tools.merge.concat(nanlogpd,axis=0)
-nanlogpi = pandas.tools.merge.concat(nanlogpi,axis=0)
-nanlogbm = pandas.tools.merge.concat(nanlogbm,axis=0)
+nanlogpd = pandas.tools.merge.concat(nanlog_pd,axis=0)
+nanlogpi = pandas.tools.merge.concat(nanlog_pi,axis=0)
+nanlogbm = pandas.tools.merge.concat(nanlog_bm,axis=0)
 
 # Save all data matrices to file
 os.chdir("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/scores/")
