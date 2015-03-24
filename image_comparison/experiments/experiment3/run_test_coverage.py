@@ -50,4 +50,5 @@ for percent_sample in percentages:
       (out, err) = proc.communicate()
       number_jobs = int(out.strip("\n"))
       if number_jobs < max_jobs:
+        print "Jobs: %s" %(number_jobs)
         os.system("sbatch -p russpold " + ".job/coverage_%s_%s.job" %(image_id,percent_sample))
