@@ -140,7 +140,7 @@ wilcox_tests = c()
 
 for (i in 1:length(image_ids)){
   cat("Processing",i,"of",length(image_ids),"\n")
-  image_id = image_ids[1]
+  image_id = image_ids[i]
   df = get_single_result(image_id,results,direction=direction) 
   
   if (plot_single==TRUE){
@@ -221,7 +221,6 @@ for (thresh in unique(test$thresh)){
 
 save(testadjust,file=paste(datadir,"/wilcox_tests_pos_fdr.Rda",sep=""))
 colnames(per_sigdiff) = c("intersect.pearson","union.pearson","brain.mask.pearson","intersect.spearman","union.spearman","brain.mask.spearman","thresh")
-per_sigdiff = per_sigdiff[ order(per_sigdiff[,4]), ]
 save(per_sigdiff,file=paste(datadir,"/wilcox_tests_per_sigdiff_pos_fdr05.Rda",sep=""))
 write.table(per_sigdiff,file=paste(datadir,"/wilcox_tests_per_sigdiff_pos_fdr05.tsv",sep=""),sep="\t",row.names=FALSE)
 tmp = melt(as.data.frame(per_sigdiff),id.vars=c("thresh"))
@@ -239,7 +238,7 @@ ggsave(paste(savedir,"/percent_means_sigdiff_pos_fdr05.png",sep=""))
 wilcox_thresh = c()
 for (thresh in thresholds){
   cat("Threshold:",thresh,"\n")
-  df = get_direction_result(results,"posneg")
+  df = get_direction_result(results,"pos")
   gs = df[df$thresh==0.0,]
   wt_pdp = wilcox_test(df,thresh,gs,"intersect.pearson")
   wt_pip = wilcox_test(df,thresh,gs,"union.pearson")
@@ -258,6 +257,7 @@ for (thresh in thresholds){
   wilcox_thresh = rbind(wilcox_thresh,tmp)
 }
 colnames(wilcox_thresh) = c("strategy","p.value","ci.low","ci.high","thresh")
+save(wilcox_thresh,file="wilcox_thresh_pos_all_uncorrected.Rda")
 fdr = p.adjust(as.numeric(wilcox_thresh[,2]),method="fdr")
 wilcox_thresh = cbind(wilcox_thresh,fdr)
 tmp = as.data.frame(wilcox_thresh,stringsAsFactors=FALSE)
@@ -265,9 +265,10 @@ tmp$p.value = as.numeric(tmp$p.value)
 tmp$ci.low = as.numeric(tmp$ci.low)
 tmp$ci.high = as.numeric(tmp$ci.high)
 tmp$fdr = as.numeric(tmp$fdr)
-write.table(tmp,file=paste(datadir,"/wilcox_tests_distributions_corrected_posneg.tsv",sep=""),sep="\t",row.names=FALSE)
-save(tmp,file=paste(datadir,"/wilcox_tests_distributions_corrected_posneg.Rda",sep=""))
+write.table(tmp,file=paste(datadir,"/wilcox_tests_distributions_corrected_pos.tsv",sep=""),sep="\t",row.names=FALSE)
+save(tmp,file=paste(datadir,"/wilcox_tests_distributions_corrected_pos.Rda",sep=""))
 tmp = melt(tmp,id.vars=c("strategy","thresh","ci.low","ci.high","fdr"))
+write.table(tmp,file=paste(datadir,"/wilcox_tests_distributions_corrected_pos_flat.tsv",sep=""),sep="\t",row.names=FALSE)
 
 # Significantly different means
 tmp[which(tmp$fdr<0.01),]
@@ -275,192 +276,41 @@ tmp[which(tmp$fdr<0.01),]
 
 # ? Quantify: How often are rankings significantly different? ##############################################################################
 
-# THIS PART IS NOT DONE YET 3/23/2015
-# PART II: Assessing significant differences in ORDERING / RANKING of similar images
-# We will save our results in a data frame for each of the contrast, task, group, and task_contrast gold standards
-# with format imageid strategy rho rho-pvalue tau tau-pvalue
-contrast_df = c()
-task_df = c()
-group_df = c()
-task_group_df = c()
+# Specify direction
+direction = "posneg"
 
-directions = c("posneg","pos")
+# For each image, for each threshold, we assess distance from the "gold standard" ordering based on task/contrast
+image_ids = unique(results[["pdp"]]$UID)
+labels = c("intersect.pearson","union.pearson","brain.mask.pearson","intersect.spearman","union.spearman","brain.mask.spearman")
 
-for (abs_v in abs_values){
-  df = c()
-  for (thresh in thresholds){  
-    # For each *gsr* and each masking strategy *pd*,*pi*,and *bm*
-    for (g in 1:nrow(pearsons_gs)){
-      
-      gs = make_gold_standard_ranking(image_id,image_ids)
-      
-      #TODO here:
-      # which to use, tau or spearman?
-      # For each gs ordering, sort data based on that
-      # then calculate tau or rho
-      # Save in different dataframes
-      
-      rowname = rownames(pearsons_gs)[g]
-      gsr = seq(1,ncol(pearsons_gs))
-      # Names of gsr correspond with the image id associated with the ranking
-      names(gsr) = c(rowname,gsub("X","",(names(sort(abs(pearsons_gs[g,]),decreasing=TRUE)))))
-      # For each of pdr,pir,bmr, we get order based on the names in gsr
-      pdr = get_similar(pearsons_pd,rowname,thresh,abs_v)
-      pdr = gsr[pdr]      
-      pir = get_similar(pearsons_pi,rowname,thresh,abs_v)
-      pir = gsr[pir]
-      bmr = get_similar(pearsons_bm,rowname,thresh,abs_v)
-      bmr = gsr[bmr]
-      # PAIRWISE DELETION
-      s = get_sets(gsr,pdr)
-      rho = cor.test(s$set1,s$set2, method = c("spearman"), conf.level = 0.95)
-      tau = cor.test(s$set1,s$set2, method = c("kendall"), conf.level = 0.95)
-      row = cbind(rowname,"PD",rho$p.value,rho$estimate,tau$p.value,tau$estimate,thresh)
-      df = rbind(df,row)
-      # PAIRWISE INCLUSION
-      s = get_sets(gsr,pir)
-      rho = cor.test(s$set1,s$set2, method = c("spearman"), conf.level = 0.95)
-      tau = cor.test(s$set1,s$set2, method = c("kendall"), conf.level = 0.95)
-      row = cbind(rowname,"PI",rho$p.value,rho$estimate,tau$p.value,tau$estimate,thresh)
-      df = rbind(df,row)
-      # BRAIN MASK
-      s = get_sets(gsr,bmr)
-      rho = cor.test(s$set1,s$set2, method = c("spearman"), conf.level = 0.95)
-      tau = cor.test(s$set1,s$set2, method = c("kendall"), conf.level = 0.95)
-      row = cbind(rowname,"BM",rho$p.value,rho$estimate,tau$p.value,tau$estimate,thresh)
-      df = rbind(df,row)
+acc_df = c()
+for (i in 1:length(image_ids)){
+  cat("Processing",i,"of",length(image_ids),"\n","Threshold:","\n")
+  image_id = image_ids[i]
+  gs = make_gold_standard_ranking(image_id,image_ids)
+  other_ids = image_ids[-which(image_ids==image_id)]
+  # For each of pearson, spearman [union, intersect, brainmask] get scores for image_id
+  df = get_single_result(image_id,results,direction=direction)   
+  for (thresh in thresholds){
+    cat(thresh,",",sep="")
+    for (label in labels){
+      # Get ordering based on actual scores
+      sorted = filter_single_result(df,thresh,label,other_ids,image_id)
+      acc = calculate_accuracy(gs,sorted)
+      contrast = rbind(c(image_id,thresh,label,acc$CONTRAST[[1]],1),
+                       c(image_id,thresh,label,acc$CONTRAST[[2]],2))
+      task = rbind(c(image_id,thresh,label,acc$TASK[[1]],1),
+                   c(image_id,thresh,label,acc$TASK[[2]],2))
+      group = rbind(c(image_id,thresh,label,acc$GROUP[[1]],1),
+                    c(image_id,thresh,label,acc$GROUP[[2]],2))
+      task_contrast = rbind(c(image_id,thresh,label,acc$TASK_CONTRAST[[1]],1),
+                            c(image_id,thresh,label,acc$TASK_CONTRAST[[2]],2),
+                            c(image_id,thresh,label,acc$TASK_CONTRAST[[3]],3))      
+      acc_df = rbind(acc_df,contrast,task,task_contrast)
     }
   }
-  colnames(df) = c("imageid","strategy","rho_pvalue","rho","tau_pvalue","tau","thresh")
-  rownames(df) = seq(1,nrow(df))
-  df = as.data.frame(df,stringsAsFactors=FALSE)
-  df$rho_pvalue = as.numeric(df$rho_pvalue)
-  df$tau_pvalue = as.numeric(df$tau_pvalue)
-  all_df[[abs_v]] = df
-}
-save(all_df,file=paste(datadir,"/all_taurho_scores_uncorrected.Rda",sep=""))
+}    
 
-# This function returns FDR corrected qvalues (c) for each threshold
-counts = c()
-for (abs_v in abs_values){
-  df = all_df[[abs_v]]
-  for (thresh in thresholds){
-    subset = df[which(df$thresh==thresh),]
-    c = plot_pval(subset,thresh,savedir,0.05)
-    c = cbind(c,rep(abs_v,nrow(c)),rep(thresh,nrow(c)))
-    counts = rbind(counts,c)
-  }
-}
-colnames(counts)[5:6] = c("abs_value","thresh")
-save(counts,file=paste(datadir,"/counts_taurho_fdr0.05.Rda",sep=""))
-write.table(counts,file=paste(datadir,"/counts_taurho_fdr05.tsv",sep=""),sep="\t",row.names=FALSE)
-
-# Which one are rho vs tau?
-rho = counts[grep("RHO",counts$STRATEGY),]
-tau = counts[grep("TAU",counts$STRATEGY),]
-rho = rho[order(-rho$perc_diff),]
-tau = tau[order(-tau$perc_diff),]
-
-# Save to table
-write.table(rho,file=paste(datadir,"/rho_table_all_fdr05.tsv",sep=""),sep="\t",row.names=FALSE)
-write.table(tau,file=paste(datadir,"/tau_table_all_fdr05.tsv",sep=""),sep="\t",row.names=FALSE)
-
-# Show the tables
-rho
-tau
-
-# Finally plot the percentages
-subset = tau[tau$abs_value=="False",]
-subset$STRATEGY[subset$STRATEGY == "BM_TAU"] = "BM"
-subset$STRATEGY[subset$STRATEGY == "PD_TAU"] = "PD"
-subset$STRATEGY[subset$STRATEGY == "PI_TAU"] = "PI"
-ggplot(subset, aes(x=thresh,y=perc_diff,color=STRATEGY)) +
-   geom_line(size=2,alpha=0.25,stat="identity") +
-   ylab("% significantly different rankings") + 
-   xlab("threshold +/-") + 
-  facet_wrap(~STRATEGY) +
-  theme(text = element_text(size=20))
-ggsave(paste(savedir,"/tau_sigdiff_posonly_fdr05.png",sep=""))
-
-# Finally, we want to see how the mask sizes change
-# First we will look at the means
-# DID NOT USE THIS IN PAPER ----------------
-ncomps_all = c()
-for (abs_v in abs_values){
-  ncomps_means = c()
-  for (thresh in thresholds){
-    pdmean = mean(get_number_comparisons(pd_sizes,thresh,abs_v))
-    pimean = mean(get_number_comparisons(pi_sizes,thresh,abs_v))
-    bmmean = mean(get_number_comparisons(bm_sizes,thresh,abs_v))
-    tmp = cbind(pdmean,pimean,bmmean)
-    ncomps_means = rbind(ncomps_means,tmp)
-  }
-  rownames(ncomps_means) = thresholds
-  colnames(ncomps_means) = c("pairwise.deletion","pairwise.inclusion","brain.mask")
-  ncomps_all[[abs_v]] = ncomps_means
-}
-save(ncomps_all,file=paste(datadir,"/mean_sizes_comparison_counts.Rda",sep=""))
-# END DID NOT USE THIS IN PAPER ----------------
-
-# Now we will look at the distributions of values themselves!
-ncomps_all = c()
-for (abs_v in abs_values){
-  ncomps = c()
-  cat("ABSOLUTE VALUE",abs_v,"\n")
-  for (thresh in thresholds){
-    cat("  THRESH",thresh,"\n")
-    tmp = c()
-    pd = unlist(get_masksize_comparisons(pd_sizes,thresh,abs_v))
-    pi = unlist(get_masksize_comparisons(pi_sizes,thresh,abs_v))
-    bm = unlist(get_masksize_comparisons(bm_sizes,thresh,abs_v))
-    tmp[["pairwise.deletion"]] = pd
-    tmp[["pairwise.inclusion"]] = pi
-    tmp[["brain.mask"]] = bm
-    ncomps[[as.character(thresh)]] = tmp
-  }
-  ncomps_all[[abs_v]] = ncomps
-}
-save(ncomps_all,file=paste(datadir,"/dist_masksizes_all.Rda",sep=""))
-
-# Plot the number of comparisons - first put into a big data frame
-df = c()
-for (abs_v in abs_values){
-  subset = ncomps_all[[abs_v]] 
-  ts = names(subset)
-  for (t in ts){
-    tsubset = subset[[t]]
-    tmp1 = cbind(tsubset$pairwise.deletion,rep(t,length(tsubset$pairwise.deletion)),rep(abs_v,length(tsubset$pairwise.deletion)),rep("PD",length(tsubset$pairwise.deletion)))
-    tmp2 = cbind(tsubset$pairwise.inclusion,rep(t,length(tsubset$pairwise.inclusion)),rep(abs_v,length(tsubset$pairwise.inclusion)),rep("PI",length(tsubset$pairwise.inclusion)))
-    tmp3 = cbind(tsubset$brain.mask,rep(t,length(tsubset$brain.mask)),rep(abs_v,length(tsubset$brain.mask)),rep("BM",length(tsubset$brain.mask)))
-    tmp = rbind(tmp1,tmp2,tmp3)
-    df = rbind(df,tmp)
-  }  
-}
-colnames(df) = c("mask.size","thresh","pos_only","strategy")
-df = as.data.frame(df)
-df$mask.size = as.numeric(as.character(df$mask.size))
-save(df,file=paste(datadir,"/dist_masksizes_flat_df.Rda",sep=""))
-
-subset = df[df$pos_only=="True",-which(colnames(df)=="pos_only")]
-tmp = ddply(subset, c("thresh","strategy"), summarise, mask.size.mean=mean(mask.size),mask.size.min = min(mask.size), mask.size.max=max(mask.size))
-
-# Here we are looking at the mean pearsons (+/- one standard deviation)
-ggplot(tmp, aes(x=thresh, y=mask.size.mean, ymin=mask.size.min, ymax=mask.size.max,colour=strategy,fill=strategy,group=strategy)) + 
-  geom_line(size=1) + 
-  title("Mask Sizes at Different Thresholds +") +
-  geom_ribbon(alpha=0.25,linetype=0) +
-  xlab("Threshold +") +
-  ylab("Mask Size (voxels)") 
-ggsave(paste(savedir,"/mask_sizes_atthresh_posonly.png",sep=""))
-
-# Now plot percentage of voxels
-total_size = max(df$mask.size)
-subset$mask.size = subset$mask.size / total_size
-tmp = ddply(subset, c("thresh","strategy"), summarise, mask.size.mean=mean(mask.size),mask.size.min = min(mask.size), mask.size.max=max(mask.size))
-ggplot(tmp, aes(x=thresh, y=mask.size.mean, ymin=mask.size.min, ymax=mask.size.max,colour=strategy,fill=strategy,group=strategy)) + 
-  geom_line(size=1) + 
-  title("Mask Sizes at Different Thresholds +/-") +
-  geom_ribbon(alpha=0.25,linetype=0) +
-  xlab("Threshold +") +
-  ylab("% Non-missing") 
-ggsave(paste(savedir,"/mask_percsizes_atthresh_posneg.png",sep=""))
+# NEXT - plot/visualize accuracies, 
+#      - make diagram to explain algorithm, 
+#       - part II: machine learning context!

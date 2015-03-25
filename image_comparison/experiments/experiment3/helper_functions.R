@@ -41,7 +41,7 @@ get_keepers = function() {
 }
 
 # A function to return a flat data frame for a single image against all others, for all thresholds
-get_single_result = function(image_id,results,direction="posneg") {
+get_single_result = function(image_id,results,direction="posneg",eliminate_imageid=TRUE) {
   
   pdp = results[["pdp"]][which(results[["pdp"]][,"UID"]==image_id),-which(colnames(results[["pdp"]])=="UID")]
   pip = results[["pip"]][which(results[["pip"]][,"UID"]==image_id),-which(colnames(results[["pip"]])=="UID")]
@@ -56,13 +56,15 @@ get_single_result = function(image_id,results,direction="posneg") {
   pds = pds[which(pds$direction==direction),-which(colnames(pds)=="direction")]
   pis = pis[which(pis$direction==direction),-which(colnames(pis)=="direction")]
   bms = bms[which(bms$direction==direction),-which(colnames(bms)=="direction")]
-  # The column corresponding to the image id will be all 1 eliminate
-  pdp = pdp[,-which(colnames(pdp)==image_id)]
-  pip = pip[,-which(colnames(pip)==image_id)]
-  bmp = bmp[,-which(colnames(bmp)==image_id)]
-  pds = pds[,-which(colnames(pds)==image_id)]
-  pis = pis[,-which(colnames(pis)==image_id)]
-  bms = bms[,-which(colnames(bms)==image_id)]
+  # In a real comparison task, we would not compare an image to itself
+  if (eliminate_imageid==TRUE){
+    pdp = pdp[,-which(colnames(pdp)==image_id)]
+    pip = pip[,-which(colnames(pip)==image_id)]
+    bmp = bmp[,-which(colnames(bmp)==image_id)]
+    pds = pds[,-which(colnames(pds)==image_id)]
+    pis = pis[,-which(colnames(pis)==image_id)]
+    bms = bms[,-which(colnames(bms)==image_id)]    
+  }
   # Add on strategy
   pdp = cbind(pdp,rep("intersect.pearson",nrow(pdp))); colnames(pdp)[ncol(pdp)] = "strategy"
   pip = cbind(pip,rep("union.pearson",nrow(pip))); colnames(pip)[ncol(pip)] = "strategy"
@@ -76,6 +78,23 @@ get_single_result = function(image_id,results,direction="posneg") {
   all_flat$strategy = as.character(all_flat$strategy)
   all_flat$thresh = as.numeric(all_flat$thresh)
   return(all_flat)
+}
+
+# A function to filter a single result to a particular strategy and threshold, and
+# return list of images in a particular order
+filter_single_result = function(df,thresh,label,other_ids,image_id){
+  df_vec = df[df$strategy==label,]
+  df_vec = df_vec[df_vec$thresh==thresh,]
+  df_vec$variable = as.character(df_vec$variable)
+  df_vec = df_vec[which(df_vec$variable %in% other_ids),]
+  # If comparison was not possible, don't include in list
+  idx = match(other_ids,df_vec$variable)
+  df_vec = df_vec[idx,]
+  df_vec = as.numeric(df_vec$value)  
+  names(df_vec) = other_ids
+  # Here we sort, absolute value == True, decreasing=TRUE
+  df_vec = sort(abs(df_vec),decreasing=TRUE)
+  return(df_vec)
 }
 
 
@@ -251,6 +270,82 @@ make_gold_standard_ranking = function(image_id,image_ids){
   return(gs)  
 }
 
+calculate_accuracy = function(gs_filter,sorted){
+  # For each standard, we need to obtain the number of 1,2,3, etc.
+  res = list()
+  for (c in 2:ncol(gs_filter)){
+    condition = colnames(gs_filter)[c]
+    # Subset the gold standard to comparisons that we have
+    gs_filter = gs_filter[which(gs_filter$UID %in% names(sorted)),]
+    # Here are the ideal (correct) labels
+    ideal = gs_filter[,c]
+    names(ideal) = gs_filter$UID  
+    # Here are the predicted labels
+    predicted = sort(ideal)
+    names(predicted) = names(sorted)
+    # Now order both by the ideal
+    ideal = ideal[match(names(predicted),names(ideal))]
+    # We will return an accuracy for each label
+    groups = sort(as.numeric(unique(ideal)))
+    #groups = groups[1:(length(groups)-1)]
+    # We don't actually care about the last label
+    accuracies = list()   
+    for (group in groups){
+      ideal_subset = ideal[ideal==group]
+      predicted_subset = predicted[ideal==group]
+      # For each correct prediction, we give 1/N to accuracy
+      accuracy_each =  1 / length(ideal_subset)
+      accuracy = length(which(ideal_subset==predicted_subset)) * accuracy_each
+      # For the wrong predictions, we need to know how far off we were
+      incorrect = names(which(ideal_subset!=predicted_subset))
+      # We will measure from the last position of the label
+      sorted_ideal = sort(ideal)
+      group_chunk = which(sorted_ideal==group)
+      last_member = as.numeric(group_chunk[length(group_chunk)])
+      # Now we get the actual indices for the ones we got wrong
+      actual_indices = which(names(predicted)%in%incorrect)
+      # Calculate the errors, the number of places we were off for each group member
+      errors = abs(actual_indices - last_member)
+      # Each of the incorrect will get some portion of the remaining accuracy, depending on the distance away from the group chunk
+      # A distance == the farthest away possible would get an weight of 0, meaning no additional accuracy
+      # We give some percentage of accuracy for each deviation from that position
+      maximum_distance_away = (length(predicted) - length(which(predicted==group)))
+      # We will calculate weights for the distance as a percentage of the length of the entire vector minus the group
+      additional_error = errors / maximum_distance_away
+      additional_accuracy_weights = 1-additional_error
+      additional_accuracy = additional_accuracy_weights * accuracy_each
+      accuracy = accuracy + sum(additional_accuracy)
+      accuracies[group] = accuracy
+    }
+    res[[condition]] = accuracies
+  }
+  return(res)
+}
+
+# OLD from when using TAU
+# Calculate weigted accuracy based on distance from end of list to actual places
+# An image of the label placed at the end of list
+# end_of_list = length(predicted)
+    
+# Calculate how well we did
+#pred = prediction( as.numeric(predicted), as.numeric(ideal) )
+#perf = performance( pred, "sens", "spec", "acc","err","auc")      
+    
+# Sort the gold standard based on order
+#gs_ordered = gs_filter[which(gs_filter$UID %in% names(sorted)),]
+#gs_ordered = gs_ordered[with(gs_ordered, order(gs_ordered[,c])),]
+# Ideal labels (eg 1 1 1 2 2 2...) 
+#ideal = gs_ordered[which(names(sorted) %in% gs_ordered$UID),c]
+#names(ideal) = names(sorted)
+# Now match the names in the gold standard ordered to names in actual ordering
+#idx = match(names(ideal),gs_ordered$UID)
+#actual = gs_ordered[idx,c]
+# We have to use tau because there are many ties
+#tau = cor.test(actual,as.numeric(ideal), method = c("kendall"), conf.level = 0.95)
+#res[[condition]] = list(p.value=tau$p.value,estimate=tau$estimate)
+#} 
+#return(res)
+#}
 
 # STATISTICS FUNCTIONS ####################################################
 
@@ -272,197 +367,4 @@ wilcox_test = function(df,thresh,gs,label){
   df_vec = as.numeric(df_vec$value[df_vec$thresh==thresh])  
   wt_vec = wilcox.test(gs_vec, y = df_vec,alternative="two.sided",conf.int=TRUE,conf.level=0.95)
   return(wt_vec)
-}
-
-
-
-
-
-
-
-
-
-
-# Write a function to format the data frames
-format_df = function(df){
-  colnames(df)[1] = "ID"
-  colnames(df) = gsub("X","",colnames(df))
-  rownames(df) = df[,1]
-  df = df[,-1]
-  return(df)
-}
-
-
-
-# Function to return sorted ordering for a particular threshold and direction
-get_similar = function(df,id,thresh,pos_only="False"){
-  subset = df[which(df$X==id),]
-  subset = subset[which(subset$pos_only==pos_only),-which(colnames(subset)%in%c("X","pos_only"))]  
-  subset = subset[which(subset$thresh==thresh),-which(colnames(subset)%in%c("thresh"))]  
-  if (length(which(is.na(subset)))!=0) {
-    subset = subset[-which(is.na(subset))]
-  }
-  labels = gsub("X","",names(subset))
-  subset = as.numeric(subset)
-  names(subset) = labels
-  ordered = names(sort(abs(subset),decreasing=TRUE))
-  return(ordered)
-}
-
-# Function to return intersection of two sets, in the case a high
-# threshold makes comparison between two images impossible, we need
-# to remove that comparison from the gold standard list
-get_sets = function(set1,set2){
-  tonix = setdiff(names(set1),names(set2)) 
-  if (length(tonix)!=0){
-    set1=as.numeric(gsr[-which(names(gsr)%in%tonix)])
-    set2=as.numeric(pdr[-which(names(pdr)%in%tonix)])    
-  }
-  return(list(set1=set1,set2=set2))
-}
-
-# Function to plot the change for a single ordering at every threshold
-get_similar_single_data = function(df,gs,id,pos_only="False"){
-  tmp = as.numeric(gs) # gets rid of names
-  thresholds = unique(df$thresh)
-  for (thresh in thresholds){
-    subset = get_similar(df,id,thresh,pos_only)
-    tmp = rbind(tmp,gsr[subset])
-  }
-  rownames(tmp) = c(0.0,thresholds)
-  return(tmp)  
-}  
-
-# Plot the image!
-plot_single_similar = function(df,gs,id,pos_only="False"){
-  data = get_similar_single_data(df,gs,id,pos_only=pos_only)
-  #TODO: for now we save static image, but later need to export data to some file... json?
-  pheatmap(data)  
-}
-
-# This function will return the number of comparisons done (eg, not NA values)
-get_number_comparisons = function(df,thresh,pos_only="False"){
-  image_ids = unique(df$X)
-  nc = c()
-  for (id in image_ids){
-    subset = df[which(df$X==id),]
-    subset = subset[which(subset$thresh==thresh),-which(colnames(subset)=="thresh")]
-    subset = subset[which(subset$pos_only==pos_only),-which(colnames(subset)=="pos_only")]  
-    nc = c(nc,length(which(!is.na(subset)))-1) # subtract 1 for ID
-  }
-  return(nc)
-}
-
-# This function will return the mask sizes
-get_masksize_comparisons = function(df,thresh,pos_only="False"){
-  image_ids = unique(df$X)
-  nc = c()
-  for (id in image_ids){
-    subset = df[which(df$X==id),]
-    subset = subset[which(subset$thresh==thresh),-which(colnames(subset)=="thresh")]
-    subset = subset[which(subset$pos_only==pos_only),-which(colnames(subset)=="pos_only")]  
-    subset = subset[!is.na(subset)]
-    subset = subset[-1]
-    if (!length(subset)==0){
-      nc[[id]] = subset      
-    }
-  }
-  return(nc)
-}
-
-
-plot_pval = function(df,thresh,savedir,fdr){
-  
-  # A value exactly == 0 actually means no significant difference
-  df$rho_pvalue[df$rho_pvalue==0] = 1
-  df$tau_pvalue[df$tau_pvalue==0] = 1
-  
-  # Rho
-  df[which(df$strategy=="BM"),3] = p.adjust(as.numeric(as.character(df[which(df$strategy=="BM"),3]),method="fdr"))
-  df[which(df$strategy=="PI"),3] = p.adjust(as.numeric(as.character(df[which(df$strategy=="PI"),3]),method="fdr"))
-  df[which(df$strategy=="PD"),3] = p.adjust(as.numeric(as.character(df[which(df$strategy=="PD"),3]),method="fdr"))
-  
-  rho = data.frame(variable=df$strategy,value=as.numeric(df$rho_pvalue),stringsAsFactors=FALSE)
-  rho$value = as.numeric(rho$value)
-  #ggplot(rho,aes(x=variable, y=value,fill=variable)) + geom_boxplot(alpha=0.25) + title(paste("Significantly different orderings based on masking, threshold",thresh,sep="")) + ylab("Q-Value") + xlab("RHO: fdr q-value")
-  #ggsave(paste(savedir,"/rho_",thresh,".png",sep=""))
-  
-  # Tau
-  df[which(df$strategy=="BM"),5] = p.adjust(as.numeric(as.character(df[which(df$strategy=="BM"),5]),method="fdr"))
-  df[which(df$strategy=="PI"),5] = p.adjust(as.numeric(as.character(df[which(df$strategy=="PI"),5]),method="fdr"))
-  df[which(df$strategy=="PD"),5] = p.adjust(as.numeric(as.character(df[which(df$strategy=="PD"),5]),method="fdr"))
-  
-  tau = data.frame(variable=df$strategy,value=as.numeric(df$tau_pvalue),stringsAsFactors=FALSE)
-  tau$value = as.numeric(tau$value)
-  #ggplot(tau,aes(x=variable, y=value, fill=variable)) + geom_boxplot(alpha=0.25) + title(paste("Significantly different orderings based on masking, threshold",thresh,sep="")) + ylab("Density") + xlab("TAU: fdr q-value")
-  #ggsave(paste(savedir,"/tau_",thresh,".png",sep=""))
-  
-  generate_count_table = function(dat,label,fdr_thresh){
-    tabley = table(dat$value[which(dat$variable==label)] <= fdr_thresh)
-    if (!("TRUE" %in% names(tabley))) {
-      tabley["TRUE"] = 0
-    }
-    if (!("FALSE" %in% names(tabley))) {
-      tabley["FALSE"] = 0
-    }    
-    return(tabley[c("TRUE","FALSE")])
-  }
-  
-  counts = rbind(generate_count_table(rho,"PD",fdr),
-                 generate_count_table(tau,"PD",fdr),
-                 generate_count_table(rho,"PI",fdr),
-                 generate_count_table(tau,"PI",fdr),
-                 generate_count_table(rho,"BM",fdr),
-                 generate_count_table(tau,"BM",fdr))
-                 
-  counts = cbind(c("PD_RHO","PD_TAU","PI_RHO","PI_TAU","BM_RHO","BM_TAU"),counts)
-  counts = as.data.frame(counts,stringsAsFactors=FALSE)
-  colnames(counts) = c("STRATEGY","SIG_DIFF","NOT_SIG")
-  counts[,"perc_diff"] = as.numeric(counts$SIG_DIFF) / (as.numeric(counts$SIG_DIFF) + as.numeric(counts$NOT_SIG))
-  return(counts)
-}
-
-plot_pval_region = function(df,n_roi,savedir,fdr){
-  
-  # A value exactly == 0 actually means no significant difference
-  df$tau_pvalue[df$tau_pvalue==0] = 1
-  
-  # Tau
-  df[which(df$strategy=="BM"),] = p.adjust(as.numeric(as.character(df[which(df$strategy=="BM"),3]),method="fdr"))
-  df[which(df$strategy=="PI"),3] = p.adjust(as.numeric(as.character(df[which(df$strategy=="PI"),3]),method="fdr"))
-  df[which(df$strategy=="PD"),3] = p.adjust(as.numeric(as.character(df[which(df$strategy=="PD"),3]),method="fdr"))
-  
-  tau = data.frame(variable=df$strategy,value=as.numeric(df$tau_pvalue),stringsAsFactors=FALSE)
-  tau$value = as.numeric(tau$value)
-  
-  generate_count_table = function(dat,label,fdr_thresh){
-    tabley = table(dat$value[which(dat$variable==label)] <= fdr_thresh)
-    if (!("TRUE" %in% names(tabley))) {
-      tabley["TRUE"] = 0
-    }
-    if (!("FALSE" %in% names(tabley))) {
-      tabley["FALSE"] = 0
-    }    
-    return(tabley[c("TRUE","FALSE")])
-  }
-  
-  counts = rbind(generate_count_table(tau,"PD",fdr),
-                 generate_count_table(tau,"PI",fdr),
-                 generate_count_table(tau,"BM",fdr))
-  
-  counts = cbind(c("PD_TAU","PI_TAU","BM_TAU"),counts)
-  counts = as.data.frame(counts,stringsAsFactors=FALSE)
-  colnames(counts) = c("STRATEGY","SIG_DIFF","NOT_SIG")
-  counts[,"perc_diff"] = as.numeric(counts$SIG_DIFF) / (as.numeric(counts$SIG_DIFF) + as.numeric(counts$NOT_SIG))
-  return(counts)
-}
-
-
-# Write a function to format the data frames
-format_df = function(df){
-  colnames(df)[1] = "ID"
-  colnames(df) = gsub("X","",colnames(df))
-  rownames(df) = df[,1]
-  df = df[,-1]
-  return(df)
 }
