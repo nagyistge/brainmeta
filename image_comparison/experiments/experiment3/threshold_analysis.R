@@ -277,7 +277,7 @@ tmp[which(tmp$fdr<0.01),]
 # ? Quantify: How often are rankings significantly different? ##############################################################################
 
 # Specify direction
-direction = "posneg"
+direction = "pos"
 
 # For each image, for each threshold, we assess distance from the "gold standard" ordering based on task/contrast
 image_ids = unique(results[["pdp"]]$UID)
@@ -312,6 +312,7 @@ for (i in 1:length(image_ids)){
 }    
 colnames(acc_df) = c("image_id","thresh","strategy","accuracy","group","standard")
 save(acc_df,file=paste(datadir,"/accuracy_df_",direction,".Rda",sep=""))
+write.table(acc_df,file=paste(datadir,"/accuracy_df_",direction,".tsv",sep=""),sep="\t")
 acc_df = as.data.frame(acc_df,stringsAsFactors=FALSE)
 
 # TODO: Need to plot this!

@@ -141,7 +141,7 @@ for filename2 in filenames:
     # PAIRWISE INCLUSION (union)
     # Calculate correlation if there is overlap
     if len(np.unique(pimask.get_data())) == 2:
-      datapi = apply_mask([mr1,mrthresh],pdmask) 
+      datapi = apply_mask([mr1,mrthresh],pimask) 
       
       # We need at least 3 values
       if np.shape(datapi)[1] > 2: 
