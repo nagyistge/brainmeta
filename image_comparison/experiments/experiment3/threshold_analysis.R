@@ -297,20 +297,32 @@ for (i in 1:length(image_ids)){
       # Get ordering based on actual scores
       sorted = filter_single_result(df,thresh,label,other_ids,image_id)
       acc = calculate_accuracy(gs,sorted)
-      contrast = rbind(c(image_id,thresh,label,acc$CONTRAST[[1]],1),
-                       c(image_id,thresh,label,acc$CONTRAST[[2]],2))
-      task = rbind(c(image_id,thresh,label,acc$TASK[[1]],1),
-                   c(image_id,thresh,label,acc$TASK[[2]],2))
-      group = rbind(c(image_id,thresh,label,acc$GROUP[[1]],1),
-                    c(image_id,thresh,label,acc$GROUP[[2]],2))
-      task_contrast = rbind(c(image_id,thresh,label,acc$TASK_CONTRAST[[1]],1),
-                            c(image_id,thresh,label,acc$TASK_CONTRAST[[2]],2),
-                            c(image_id,thresh,label,acc$TASK_CONTRAST[[3]],3))      
-      acc_df = rbind(acc_df,contrast,task,task_contrast)
+      contrast = rbind(c(image_id,thresh,label,acc$CONTRAST[[1]],1,"contrast"),
+                       c(image_id,thresh,label,acc$CONTRAST[[2]],2,"contrast"))
+      task = rbind(c(image_id,thresh,label,acc$TASK[[1]],1,"task"),
+                   c(image_id,thresh,label,acc$TASK[[2]],2,"task"))
+      group = rbind(c(image_id,thresh,label,acc$GROUP[[1]],1,"group"),
+                    c(image_id,thresh,label,acc$GROUP[[2]],2,"group"))
+      task_contrast = rbind(c(image_id,thresh,label,acc$TASK_CONTRAST[[1]],1,"task_contrast"),
+                            c(image_id,thresh,label,acc$TASK_CONTRAST[[2]],2,"task_contrast"),
+                            c(image_id,thresh,label,acc$TASK_CONTRAST[[3]],3,"task_contrast"))      
+      acc_df = rbind(acc_df,contrast,task,task_contrast,group)
     }
   }
 }    
+colnames(acc_df) = c("image_id","thresh","strategy","accuracy","group","standard")
+save(acc_df,file=paste(datadir,"/accuracy_df_",direction,".Rda",sep=""))
+acc_df = as.data.frame(acc_df,stringsAsFactors=FALSE)
+
+# TODO: Need to plot this!
 
 # NEXT - plot/visualize accuracies, 
-#      - make diagram to explain algorithm, 
 #       - part II: machine learning context!
+
+# For each pairwise group, A and B
+#  Subset data to groups A and B, remove GRP# from labels
+#   For each handling missing data strategy
+#    For each threshold 0:4
+#      Define gold standard labels as labels from A
+#      For every map in B assign it a label (TASK_CON) corresponding to the most similar in A
+#      Calculate (and save) accuracy
