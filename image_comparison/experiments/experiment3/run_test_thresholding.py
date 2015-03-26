@@ -12,7 +12,7 @@ import pickle
 # Input file with map paths
 basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment3"
 outdirectory = "%s/scores" %(basedir)
-input_file = "%s/doc/hcp_groupmaps.tsv" %(basedir)
+input_file = "%s/doc/hcp_groupmaps_filter.tsv" %(basedir)
 inputs = pandas.read_csv(input_file,sep="\t")
 
 # Our groups will tells us the number of degrees of freedom for each map
@@ -20,11 +20,11 @@ groups = "%s/doc/hcp_10groups460_alltasks.pkl" %(basedir)
 
 # We will run for a set of thresholds
 thresholds = [0.0,0.5,1.0,1.5,1.65,1.7,1.75,1.8,1.85,1.9,1.96,2.0,2.58,3.02,3.5,4.0]
-thresholds = [4.0]
+thresholds = [0.0,0.5,1.0,1.5,1.65,1.7,1.75,1.8,1.85,1.9]
 
 # Take absolute value (include negative values): True
 # Do not take absolute value (include only positive values): False
-absolute_value = False
+absolute_value = True
 if absolute_value == True:
   direction = "posneg"
 else:

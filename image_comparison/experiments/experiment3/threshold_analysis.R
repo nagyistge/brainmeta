@@ -36,7 +36,7 @@ spearman_bm = read.table(input_data_files[4],stringsAsFactors=FALSE)
 
 thresholds = unique(pearsons_pd$thresh)
 
-
+# Part I: Handling Missing Values to Optimize Similarity Search Ranking
 # ? Visualize: How do distributions of scores change? ###################################################################
 
 # NOTE: R can get buggy and not correctly return plots from a function, so this was run manually.
@@ -275,6 +275,17 @@ tmp[which(tmp$fdr<0.01),]
 
 
 # ? Quantify: How often are rankings significantly different? ##############################################################################
+# We will use the Chunk Indifferent Ranking Algorithm, which compares a gold standard ranking against the actual
+# ranking, and assigns accuracy for each group ("chunk") within the ranking (a chunk corresponds to a group of images of the same task, contrast, etc, 
+# A correct prediction is given full credit (an accuracy of 1/N, where N is the number of members of the chunk), and an incorrect
+# prediction is given a weighted accuracy, 1/N * the distance it falls between the best and worst case position. 
+# [A] For group == the first chunk: 
+#  The best case position is 1 position after the last member of the gold standard chunk, and the worst is the end of the list.
+# [B] For group == the last chunk: 
+#  The best case position is the index of the first member of the chunk, and the worst is the first index of the list (1).
+# [C] For group == middle chunk: 
+#  Members with actual positions up the list use algorithm A, above, and members with actual positions down in the list use algorithm B
+
 
 # Specify direction
 direction = "pos"
@@ -285,28 +296,48 @@ labels = c("intersect.pearson","union.pearson","brain.mask.pearson","intersect.s
 
 acc_df = c()
 for (i in 1:length(image_ids)){
-  cat("Processing",i,"of",length(image_ids),"\n","Threshold:","\n")
+  #cat("Processing",i,"of",length(image_ids),"\n","Threshold:","\n")
   image_id = image_ids[i]
-  gs = make_gold_standard_ranking(image_id,image_ids)
   other_ids = image_ids[-which(image_ids==image_id)]
+  gs = make_gold_standard_ranking(image_id,other_ids)
   # For each of pearson, spearman [union, intersect, brainmask] get scores for image_id
   df = get_single_result(image_id,results,direction=direction)   
   for (thresh in thresholds){
-    cat(thresh,",",sep="")
+    #cat(thresh,",",sep="")
     for (label in labels){
       # Get ordering based on actual scores
       sorted = filter_single_result(df,thresh,label,other_ids,image_id)
       acc = calculate_accuracy(gs,sorted)
-      contrast = rbind(c(image_id,thresh,label,acc$CONTRAST[[1]],1,"contrast"),
-                       c(image_id,thresh,label,acc$CONTRAST[[2]],2,"contrast"))
-      task = rbind(c(image_id,thresh,label,acc$TASK[[1]],1,"task"),
-                   c(image_id,thresh,label,acc$TASK[[2]],2,"task"))
-      group = rbind(c(image_id,thresh,label,acc$GROUP[[1]],1,"group"),
+      
+      # For higher thresholds, for smaller groups we may not have an entire group, 
+      # so the accuracy will not be calculatable, and we do not append these
+      # this is only true for threshold of 4 for "pos" data
+      acc_df_single = c()
+      if (!is.null(acc$CONTRAST[[1]]) && !is.null(acc$CONTRAST[[2]])){
+        contrast = rbind(c(image_id,thresh,label,acc$CONTRAST[[1]],1,"contrast"),
+                         c(image_id,thresh,label,acc$CONTRAST[[2]],2,"contrast"))
+        acc_df_single = rbind(acc_df_single,contrast)
+      }
+      if (!is.null(acc$TASK[[1]]) && !is.null(acc$TASK[[2]])){
+        task = rbind(c(image_id,thresh,label,acc$TASK[[1]],1,"task"),
+                     c(image_id,thresh,label,acc$TASK[[2]],2,"task"))
+        acc_df_single = rbind(acc_df_single,task)
+      }
+
+      if (!is.null(acc$GROUP[[1]]) && !is.null(acc$GROUP[[2]])){
+        group = rbind(c(image_id,thresh,label,acc$GROUP[[1]],1,"group"),
                     c(image_id,thresh,label,acc$GROUP[[2]],2,"group"))
-      task_contrast = rbind(c(image_id,thresh,label,acc$TASK_CONTRAST[[1]],1,"task_contrast"),
+        acc_df_single = rbind(acc_df_single,group)
+      }
+
+      if (!is.null(acc$TASK_CONTRAST[[1]]) && !is.null(acc$TASK_CONTRAST[[2]]) &&
+          !is.null(acc$TASK_CONTRAST[[3]]) && !is.null(acc$TASK_CONTRAST[[4]])){
+          task_contrast = rbind(c(image_id,thresh,label,acc$TASK_CONTRAST[[1]],1,"task_contrast"),
                             c(image_id,thresh,label,acc$TASK_CONTRAST[[2]],2,"task_contrast"),
                             c(image_id,thresh,label,acc$TASK_CONTRAST[[3]],3,"task_contrast"))      
-      acc_df = rbind(acc_df,contrast,task,task_contrast,group)
+          acc_df_single = rbind(acc_df_single,task_contrast)
+      }
+      acc_df = rbind(acc_df,acc_df_single)
     }
   }
 }    
@@ -315,10 +346,50 @@ save(acc_df,file=paste(datadir,"/accuracy_df_",direction,".Rda",sep=""))
 write.table(acc_df,file=paste(datadir,"/accuracy_df_",direction,".tsv",sep=""),sep="\t")
 acc_df = as.data.frame(acc_df,stringsAsFactors=FALSE)
 
-# TODO: Need to plot this!
+# ? Visualize: How often are rankings significantly different? ##############################################################################
+# We don't care about group 2 for task, contrast or group
+subset = acc_df
+contrast = subset[subset$standard=="contrast",]
+contrast = contrast[which(contrast$group==1),]
+task = subset[subset$standard=="task",]
+task = task[which(task$group==1),]
+task_contrast = subset[subset$standard=="task_contrast",]
+# For task_contrast, calculate weighted accuracy as 2/3,1/3
+task_contrast_grp1 = task_contrast[which(task_contrast$group==1),]
+task_contrast_grp2 = task_contrast[which(task_contrast$group==2),]
+tc_accuracy = (2/3)*as.numeric(task_contrast_grp1$accuracy) + (1/3)*as.numeric(task_contrast_grp2$accuracy)
+task_contrast = task_contrast_grp1
+task_contrast$accuracy = tc_accuracy
+group = subset[subset$standard=="group",]
+group = group[which(group$group==1),]
+# Not including group - accuracy is essentially 0
+subset = rbind(contrast,task,task_contrast)
+subset$accuracy = as.numeric(subset$accuracy)
+subset$thresh = as.numeric(subset$thresh)
 
-# NEXT - plot/visualize accuracies, 
-#       - part II: machine learning context!
+subset_summary = ddply(subset, c("strategy","thresh","standard"), summarise, mscore = mean(accuracy), up=get_ci(accuracy,"upper"), down=get_ci(accuracy,"lower"))
+ggplot(subset_summary, aes(x=thresh,y=mscore,ymax=up,ymin=down, fill=strategy,colour=strategy,standard=standard)) + 
+  geom_line(size=1.5) + 
+  geom_ribbon(alpha=0.15,linetype=0) +
+  xlab("Threshold +/-") +
+  facet_wrap(~standard) +
+  ylab("Accuracy")
+ggsave(paste(savedir,"/chunk_ranking_accuracy",direction,"_withCI.png",sep=""))
+
+group$thresh = as.numeric(group$thresh)
+group$accuracy = as.numeric(group$accuracy)
+group_summary = ddply(group, c("strategy","thresh","standard"), summarise, mscore = mean(accuracy), up=get_ci(accuracy,"upper"), down=get_ci(accuracy,"lower"))
+ggplot(group_summary, aes(x=thresh,y=mscore,ymax=up,ymin=down, fill=strategy,colour=strategy,standard=standard)) + 
+  geom_line(size=1.5) + 
+  geom_ribbon(alpha=0.15,linetype=0) +
+  xlab("Threshold +/-") +
+  facet_wrap(~standard) +
+  ylab("Accuracy")
+ggsave(paste(savedir,"/chunk_ranking_group_accuracy",direction,"_withCI.png",sep=""))
+
+
+# Part II: Image Classification
+unique_groups = c(paste("GRP0",seq(1,9),sep=""),"GRP10")
 
 # For each pairwise group, A and B
 #  Subset data to groups A and B, remove GRP# from labels
@@ -327,3 +398,35 @@ acc_df = as.data.frame(acc_df,stringsAsFactors=FALSE)
 #      Define gold standard labels as labels from A
 #      For every map in B assign it a label (TASK_CON) corresponding to the most similar in A
 #      Calculate (and save) accuracy
+
+# We will keep track of which we have compared, so there are no repeats (eg, group1 vs group2 == group2 vs group1)
+repeat_check = c()
+all_acc = c()
+
+# For each pairwise group, A and B
+for (group1 in unique_groups){
+  for (group2 in unique_groups){
+    if (group1!=group2){
+      #  Subset data to groups A and B, remove group from the labels
+      # We will create a label with sorted names to eliminate repeats
+      label = paste(sort(c(group1,group2)),collapse="vs")
+      if (!(label %in% repeat_check)){
+        acc_scores = get_group_result(group1,group2,results,direction=direction)
+        acc_scores$label = label
+        all_acc = rbind(all_acc,acc_scores)      
+        repeat_check = c(repeat_check,label)
+      }
+    }
+  }  
+}
+
+# Finally, we can calculate a mean accuracy for each threshold, strategy
+acc_summary = ddply(all_acc, c("strategy","thresh"), summarise, mscore = mean(acc), up=get_ci(acc,"upper"), down=get_ci(acc,"lower"))
+ggplot(acc_summary, aes(x=thresh,y=mscore,ymax=up,ymin=down, fill=strategy,colour=strategy)) + 
+  geom_line(size=1.5) + 
+  geom_ribbon(alpha=0.15,linetype=0) +
+  xlab("Threshold +/-") +
+  ylab("Accuracy")
+ggsave(paste(savedir,"/ml_accuracy",direction,"_withCI.png",sep=""))
+
+# Woot!

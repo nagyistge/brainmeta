@@ -1,3 +1,4 @@
+library(pROC)
 library(plyr)
 library(reshape2)
 library(pheatmap)
@@ -95,6 +96,100 @@ filter_single_result = function(df,thresh,label,other_ids,image_id){
   # Here we sort, absolute value == True, decreasing=TRUE
   df_vec = sort(abs(df_vec),decreasing=TRUE)
   return(df_vec)
+}
+
+# Function to get column name with max absolute score for a row [for get_group_result, below]
+get_max_score_column = function(row,column_names,group_name) {
+  names(row) = column_names
+  top_score = sort(abs(row),decreasing=TRUE)[1]
+  return(gsub(paste(group_name,"_",sep=""),"",names(top_score)))
+}
+
+# Function to get accuracy, sensitivity, specificity, for each threshold, strategy for handling missing data
+# df has columns "actual", "prediction","thresh",and "strategy"
+accuracy_metrics = function(df) {
+  unique_thresholds = unique(df$thresh)
+  unique_strategy = unique(df$strategy)
+  # We will return a new data frame with thresh, strategy, accuracy, sensitivity (tpr), specificity(tnr), error, auc
+  metrics = c()
+  for (thresh in unique_thresholds){
+    for (strategy in unique_strategy){
+      subset = df[df$thresh==thresh,]
+      subset = subset[subset$strategy==strategy,]
+      # 1==correct,0==wrong
+      perf = array(0,dim=nrow(subset))
+      perf[which(as.character(subset$actual)==as.character(subset$prediction))]=1                  
+      tp = sum(perf)  
+      fn = length(perf) - tp
+      acc = tp/length(perf)  
+      metrics = rbind(metrics,cbind(thresh,as.character(strategy),tp,fn,acc))
+    }
+  }  
+  metrics = as.data.frame(metrics,stringsAsFactors=FALSE)
+  colnames(metrics)[2] = "strategy"
+  # R, you and your factors are pure evil
+  metrics$thresh = as.numeric(metrics$thresh)
+  metrics$strategy = as.character(metrics$strategy)
+  metrics$tp = as.numeric(metrics$tp)
+  metrics$fn = as.numeric(metrics$fn)
+  metrics$acc = as.numeric(metrics$acc)
+  return(metrics)
+}
+
+# A function to calculate predictions for a TASK_CON from group1 to group2
+get_group_result = function(group1,group2,results,direction="posneg") {
+  
+  # Filter down to comparisons with group1 (UID)
+  pdp = results$pdp[grep(group1,results$pdp$UID),]
+  pip = results$pip[grep(group1,results$pip$UID),]
+  bmp = results$bmp[grep(group1,results$bmp$UID),]
+  pds = results$pds[grep(group1,results$pds$UID),]
+  pis = results$pis[grep(group1,results$pis$UID),]
+  bms = results$bms[grep(group1,results$bms$UID),]
+  
+  # Get rid of direction
+  pdp = pdp[which(pdp$direction==direction),-which(colnames(pdp)=="direction")]
+  pip = pip[which(pip$direction==direction),-which(colnames(pip)=="direction")]
+  bmp = bmp[which(bmp$direction==direction),-which(colnames(bmp)=="direction")]
+  pds = pds[which(pds$direction==direction),-which(colnames(pds)=="direction")]
+  pis = pis[which(pis$direction==direction),-which(colnames(pis)=="direction")]
+  bms = bms[which(bms$direction==direction),-which(colnames(bms)=="direction")]
+
+  # Filter down to comparisons with group2 (column names)
+  pdp = pdp[,c(grep(group2,colnames(pdp)),which(colnames(pdp)%in%c("thresh","UID")))]
+  pip = pip[,c(grep(group2,colnames(pip)),which(colnames(pip)%in%c("thresh","UID")))]
+  bmp = bmp[,c(grep(group2,colnames(bmp)),which(colnames(bmp)%in%c("thresh","UID")))]
+  pds = pds[,c(grep(group2,colnames(pds)),which(colnames(pds)%in%c("thresh","UID")))]
+  pis = pis[,c(grep(group2,colnames(pis)),which(colnames(pis)%in%c("thresh","UID")))]
+  bms = bms[,c(grep(group2,colnames(bms)),which(colnames(bms)%in%c("thresh","UID")))]
+  
+  # Add on strategy
+  pdp = cbind(pdp,rep("intersect.pearson",nrow(pdp))); colnames(pdp)[ncol(pdp)] = "strategy"
+  pip = cbind(pip,rep("union.pearson",nrow(pip))); colnames(pip)[ncol(pip)] = "strategy"
+  bmp = cbind(bmp,rep("brain.mask.pearson",nrow(bmp))); colnames(bmp)[ncol(bmp)] = "strategy"
+  pds = cbind(pds,rep("intersect.spearman",nrow(pds))); colnames(pds)[ncol(pds)] = "strategy"
+  pis = cbind(pis,rep("union.spearman",nrow(pis))); colnames(pis)[ncol(pis)] = "strategy"
+  bms = cbind(bms,rep("brain.mask.spearman",nrow(bms))); colnames(bms)[ncol(bms)] = "strategy"
+   
+  # For eeach row, find column that has max absolute value (the prediction)
+  pdp_pred = as.character(apply(pdp[,-which(colnames(pdp)%in%c("thresh","UID","strategy"))],1,get_max_score_column,colnames(pdp)[-which(colnames(pdp)%in%c("thresh","UID","strategy"))],group2))
+  pip_pred = as.character(apply(pip[,-which(colnames(pip)%in%c("thresh","UID","strategy"))],1,get_max_score_column,colnames(pip)[-which(colnames(pip)%in%c("thresh","UID","strategy"))],group2))
+  bmp_pred = as.character(apply(bmp[,-which(colnames(bmp)%in%c("thresh","UID","strategy"))],1,get_max_score_column,colnames(bmp)[-which(colnames(bmp)%in%c("thresh","UID","strategy"))],group2))
+  pds_pred = as.character(apply(pds[,-which(colnames(pds)%in%c("thresh","UID","strategy"))],1,get_max_score_column,colnames(pds)[-which(colnames(pds)%in%c("thresh","UID","strategy"))],group2))
+  pis_pred = as.character(apply(pis[,-which(colnames(pis)%in%c("thresh","UID","strategy"))],1,get_max_score_column,colnames(pis)[-which(colnames(pis)%in%c("thresh","UID","strategy"))],group2))
+  bms_pred = as.character(apply(bms[,-which(colnames(bms)%in%c("thresh","UID","strategy"))],1,get_max_score_column,colnames(bms)[-which(colnames(bms)%in%c("thresh","UID","strategy"))],group2))
+  
+  # Combine with actual labels, and we will calculate accuracy for each
+  pdp = data.frame(actual=gsub(paste(group1,"_",sep=""),"",pdp$UID),prediction=pdp_pred,thresh=pdp$thresh,strategy=pdp$strategy)
+  pip = data.frame(actual=gsub(paste(group1,"_",sep=""),"",pip$UID),prediction=pip_pred,thresh=pip$thresh,strategy=pip$strategy)
+  bmp = data.frame(actual=gsub(paste(group1,"_",sep=""),"",bmp$UID),prediction=bmp_pred,thresh=bmp$thresh,strategy=bmp$strategy)
+  pds = data.frame(actual=gsub(paste(group1,"_",sep=""),"",pds$UID),prediction=pds_pred,thresh=pds$thresh,strategy=pds$strategy)
+  pis = data.frame(actual=gsub(paste(group1,"_",sep=""),"",pis$UID),prediction=pis_pred,thresh=pis$thresh,strategy=pis$strategy)
+  bms = data.frame(actual=gsub(paste(group1,"_",sep=""),"",bms$UID),prediction=bms_pred,thresh=bms$thresh,strategy=bms$strategy)
+  
+  # Return list of accuracy metrics
+  perf = rbind(accuracy_metrics(pdp),accuracy_metrics(pip),accuracy_metrics(bmp),accuracy_metrics(pds),accuracy_metrics(pis),accuracy_metrics(bms))  
+  return(perf)
 }
 
 
