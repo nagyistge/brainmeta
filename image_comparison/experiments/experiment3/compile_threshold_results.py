@@ -58,20 +58,24 @@ for input_folder in input_folders:
     print "Processing %s" %i
     input_id =  i.replace("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/scores/thresh_%s_%s/" %(thresh,direction),"").replace("_scores_thresh_%s.pkl" %(thresh),"")
     tmp = pickle.load(open(i,"rb"))
-    pearson_pi.loc[input_id,tmp["uid"]] = tmp["mr_vs_thresh_pearson_pi"]
-    pearson_pd.loc[input_id,tmp["uid"]] = tmp["mr_vs_thresh_pearson_pd"]
-    pearson_bm.loc[input_id,tmp["uid"]] = tmp["mr_vs_thresh_pearson_bm"]
-    spearman_pi.loc[input_id,tmp["uid"]] = tmp["mr_vs_thresh_spearman_pi"]
-    spearman_pd.loc[input_id,tmp["uid"]] = tmp["mr_vs_thresh_spearman_pd"]
-    spearman_bm.loc[input_id,tmp["uid"]] = tmp["mr_vs_thresh_spearman_bm"]
+    uids = [x for x in tmp["uid"] if x in column_labels]
+    size_ids = [x for x in tmp["size_ids"] if x in column_labels]
+    uid_index = [tmp["uid"].index(x) for x in uids]
+    size_index = [tmp["size_ids"].index(x) for x in size_ids]
+    pearson_pi.loc[input_id,uids] = [tmp["mr_vs_thresh_pearson_pi"][x] for x in uid_index]
+    pearson_pd.loc[input_id,uids] = [tmp["mr_vs_thresh_pearson_pd"][x] for x in uid_index]
+    pearson_bm.loc[input_id,uids] = [tmp["mr_vs_thresh_pearson_bm"][x] for x in uid_index]
+    spearman_pi.loc[input_id,uids] = [tmp["mr_vs_thresh_spearman_pi"][x] for x in uid_index]
+    spearman_pd.loc[input_id,uids] = [tmp["mr_vs_thresh_spearman_pd"][x] for x in uid_index]
+    spearman_bm.loc[input_id,uids] = [tmp["mr_vs_thresh_spearman_bm"][x] for x in uid_index]
     # Save all mask sizes differences, again will be nan for image vs itself.
-    pd_size.loc[input_id,tmp["size_ids"]] = tmp["sizes"]["pd"].tolist()
-    pi_size.loc[input_id,tmp["size_ids"]] = tmp["sizes"]["pi"].tolist()
-    bm_size.loc[input_id,tmp["size_ids"]] = tmp["sizes"]["bm"].tolist()
+    pd_size.loc[input_id,size_ids] = [tmp["sizes"]["pd"].tolist()[x] for x in size_index]
+    pi_size.loc[input_id,size_ids] = [tmp["sizes"]["pi"].tolist()[x] for x in size_index]
+    bm_size.loc[input_id,size_ids] = [tmp["sizes"]["bm"].tolist()[x] for x in size_index]
     # Nanlog - did we append a nan and why?
-    nanlog_pd_single.loc[input_id,tmp["uid"]] = tmp["nanlog_pd"]
-    nanlog_pi_single.loc[input_id,tmp["uid"]] = tmp["nanlog_pi"]
-    nanlog_bm_single.loc[input_id,tmp["uid"]] = tmp["nanlog_bm"]
+    nanlog_pd_single.loc[input_id,uids] = [tmp["nanlog_pd"][x] for x in uid_index]
+    nanlog_pi_single.loc[input_id,uids] = [tmp["nanlog_pi"][x] for x in uid_index]
+    nanlog_bm_single.loc[input_id,uids] = [tmp["nanlog_bm"][x] for x in uid_index]
   # Add thresholding, directions, mr1 degrees of freedom
   pd_size["thresh"] = thresh; pd_size["direction"] = direction
   pi_size["thresh"] = thresh; pi_size["direction"] = direction
@@ -109,24 +113,24 @@ ppd = pandas.tools.merge.concat(pearsons_pd,axis=0)
 sbm = pandas.tools.merge.concat(spearmans_bm,axis=0)
 spi = pandas.tools.merge.concat(spearmans_pi,axis=0)
 spd = pandas.tools.merge.concat(spearmans_pd,axis=0)
-bmsizes = pandas.tools.merge.concat(bm_sizes,axis=0)
-pdsizes = pandas.tools.merge.concat(pd_sizes,axis=0)
-pisizes = pandas.tools.merge.concat(pi_sizes,axis=0)
+bmsize = pandas.tools.merge.concat(bm_sizes,axis=0)
+pdsize = pandas.tools.merge.concat(pd_sizes,axis=0)
+pisize = pandas.tools.merge.concat(pi_sizes,axis=0)
 nanlogpd = pandas.tools.merge.concat(nanlog_pd,axis=0)
 nanlogpi = pandas.tools.merge.concat(nanlog_pi,axis=0)
 nanlogbm = pandas.tools.merge.concat(nanlog_bm,axis=0)
 
 # Save all data matrices to file
 os.chdir("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/scores/")
-ppd.to_csv("860_pearson_pd.tsv",sep="\t")
-ppi.to_csv("860_pearson_pi.tsv",sep="\t")
-pbm.to_csv("860_pearson_bm.tsv",sep="\t")
-spd.to_csv("860_spearman_pd.tsv",sep="\t")
-spi.to_csv("860_spearman_pi.tsv",sep="\t")
-sbm.to_csv("860_spearman_bm.tsv",sep="\t")
-bmsizes.to_csv("860_bm_sizes.tsv",sep="\t")
-pdsizes.to_csv("860_pd_sizes.tsv",sep="\t")
-pisizes.to_csv("860_pi_sizes.tsv",sep="\t")
-nanlogpd.to_csv("860_nanlog_pd.tsv",sep="\t")
-nanlogpi.to_csv("860_nanlog_pi.tsv",sep="\t")
-nanlogbm.to_csv("860_nanlog_bm.tsv",sep="\t")
+ppd.to_csv("860_pearson_pd_v2.tsv",sep="\t")
+ppi.to_csv("860_pearson_pi_v2.tsv",sep="\t")
+pbm.to_csv("860_pearson_bm_v2.tsv",sep="\t")
+spd.to_csv("860_spearman_pd_v2.tsv",sep="\t")
+spi.to_csv("860_spearman_pi_v2.tsv",sep="\t")
+sbm.to_csv("860_spearman_bm_v2.tsv",sep="\t")
+bmsize.to_csv("860_bm_sizes_v2.tsv",sep="\t")
+pdsize.to_csv("860_pd_sizes_v2.tsv",sep="\t")
+pisize.to_csv("860_pi_sizes_v2.tsv",sep="\t")
+nanlogpd.to_csv("860_nanlog_pd_v2.tsv",sep="\t")
+nanlogpi.to_csv("860_nanlog_pi_v2.tsv",sep="\t")
+nanlogbm.to_csv("860_nanlog_bm_v2.tsv",sep="\t")

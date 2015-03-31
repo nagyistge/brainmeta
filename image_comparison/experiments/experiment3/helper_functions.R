@@ -9,13 +9,21 @@ library(ggplot2)
 
 filter_columns = function(tmp,extra_cols){
   column_names = gsub("GRP[0-9]+_","",colnames(tmp)[1:(ncol(tmp)-extra_cols)])
-  keepers = get_keepers()
+  #keepers = get_keepers()
   # First we are filtering columns
-  filtered = tmp[,which(column_names %in% keepers)]
+  #filtered = tmp[,which(column_names %in% keepers)]
   filtered$direction = tmp$direction
   filtered$thresh = tmp$thresh
   filtered$UID = tmp$X
   return(filtered)
+}
+
+# Function to eliminate particular column name
+remove_columns = function(df,column_names){
+  idx = which(colnames(df)%in%column_names)
+  df = df[,-idx]
+  colnames(df)[1] = "UID"
+  return(df)
 }
 
 # Function to filter data down to non-redundant contrasts
@@ -276,6 +284,7 @@ plot_result = function(res,thresh,direction="posneg",outfile) {
     ylab("Density") + 
     xlab(paste("Threshold",thresh)) + 
     ylim(0,4) +
+    xlim(-1,1) +
     facet_wrap(~variable) +
     theme(legend.position="none")
   
@@ -290,7 +299,7 @@ plot_result = function(res,thresh,direction="posneg",outfile) {
     guides(fill=guide_legend(title=NULL)) +
     scale_x_discrete(breaks=NULL)
   
-  g = arrangeGrob(densityplot, nanplot, ncol=2)
+  g = arrangeGrob(densityplot, ncol=1)
   ggsave(file=outfile,g)    
 }
 

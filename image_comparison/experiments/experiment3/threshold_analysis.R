@@ -2,7 +2,7 @@ library(plyr)
 
 # First, read in all input files
 datadir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/experiment3"
-input_files = list.files(datadir,pattern="*.tsv")
+input_files = list.files(datadir,pattern="*v2.tsv")
 input_data = list.files(datadir,pattern="*spearman*|*pearson*") # data files have extra column, parse differently
 other_files = input_files[-which(input_files %in% input_data)]
 setwd("/home/vanessa/Documents/Dropbox/Code/Python/brainmeta/image_comparison/experiments/experiment3")
@@ -24,17 +24,17 @@ for (input_file in input_data){
 }
 
 # Read in all filtered data
-input_size_files = list.files(datadir,pattern="*sizes_filter.tsv")
-input_data_files = list.files(datadir,pattern="*n_pd_filter.tsv|*n_bm_filter.tsv|*n_pi_filter.tsv")
-input_nanlog_files = list.files(datadir,pattern="*g_pd_filter.tsv|*g_bm_filter.tsv|*g_pi_filter.tsv")
-pearsons_pd = read.table(input_data_files[2],stringsAsFactors=FALSE)
-pearsons_pi = read.table(input_data_files[3],stringsAsFactors=FALSE)
-pearsons_bm = read.table(input_data_files[1],stringsAsFactors=FALSE)
-spearman_pd = read.table(input_data_files[5],stringsAsFactors=FALSE)
-spearman_pi = read.table(input_data_files[6],stringsAsFactors=FALSE)
-spearman_bm = read.table(input_data_files[4],stringsAsFactors=FALSE)
+input_size_files = list.files(datadir,pattern="*sizes_v2.tsv")
+input_data_files = list.files(datadir,pattern="*n_pd_v2.tsv|*n_bm_v2.tsv|*n_pi_v2.tsv")
+input_nanlog_files = list.files(datadir,pattern="*g_pd_v2.tsv|*g_bm_v2.tsv|*g_pi_v2.tsv")
+pearsons_pd = remove_columns(read.csv(input_data_files[2],stringsAsFactors=FALSE,sep="\t"),c("dof_mr1","mr_df"))
+pearsons_pi = remove_columns(read.csv(input_data_files[3],stringsAsFactors=FALSE,sep="\t"),c("dof_mr1","mr_df"))
+pearsons_bm = remove_columns(read.csv(input_data_files[1],stringsAsFactors=FALSE,sep="\t"),c("dof_mr1","mr_df"))
+spearman_pd = remove_columns(read.csv(input_data_files[5],stringsAsFactors=FALSE,sep="\t"),c("dof_mr1","mr_df"))
+spearman_pi = remove_columns(read.csv(input_data_files[6],stringsAsFactors=FALSE,sep="\t"),c("dof_mr1","mr_df"))
+spearman_bm = remove_columns(read.csv(input_data_files[4],stringsAsFactors=FALSE,sep="\t"),c("dof_mr1","mr_df"))
 
-thresholds = unique(pearsons_pd$thresh)
+thresholds = sort(unique(pearsons_pd$thresh))
 
 # Part I: Handling Missing Values to Optimize Similarity Search Ranking
 # ? Visualize: How do distributions of scores change? ###################################################################
@@ -67,7 +67,7 @@ plot.new()
 ALL = as.data.frame(rbind(IP,UP,MP,IS,US,MS),stringsAsFactors=FALSE)
 ALL$score = as.numeric(ALL$score)
 #save(ALL,file=paste(datadir,"/all_scores_posneg.Rda",sep=""))
-load(file=paste(datadir,"/all_scores_posneg.Rda",sep=""))
+#load(file=paste(datadir,"/all_scores_posneg.Rda",sep=""))
 ALLSUM = ddply(ALL, c("strategy","thresh"), summarise, mscore = mean(score), up=get_ci(score,"upper"), down=get_ci(score,"lower"))
 ggplot(ALLSUM, aes(x=thresh, group=strategy,y=mscore,ymin=down,ymax=up,fill=strategy,colour=strategy)) + 
   geom_line(size=1.5) + 
@@ -81,10 +81,10 @@ ggplot(ALL,aes(x=score, fill=strategy)) +
   geom_density(alpha=0.25) + 
   ylab("Density") + 
   xlab("Score") +
-  ylim(0,2.5) +
+  ylim(0,2.6) +
   xlim(-1,1) +
   facet_wrap(~thresh)
-ggsave(paste(savedir,"/scores_densities_posneg.png",sep=""))
+ggsave(paste(savedir,"/scores_densities_posneg_smaller.png",sep=""))
 
 # Now do for each of pearson, pos
 IP = flatten_data(pearsons_pd,direction="pos",label="intersect.pearson")
@@ -98,8 +98,8 @@ plot.new()
 # Put them all together and plot
 ALL = as.data.frame(rbind(IP,UP,MP,IS,US,MS),stringsAsFactors=FALSE)
 ALL$score = as.numeric(ALL$score)
-#save(ALL,file=paste(datadir,"/all_scores_pos.Rda",sep=""))
-load(file=paste(datadir,"/all_scores_pos.Rda",sep=""))
+save(ALL,file=paste(datadir,"/all_scores_pos.Rda",sep=""))
+#load(file=paste(datadir,"/all_scores_pos.Rda",sep=""))
 ALLSUM = ddply(ALL, c("strategy","thresh"), summarise, mscore = mean(score), up=get_ci(score,"upper"), down=get_ci(score,"lower"))
 ggplot(ALLSUM, aes(x=thresh, group=strategy,y=mscore,ymin=down,ymax=up,fill=strategy,colour=strategy)) + 
   geom_line(size=1.5) + 
@@ -113,7 +113,7 @@ ggplot(ALL,aes(x=score, fill=strategy)) +
   geom_density(alpha=0.25) + 
   ylab("Density") + 
   xlab("Score") +
-  ylim(0,2.5) +
+  ylim(0,2.8) +
   xlim(-1,1) +
   facet_wrap(~thresh)
 ggsave(paste(savedir,"/scores_densities_pos.png",sep=""))
@@ -188,9 +188,9 @@ test = as.data.frame(wilcox_tests,stringsAsFactors = FALSE)
 for (col in 1:(ncol(test)-1)){
   test[,col] = as.numeric(test[,col])
 }
-save(test,file=paste(datadir,"/wilcox_tests_pos_nocorrection.Rda",sep=""))
+save(test,file=paste(datadir,"/wilcox_tests_",direction,"_nocorrection.Rda",sep=""))
 testadjust = test # Here we will save adjusted (FDR corrected) q values
-save(wilcox_tests,file=paste(datadir,"/wilcox_tests_distributions_pos_raw.Rda",sep=""))
+save(wilcox_tests,file=paste(datadir,"/wilcox_tests_distributions_",direction,"_raw.Rda",sep=""))
 
 # Now we will keep track of percentage of significantly different for each
 per_sigdiff = c()
@@ -219,19 +219,19 @@ for (thresh in unique(test$thresh)){
   per_sigdiff = rbind(per_sigdiff,cbind(pdp_per,pip_per,bmp_per,pds_per,pis_per,bms_per,thresh))
 }
 
-save(testadjust,file=paste(datadir,"/wilcox_tests_pos_fdr.Rda",sep=""))
+save(testadjust,file=paste(datadir,"/wilcox_tests_",direction,"_fdr.Rda",sep=""))
 colnames(per_sigdiff) = c("intersect.pearson","union.pearson","brain.mask.pearson","intersect.spearman","union.spearman","brain.mask.spearman","thresh")
-save(per_sigdiff,file=paste(datadir,"/wilcox_tests_per_sigdiff_pos_fdr05.Rda",sep=""))
-write.table(per_sigdiff,file=paste(datadir,"/wilcox_tests_per_sigdiff_pos_fdr05.tsv",sep=""),sep="\t",row.names=FALSE)
+save(per_sigdiff,file=paste(datadir,"/wilcox_tests_per_sigdiff_",direction,"_fdr05.Rda",sep=""))
+write.table(per_sigdiff,file=paste(datadir,"/wilcox_tests_per_sigdiff_",direction,"_fdr05.tsv",sep=""),sep="\t",row.names=FALSE)
 tmp = melt(as.data.frame(per_sigdiff),id.vars=c("thresh"))
 colnames(tmp) = c("threshold","masking.strategy","value")
 ggplot(tmp,aes(x=threshold,y=value,group=masking.strategy,colour=masking.strategy)) + 
   geom_line(size=1) + 
   ylab("% different from threshold of 0") +
-  xlab("Threshold +/-") +
+  xlab("Threshold +") +
   theme(text = element_text(size=20),legend.position="none") +
   facet_wrap(~masking.strategy)
-ggsave(paste(savedir,"/percent_means_sigdiff_pos_fdr05.png",sep=""))
+ggsave(paste(savedir,"/percent_means_sigdiff_",direction,"_fdr05.png",sep=""))
 
 # For which thresholds are masking strategies pearson score distributions sig. dif?
 # Let's get an overall pvalue for each threshold
@@ -257,7 +257,7 @@ for (thresh in thresholds){
   wilcox_thresh = rbind(wilcox_thresh,tmp)
 }
 colnames(wilcox_thresh) = c("strategy","p.value","ci.low","ci.high","thresh")
-save(wilcox_thresh,file="wilcox_thresh_pos_all_uncorrected.Rda")
+save(wilcox_thresh,file=paste("wilcox_thresh_",direction,"_all_uncorrected.Rda",sep=""))
 fdr = p.adjust(as.numeric(wilcox_thresh[,2]),method="fdr")
 wilcox_thresh = cbind(wilcox_thresh,fdr)
 tmp = as.data.frame(wilcox_thresh,stringsAsFactors=FALSE)
@@ -265,10 +265,10 @@ tmp$p.value = as.numeric(tmp$p.value)
 tmp$ci.low = as.numeric(tmp$ci.low)
 tmp$ci.high = as.numeric(tmp$ci.high)
 tmp$fdr = as.numeric(tmp$fdr)
-write.table(tmp,file=paste(datadir,"/wilcox_tests_distributions_corrected_pos.tsv",sep=""),sep="\t",row.names=FALSE)
-save(tmp,file=paste(datadir,"/wilcox_tests_distributions_corrected_pos.Rda",sep=""))
+write.table(tmp,file=paste(datadir,"/wilcox_tests_distributions_corrected_",direction,".tsv",sep=""),sep="\t",row.names=FALSE)
+save(tmp,file=paste(datadir,"/wilcox_tests_distributions_corrected_",direction,".Rda",sep=""))
 tmp = melt(tmp,id.vars=c("strategy","thresh","ci.low","ci.high","fdr"))
-write.table(tmp,file=paste(datadir,"/wilcox_tests_distributions_corrected_pos_flat.tsv",sep=""),sep="\t",row.names=FALSE)
+write.table(tmp,file=paste(datadir,"/wilcox_tests_distributions_corrected_",direction,"_flat.tsv",sep=""),sep="\t",row.names=FALSE)
 
 # Significantly different means
 tmp[which(tmp$fdr<0.01),]
@@ -288,7 +288,7 @@ tmp[which(tmp$fdr<0.01),]
 
 
 # Specify direction
-direction = "pos"
+direction = "posneg"
 
 # For each image, for each threshold, we assess distance from the "gold standard" ordering based on task/contrast
 image_ids = unique(results[["pdp"]]$UID)
@@ -296,14 +296,14 @@ labels = c("intersect.pearson","union.pearson","brain.mask.pearson","intersect.s
 
 acc_df = c()
 for (i in 1:length(image_ids)){
-  #cat("Processing",i,"of",length(image_ids),"\n","Threshold:","\n")
+  cat("Processing",i,"of",length(image_ids),"\n","Threshold:","\n")
   image_id = image_ids[i]
   other_ids = image_ids[-which(image_ids==image_id)]
   gs = make_gold_standard_ranking(image_id,other_ids)
   # For each of pearson, spearman [union, intersect, brainmask] get scores for image_id
   df = get_single_result(image_id,results,direction=direction)   
   for (thresh in thresholds){
-    #cat(thresh,",",sep="")
+    cat(thresh,",",sep="")
     for (label in labels){
       # Get ordering based on actual scores
       sorted = filter_single_result(df,thresh,label,other_ids,image_id)
@@ -369,9 +369,9 @@ subset$thresh = as.numeric(subset$thresh)
 
 subset_summary = ddply(subset, c("strategy","thresh","standard"), summarise, mscore = mean(accuracy), up=get_ci(accuracy,"upper"), down=get_ci(accuracy,"lower"))
 ggplot(subset_summary, aes(x=thresh,y=mscore,ymax=up,ymin=down, fill=strategy,colour=strategy,standard=standard)) + 
-  geom_line(size=1.5) + 
+  geom_line(size=1) + 
   geom_ribbon(alpha=0.15,linetype=0) +
-  xlab("Threshold +/-") +
+  xlab("Threshold +") +
   facet_wrap(~standard) +
   ylab("Accuracy")
 ggsave(paste(savedir,"/chunk_ranking_accuracy",direction,"_withCI.png",sep=""))
@@ -382,7 +382,7 @@ group_summary = ddply(group, c("strategy","thresh","standard"), summarise, mscor
 ggplot(group_summary, aes(x=thresh,y=mscore,ymax=up,ymin=down, fill=strategy,colour=strategy,standard=standard)) + 
   geom_line(size=1.5) + 
   geom_ribbon(alpha=0.15,linetype=0) +
-  xlab("Threshold +/-") +
+  xlab("Threshold +") +
   facet_wrap(~standard) +
   ylab("Accuracy")
 ggsave(paste(savedir,"/chunk_ranking_group_accuracy",direction,"_withCI.png",sep=""))
@@ -426,7 +426,8 @@ ggplot(acc_summary, aes(x=thresh,y=mscore,ymax=up,ymin=down, fill=strategy,colou
   geom_line(size=1.5) + 
   geom_ribbon(alpha=0.15,linetype=0) +
   xlab("Threshold +/-") +
-  ylab("Accuracy")
+  ylab("Accuracy") +
+  ylim(0,1)
 ggsave(paste(savedir,"/ml_accuracy",direction,"_withCI.png",sep=""))
 
 # Woot!
