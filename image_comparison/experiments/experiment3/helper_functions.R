@@ -49,6 +49,23 @@ get_keepers = function() {
          "TASK04_CON69","TASK04_CON70","TASK04_CON71","TASK04_CON72","TASK04_CON73"))
 }
 
+# Get mask sizes for a threshold and direction
+get_masksize_dist = function(df,thresh,direction="posneg"){
+  image_ids = as.character(unique(df$X))
+  nc = c()
+  for (id in image_ids){
+    subset = df[which(df$X==id),-which(colnames(df) == "dof_mr1" )]
+    subset = subset[which(subset$thresh==thresh),-which(colnames(subset)=="thresh")]
+    subset = subset[which(subset$direction==direction),-which(colnames(subset)=="direction")]  
+    subset = subset[!is.na(subset)]
+    subset = subset[-1]
+    if (!length(subset)==0){
+      nc[[id]] = subset      
+    }
+  }
+  return(nc)
+}
+
 # A function to return a flat data frame for a single image against all others, for all thresholds
 get_single_result = function(image_id,results,direction="posneg",eliminate_imageid=TRUE) {
   
@@ -188,6 +205,7 @@ get_group_result = function(group1,group2,results,direction="posneg") {
   bms_pred = as.character(apply(bms[,-which(colnames(bms)%in%c("thresh","UID","strategy"))],1,get_max_score_column,colnames(bms)[-which(colnames(bms)%in%c("thresh","UID","strategy"))],group2))
   
   # Combine with actual labels, and we will calculate accuracy for each
+  # Note this only assesses TASK_CONTRAST (not done for just task, for example)
   pdp = data.frame(actual=gsub(paste(group1,"_",sep=""),"",pdp$UID),prediction=pdp_pred,thresh=pdp$thresh,strategy=pdp$strategy)
   pip = data.frame(actual=gsub(paste(group1,"_",sep=""),"",pip$UID),prediction=pip_pred,thresh=pip$thresh,strategy=pip$strategy)
   bmp = data.frame(actual=gsub(paste(group1,"_",sep=""),"",bmp$UID),prediction=bmp_pred,thresh=bmp$thresh,strategy=bmp$strategy)
@@ -235,6 +253,24 @@ get_direction_result = function(results,direction="posneg") {
 
 
 # PLOTTING FUNCTIONS ####################################################
+plot_distribution = function(df,title,ymax=2.6){
+
+  gg = ggplot(df,aes(x=score,fill=strategy)) +
+    geom_density(alpha=0.25) + 
+    ylab("") + 
+    xlab("") +
+    ylim(0,ymax) +
+    xlim(-1,1) +
+    facet_wrap(~thresh,nrow=1) +
+    theme(strip.background = element_blank(),
+          strip.text.x = element_blank(),
+          plot.margin=unit(c(0,0,0,5),"mm")) +
+    guides(fill=FALSE) + 
+    ggtitle(title)
+    
+  return(gg)
+}
+
 plot_result = function(res,thresh,direction="posneg",outfile) {
 
   pdp = res$pdp[res$pdp$direction==direction,-which(colnames(res$pdp)=="direction")]

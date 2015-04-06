@@ -67,7 +67,7 @@ plot.new()
 ALL = as.data.frame(rbind(IP,UP,MP,IS,US,MS),stringsAsFactors=FALSE)
 ALL$score = as.numeric(ALL$score)
 #save(ALL,file=paste(datadir,"/all_scores_posneg.Rda",sep=""))
-#load(file=paste(datadir,"/all_scores_posneg.Rda",sep=""))
+load(file=paste(datadir,"/all_scores_posneg.Rda",sep=""))
 ALLSUM = ddply(ALL, c("strategy","thresh"), summarise, mscore = mean(score), up=get_ci(score,"upper"), down=get_ci(score,"lower"))
 ggplot(ALLSUM, aes(x=thresh, group=strategy,y=mscore,ymin=down,ymax=up,fill=strategy,colour=strategy)) + 
   geom_line(size=1.5) + 
@@ -85,6 +85,25 @@ ggplot(ALL,aes(x=score, fill=strategy)) +
   xlim(-1,1) +
   facet_wrap(~thresh)
 ggsave(paste(savedir,"/scores_densities_posneg_smaller.png",sep=""))
+
+# We want to visualize them separately - too crowded in the plot above
+bmp_plot = ALL[ALL$strategy == "brain.mask.pearson",]
+bms_plot = ALL[ALL$strategy == "brain.mask.spearman",]
+pdp_plot = ALL[ALL$strategy == "intersect.pearson",]
+pds_plot = ALL[ALL$strategy == "intersect.spearman",]
+pip_plot = ALL[ALL$strategy == "union.pearson",]
+pis_plot = ALL[ALL$strategy == "union.spearman",]
+
+# We will need ggplot colors
+bmp_gg = plot_distribution(bmp_plot,"brain mask, pearson",ymax=2.8)
+bms_gg = plot_distribution(bms_plot,"brain mask, spearman",ymax=2.8)
+pdp_gg = plot_distribution(pdp_plot,"complete case analysis, pearson",ymax=2.8)
+pip_gg = plot_distribution(pip_plot,"single-value imputation, pearson",ymax=2.8)
+pds_gg = plot_distribution(pds_plot,"complete case analysis, spearman",ymax=2.8)
+pis_gg = plot_distribution(pis_plot,"single-value imputation, spearman",ymax=2.8)
+g = arrangeGrob(bmp_gg, bms_gg, pdp_gg, pds_gg, pip_gg, pis_gg, ncol=1)
+ggsave(file=paste(datadir,"scores_distributions_posneg.png",sep=""),g)    
+
 
 # Now do for each of pearson, pos
 IP = flatten_data(pearsons_pd,direction="pos",label="intersect.pearson")
@@ -118,13 +137,114 @@ ggplot(ALL,aes(x=score, fill=strategy)) +
   facet_wrap(~thresh)
 ggsave(paste(savedir,"/scores_densities_pos.png",sep=""))
 
+# We want to visualize them separately - too crowded in the plot above
+bmp_plot = ALL[ALL$strategy == "brain.mask.pearson",]
+bms_plot = ALL[ALL$strategy == "brain.mask.spearman",]
+pdp_plot = ALL[ALL$strategy == "intersect.pearson",]
+pds_plot = ALL[ALL$strategy == "intersect.spearman",]
+pip_plot = ALL[ALL$strategy == "union.pearson",]
+pis_plot = ALL[ALL$strategy == "union.spearman",]
+
+# We will need ggplot colors
+bmp_gg = plot_distribution(bmp_plot,"brain mask, pearson",ymax=2.8)
+bms_gg = plot_distribution(bms_plot,"brain mask, spearman",ymax=2.8)
+pdp_gg = plot_distribution(pdp_plot,"complete case analysis, pearson",ymax=2.8)
+pip_gg = plot_distribution(pip_plot,"single-value imputation, pearson",ymax=2.8)
+pds_gg = plot_distribution(pds_plot,"complete case analysis, spearman",ymax=2.8)
+pis_gg = plot_distribution(pis_plot,"single-value imputation, spearman",ymax=2.8)
+g = arrangeGrob(bmp_gg, bms_gg, pdp_gg, pds_gg, pip_gg, pis_gg, ncol=1)
+ggsave(file=paste(datadir,"scores_distributions_pos.png",sep=""),g)    
 
 
-# We will read in size data later
+# ? Visualize: How do sizes change? ##############################################################################
+
 pd_sizes = read.csv(input_size_files[2],sep="\t")
 pi_sizes = read.csv(input_size_files[3],sep="\t")
 bm_sizes = read.csv(input_size_files[1],sep="\t")
 
+# Now we will look at the distributions of values themselves!
+ncomps = c()
+direction = "pos"
+thresholds = sort(unique(pd_sizes$thresh))
+for (thresh in thresholds){
+    cat("  THRESH",thresh,"\n")
+    tmp = c()
+    # Get mask size distributions
+    pd = unlist(get_masksize_dist(pd_sizes,thresh,direction))
+    pi = unlist(get_masksize_dist(pi_sizes,thresh,direction))
+    bm = unlist(get_masksize_dist(bm_sizes,thresh,direction))
+    tmp[["pairwise.deletion"]] = pd
+    tmp[["pairwise.inclusion"]] = pi
+    tmp[["brain.mask"]] = bm
+    ncomps[[as.character(thresh)]] = tmp
+}
+save(ncomps,file=paste(datadir,"/dist_masksizes",direction,".Rda",sep=""))
+
+# Plot the number of comparisons - first put into a big data frame
+df = c()
+ts = names(ncomps)
+for (t in ts){
+    tsubset = ncomps[[t]]
+    tmp1 = cbind(tsubset$pairwise.deletion,rep(t,length(tsubset$pairwise.deletion)),rep(direction,length(tsubset$pairwise.deletion)),rep("PD",length(tsubset$pairwise.deletion)))
+    tmp2 = cbind(tsubset$pairwise.inclusion,rep(t,length(tsubset$pairwise.inclusion)),rep(direction,length(tsubset$pairwise.inclusion)),rep("PI",length(tsubset$pairwise.inclusion)))
+    tmp3 = cbind(tsubset$brain.mask,rep(t,length(tsubset$brain.mask)),rep(direction,length(tsubset$brain.mask)),rep("BM",length(tsubset$brain.mask)))
+    tmp = rbind(tmp1,tmp2,tmp3)
+    df = rbind(df,tmp)
+}  
+colnames(df) = c("mask.size","thresh","direction","strategy")
+df = as.data.frame(df)
+df$mask.size = as.numeric(as.character(df$mask.size))
+df$thresh = as.character(df$thresh)
+df$strategy = as.character(df$strategy)
+save(df,file=paste(datadir,"/dist_masksizes_flat_pos_df.Rda",sep=""))
+df = df[,-3] # remove posneg
+tmp = ddply(df, c("thresh","strategy"), summarise, mask.size.mean=mean(mask.size),mask.size.min = min(mask.size), mask.size.max=max(mask.size))
+
+# Here we are looking at the mean pearsons (+/- one standard deviation)
+ggplot(tmp, aes(x=thresh, y=mask.size.mean, ymin=mask.size.min, ymax=mask.size.max, fill=strategy,group=strategy,color=strategy)) + 
+  geom_line(size=1) + 
+  title("Mask Sizes at Different Thresholds +") +
+  geom_ribbon(alpha=0.25,linetype=0) +
+  xlab("Threshold +/-") +
+  ylab("Mask Size (voxels)") 
+ggsave(paste(savedir,"/mask_sizes_voxels_posonly.png",sep=""))
+
+# Now plot percentage of voxels
+total_size = max(df$mask.size)
+df2 = df
+df2$mask.size = df2$mask.size / total_size
+tmp = ddply(df2, c("thresh","strategy"), summarise, mask.size.mean=mean(mask.size),mask.size.min = min(mask.size), mask.size.max=max(mask.size))
+ggplot(tmp[tmp$strategy!="PD",], aes(x=thresh, y=mask.size.mean, ymin=mask.size.min, ymax=mask.size.max, fill=strategy,group=strategy,color=strategy)) + 
+  geom_line(size=1) + 
+  title("Mask Sizes at Different Thresholds +") +
+  geom_ribbon(alpha=0.25,linetype=0) +
+  xlab("Threshold +") +
+  ylab("size of comparison setas % of brain mask") 
+ggsave(paste(savedir,"/mask_percsizes_atthresh_",direction,".png",sep=""))
+
+# Visualize - the number of nans (and why) ######################################################################################################
+
+pd_nan = read.csv(input_nanlog_files[1],sep="\t")
+pi_nan = read.csv(input_nanlog_files[2],sep="\t")
+bm_nan = read.csv(input_nanlog_files[3],sep="\t")
+
+thresholds = sort(unique(pd_nan$thresh))
+direction = "posneg"
+# For each threshold, and strategy, count the number of successful vs nans
+nanlog = list()
+for (x in 1:nrow(pd_nan)) {
+  for (thresh in thresholds){
+    pdsub = pd_nan[pd_nan$thresh==thresh,-which(colnames(pd_nan) %in% c("X","thresh","dof_mr1"))]    
+    pdsub = pdsub[pdsub$direction==direction,-which(colnames(pdsub) == "direction")]
+    pdsub = table(unlist(pdsub))
+    
+    pisub = pi_nan[pi_nan$thresh==thresh,-which(colnames(pi_nan) %in% c("thresh","dof_mr1","X"))]    
+    pisub = pi_nan[pi_nan$direction==direction,] 
+
+    bmsub = bm_nan[bm_nan$thresh==thresh,-which(colnames(bm_nan) %in% c("thresh","dof_mr1"))]    
+    bmsub = bm_nan[bm_nan$direction==direction,] 
+  }
+}
 
 # ? Quantify: How often are distributions significantly different? ##############################################################################
 # we want to know "how often" it looks different, or we get weird results.
@@ -425,9 +545,10 @@ acc_summary = ddply(all_acc, c("strategy","thresh"), summarise, mscore = mean(ac
 ggplot(acc_summary, aes(x=thresh,y=mscore,ymax=up,ymin=down, fill=strategy,colour=strategy)) + 
   geom_line(size=1.5) + 
   geom_ribbon(alpha=0.15,linetype=0) +
-  xlab("Threshold +/-") +
+  xlab("Threshold +") +
   ylab("Accuracy") +
   ylim(0,1)
 ggsave(paste(savedir,"/ml_accuracy",direction,"_withCI.png",sep=""))
+write.table(acc_summary,file=paste(datadir,"/ml_accuracy_",direction,".tsv",sep=""),sep="\t")
 
 # Woot!

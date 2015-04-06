@@ -18,9 +18,8 @@ inputs = pandas.read_csv(input_file,sep="\t")
 # Our groups will tells us the number of degrees of freedom for each map
 groups = "%s/doc/hcp_10groups460_alltasks.pkl" %(basedir)
 
-# We will run for a set of thresholds
-thresholds = [0.0,0.5,1.0,1.5,1.65,1.7,1.75,1.8,1.85,1.9,1.96,2.0,2.58,3.02,3.5,4.0]
-thresholds = [2.58,3.02,3.5,4.0]
+# thresholds = [0.0,1.5,1.0,1.5,1.65,1.7,1.75,1.8,1.85,1.9,1.96,2.0,2.58,3.02,3.5,4.0,4.5,5.0,6.0]
+thresholds = [0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,1.0,12.0,13.0]
 
 # Take absolute value (include negative values): True
 # Do not take absolute value (include only positive values): False
@@ -48,6 +47,6 @@ for thresh in thresholds:
       filey.writelines("#SBATCH --error=.out/%s_%s.err\n" %(image_id,thresh))
       filey.writelines("#SBATCH --time=2-00:00\n")
       filey.writelines("#SBATCH --mem=64000\n")
-      filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/test_thresholding.py %s %s %s %s %s %s %s" %(basedir,image_id,filename,thresh,direction,outfile,groups))
+      filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/test_thresholding_new.py %s %s %s %s %s %s %s" %(basedir,image_id,filename,thresh,direction,outfile,groups))
       filey.close()
       os.system("sbatch -p russpold " + ".job/%s_masking_%s.job" %(image_id,thresh))

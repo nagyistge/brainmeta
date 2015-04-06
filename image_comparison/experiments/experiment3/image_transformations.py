@@ -92,7 +92,6 @@ def get_pairwise_inclusion_mask(image1,image2,mask,absolute_value=False):
     pimask_img = nib.Nifti1Image(pimask,affine=mask.get_affine(),header=mask.get_header())
     return pimask_img    
 
-
 # File Operations
 def make_tmp_nii(image1,tmp_file_prefix):
   tmp_file = "%s.nii" %(tmp_file_prefix.replace(".","pt"))
