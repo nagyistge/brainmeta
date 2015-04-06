@@ -43,12 +43,13 @@ for f in range(0,len(filenames)):
 # -12.269853691998309
 # 11.183601479336019
 
-thresholds = [0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,1.0,12.0,13.0]
+thresholds = [0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0]
 
 # Create images of maps
 # Now we want to do the same thing, but threshold the images, and save an image at each threshold 
+count=1
 for f in inputs.iterrows():
-    print "Processing %s of %s" %(f,len(filenames))
+    print "Processing %s of %s" %(count,len(filenames))
     uid = f[1].uid
     mr = nib.load(f[1].files)
     subject_directory = "%s/img/%s" %(basedir,uid)
@@ -68,4 +69,5 @@ for f in inputs.iterrows():
         plotpos.savefig("%s/%s_thresh%s_pos.png" %(subject_directory,uid,thresh))
         plotpos.close()
         plotposneg.close()
+    count=count+1
 

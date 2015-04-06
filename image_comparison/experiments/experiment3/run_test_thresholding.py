@@ -11,7 +11,7 @@ import pickle
 
 # Input file with map paths
 basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment3"
-outdirectory = "%s/scores" %(basedir)
+outdirectory = "%s/scoresnew" %(basedir)
 input_file = "%s/doc/hcp_groupmaps_filter.tsv" %(basedir)
 inputs = pandas.read_csv(input_file,sep="\t")
 
@@ -19,7 +19,7 @@ inputs = pandas.read_csv(input_file,sep="\t")
 groups = "%s/doc/hcp_10groups460_alltasks.pkl" %(basedir)
 
 # thresholds = [0.0,1.5,1.0,1.5,1.65,1.7,1.75,1.8,1.85,1.9,1.96,2.0,2.58,3.02,3.5,4.0,4.5,5.0,6.0]
-thresholds = [0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,1.0,12.0,13.0]
+thresholds = [0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0]
 
 # Take absolute value (include negative values): True
 # Do not take absolute value (include only positive values): False
