@@ -12,7 +12,7 @@ import nibabel as nib
 
 basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment3"
 input_file = "%s/doc/hcp_groupmaps_filter.tsv" %(basedir)
-imgdir = "%s/img"
+imgdir = "%s/img_old" %(basedir)
 inputs = pandas.read_csv(input_file,sep="\t")
 filenames = inputs.files.tolist()
 

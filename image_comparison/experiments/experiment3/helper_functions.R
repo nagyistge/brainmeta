@@ -367,6 +367,22 @@ flatten_data = function(df,direction="posneg",label){
   return(ALL)
 }
 
+# Format a data frame into json, with each object being a row with fields (columns)
+format_json = function(df){
+  myjson = "["
+  for (r in 1:nrow(df)){
+    row = df[r,]
+    if (r==nrow(df)){
+      tmp = paste('{"uid":"',rownames(row),'","perc_distance":',row$perc_distances,',"abs_distance":',row$abs_distances,',"classified":"',row$classified,'","ideal":',row$ideal,',"predicted":',row$predicted,',"img":"',row$img,'","ranking":',row$ranking,'}',sep="")
+    } else {
+      tmp = paste('{"uid":"',rownames(row),'","perc_distance":',row$perc_distances,',"abs_distance":',row$abs_distances,',"classified":"',row$classified,'","ideal":',row$ideal,',"predicted":',row$predicted,',"img":"',row$img,'","ranking":',row$ranking,'},',sep="")
+    }
+    myjson = paste(myjson,tmp,sep="\n")
+  }
+  myjson=paste(myjson,"]",sep="")
+  return(myjson)
+}
+
 # GOLD STANDARD FUNCTIONS ####################################################
 
 make_gold_standard_labels = function(image_ids){
@@ -523,6 +539,121 @@ calculate_accuracy = function(gs,sorted){
    }
  return(res)
 }
+
+# Return vector of image labels in same order as gold standard,
+# with a "correct" or "misclassified"
+get_ranking = function(gs,sorted){
+  
+  # For each standard, we need to obtain the number of 1,2,3, etc.
+  res = list()
+  
+  # Subset the gold standard to comparisons that we have
+  gs_filter = gs[which(gs$UID %in% names(sorted)),]
+  
+  for (c in 2:ncol(gs_filter)){
+    condition = colnames(gs)[c]
+    
+    # Here are the ideal (correct) labels
+    ideal = gs_filter[,c]
+    names(ideal) = gs_filter$UID  
+    ideal = sort(ideal)
+        
+    # Prepare the predicted labels
+    predicted = ideal
+    names(predicted) = names(sorted)
+    
+    # We will keep a vector, in order of gs, that says if we got it right
+    groups = sort(as.numeric(unique(ideal)))
+    correct = array(dim=length(ideal))
+    names(correct) = names(ideal)
+
+    # Let's also save how far off we were (percentage and absolute distances)
+    distances = array(dim=length(ideal))
+    abs_distances = array(dim=length(ideal))
+    names(distances) = names(ideal)
+    names(abs_distances) = names(ideal)
+    
+    for (group in groups){
+      ideal_subset = ideal[ideal==group]
+      predicted_subset = predicted[ideal==group]
+      
+      # Which names did we get right?
+      corr = names(ideal_subset)[which(names(ideal_subset) %in% names(predicted_subset))]
+      correct[corr] = "correct"
+      distances[corr] = 0
+      abs_distances[corr] = 0
+      
+      incorrect = names(ideal_subset)[-which(names(ideal_subset) %in% names(predicted_subset))]
+      correct[incorrect] = "incorrect"
+    
+      # For the wrong predictions, we need to know how far off we were
+      group_chunk = which(ideal==group)
+      
+      # Now we get the actual indices for the ones we got wrong
+      actual_indices = which(names(predicted)%in%incorrect)
+      
+      # Case 1: If we are at the first group, we will measure from the last position of the group 1 label
+      # [1,1,1<--last ok position,2,2,2,2<--worst case]
+      if (group==1){
+        last_member = as.numeric(group_chunk[length(group_chunk)])
+        # Calculate the errors, the number of places we were off for each group member
+        errors = abs(actual_indices - last_member)
+        maximum_distance_away = (length(predicted) - length(which(predicted==group)))
+        # We will calculate weights for the distance as a percentage of the length of the entire vector minus the group
+        additional_error = errors / maximum_distance_away        
+      }
+      # Case 2: If we are at the last group, we will measure from the first index to the first position of the group label
+      # [worst case-->1,1,1,last ok position-->2,2,2,2]      
+      else if (group==length(groups)){
+        first_index = 1
+        first_member = as.numeric(group_chunk[1])
+        # Calculate the errors, the number of places we were off for each group member
+        errors = abs(first_member-actual_indices)
+        # Give some portion of remaining accuracy based on where falls between first index
+        # and first member (the worst scenario, if distance == first member, we give 0 accuracy)
+        maximum_distance_away = first_member - first_index
+        # Calculate weights as the actual distance (errors) as a percentage of the maximum distance away
+        additional_error = errors / maximum_distance_away
+        # Case 3: If we are at a middle group, we must measure distances in both directions (to end and front of list)
+        # and depending on the direction of each incorrect, calculate distance in that direction. 
+        # This approach makes the assumption that an error moving up in the list is equally bad to an error 
+        # moving down in the list.
+        # Given incorrect "2" grouped with 1: [worst case-->1,2,1,1,last ok position-->2,2,2,2,3,3,3,3]
+        # Given incorrect "2" grouped with 3: [1,1,1,2,2,2,2<-- last ok position,3,3,2,3,3<--worst case]
+      } else {
+        first_index = 1
+        first_member = as.numeric(group_chunk[1])
+        last_member = as.numeric(group_chunk[length(group_chunk)])
+        # Now we split the actual indices into two groups based on the direction
+        up_in_list = actual_indices[actual_indices < first_member]
+        down_in_list = actual_indices[actual_indices > last_member]
+        # Calculate the errors, the number of places we were off for each group member
+        errors_up = abs(first_member-up_in_list)
+        errors_down = abs(last_member-down_in_list)
+        errors = abs(c(errors_up,errors_down))
+        # Give some portion of remaining accuracy based on distances away
+        maximum_distance_away_up = abs(first_member - first_index)
+        maximum_distance_away_down = abs(length(predicted) - last_member)
+        # Calculate weights as the actual distance (errors) as a percentage of the maximum distance away
+        additional_error_up = errors_up / maximum_distance_away_up
+        additional_error_down = errors_down / maximum_distance_away_down
+        additional_error = c(additional_error_up,additional_error_down)
+      }
+        distances[incorrect] = additional_error
+        abs_distances[incorrect] = errors
+    }
+    # We will return a data frame ordered by the predicted names, so the ordering shows the predictions
+    df = data.frame(row.names=names(predicted))
+    df[names(distances),"perc_distances"] = distances
+    df[names(correct),"classified"] = correct
+    df[names(abs_distances),"abs_distances"] = abs_distances
+    df[names(ideal),"ideal"] = ideal
+    df[names(predicted),"predicted"] = predicted
+    res[[condition]] = df
+  }
+  return(res)
+}
+
 
 # OLD from when using TAU
 # Calculate weigted accuracy based on distance from end of list to actual places
