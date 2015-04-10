@@ -71,35 +71,27 @@ get_single_result = function(image_id,results,direction="posneg",eliminate_image
   
   pdp = results[["pdp"]][which(results[["pdp"]][,"UID"]==image_id),-which(colnames(results[["pdp"]])=="UID")]
   pip = results[["pip"]][which(results[["pip"]][,"UID"]==image_id),-which(colnames(results[["pip"]])=="UID")]
-  bmp = results[["bmp"]][which(results[["bmp"]][,"UID"]==image_id),-which(colnames(results[["bmp"]])=="UID")]  
   pds = results[["pds"]][which(results[["pds"]][,"UID"]==image_id),-which(colnames(results[["pds"]])=="UID")]
   pis = results[["pis"]][which(results[["pis"]][,"UID"]==image_id),-which(colnames(results[["pis"]])=="UID")]
-  bms = results[["bms"]][which(results[["bms"]][,"UID"]==image_id),-which(colnames(results[["bms"]])=="UID")]  
   # Get rid of direction
   pdp = pdp[which(pdp$direction==direction),-which(colnames(pdp)=="direction")]
   pip = pip[which(pip$direction==direction),-which(colnames(pip)=="direction")]
-  bmp = bmp[which(bmp$direction==direction),-which(colnames(bmp)=="direction")]
   pds = pds[which(pds$direction==direction),-which(colnames(pds)=="direction")]
   pis = pis[which(pis$direction==direction),-which(colnames(pis)=="direction")]
-  bms = bms[which(bms$direction==direction),-which(colnames(bms)=="direction")]
   # In a real comparison task, we would not compare an image to itself
   if (eliminate_imageid==TRUE){
     pdp = pdp[,-which(colnames(pdp)==image_id)]
     pip = pip[,-which(colnames(pip)==image_id)]
-    bmp = bmp[,-which(colnames(bmp)==image_id)]
     pds = pds[,-which(colnames(pds)==image_id)]
     pis = pis[,-which(colnames(pis)==image_id)]
-    bms = bms[,-which(colnames(bms)==image_id)]    
   }
   # Add on strategy
   pdp = cbind(pdp,rep("intersect.pearson",nrow(pdp))); colnames(pdp)[ncol(pdp)] = "strategy"
   pip = cbind(pip,rep("union.pearson",nrow(pip))); colnames(pip)[ncol(pip)] = "strategy"
-  bmp = cbind(bmp,rep("brain.mask.pearson",nrow(bmp))); colnames(bmp)[ncol(bmp)] = "strategy"
   pds = cbind(pds,rep("intersect.spearman",nrow(pds))); colnames(pds)[ncol(pds)] = "strategy"
   pis = cbind(pis,rep("union.spearman",nrow(pis))); colnames(pis)[ncol(pis)] = "strategy"
-  bms = cbind(bms,rep("brain.mask.spearman",nrow(bms))); colnames(bms)[ncol(bms)] = "strategy"
   
-  all = rbind(pdp,pip,bmp,pds,pis,bms)
+  all = rbind(pdp,pip,pds,pis)
   all_flat = melt(all,id.vars=c("thresh","strategy"),factorsAsStrings=FALSE)
   all_flat$strategy = as.character(all_flat$strategy)
   all_flat$thresh = as.numeric(all_flat$thresh)
@@ -167,54 +159,42 @@ get_group_result = function(group1,group2,results,direction="posneg") {
   # Filter down to comparisons with group1 (UID)
   pdp = results$pdp[grep(group1,results$pdp$UID),]
   pip = results$pip[grep(group1,results$pip$UID),]
-  bmp = results$bmp[grep(group1,results$bmp$UID),]
   pds = results$pds[grep(group1,results$pds$UID),]
   pis = results$pis[grep(group1,results$pis$UID),]
-  bms = results$bms[grep(group1,results$bms$UID),]
   
   # Get rid of direction
   pdp = pdp[which(pdp$direction==direction),-which(colnames(pdp)=="direction")]
   pip = pip[which(pip$direction==direction),-which(colnames(pip)=="direction")]
-  bmp = bmp[which(bmp$direction==direction),-which(colnames(bmp)=="direction")]
   pds = pds[which(pds$direction==direction),-which(colnames(pds)=="direction")]
   pis = pis[which(pis$direction==direction),-which(colnames(pis)=="direction")]
-  bms = bms[which(bms$direction==direction),-which(colnames(bms)=="direction")]
 
   # Filter down to comparisons with group2 (column names)
   pdp = pdp[,c(grep(group2,colnames(pdp)),which(colnames(pdp)%in%c("thresh","UID")))]
   pip = pip[,c(grep(group2,colnames(pip)),which(colnames(pip)%in%c("thresh","UID")))]
-  bmp = bmp[,c(grep(group2,colnames(bmp)),which(colnames(bmp)%in%c("thresh","UID")))]
   pds = pds[,c(grep(group2,colnames(pds)),which(colnames(pds)%in%c("thresh","UID")))]
   pis = pis[,c(grep(group2,colnames(pis)),which(colnames(pis)%in%c("thresh","UID")))]
-  bms = bms[,c(grep(group2,colnames(bms)),which(colnames(bms)%in%c("thresh","UID")))]
   
   # Add on strategy
   pdp = cbind(pdp,rep("intersect.pearson",nrow(pdp))); colnames(pdp)[ncol(pdp)] = "strategy"
   pip = cbind(pip,rep("union.pearson",nrow(pip))); colnames(pip)[ncol(pip)] = "strategy"
-  bmp = cbind(bmp,rep("brain.mask.pearson",nrow(bmp))); colnames(bmp)[ncol(bmp)] = "strategy"
   pds = cbind(pds,rep("intersect.spearman",nrow(pds))); colnames(pds)[ncol(pds)] = "strategy"
   pis = cbind(pis,rep("union.spearman",nrow(pis))); colnames(pis)[ncol(pis)] = "strategy"
-  bms = cbind(bms,rep("brain.mask.spearman",nrow(bms))); colnames(bms)[ncol(bms)] = "strategy"
    
   # For eeach row, find column that has max absolute value (the prediction)
   pdp_pred = as.character(apply(pdp[,-which(colnames(pdp)%in%c("thresh","UID","strategy"))],1,get_max_score_column,colnames(pdp)[-which(colnames(pdp)%in%c("thresh","UID","strategy"))],group2))
   pip_pred = as.character(apply(pip[,-which(colnames(pip)%in%c("thresh","UID","strategy"))],1,get_max_score_column,colnames(pip)[-which(colnames(pip)%in%c("thresh","UID","strategy"))],group2))
-  bmp_pred = as.character(apply(bmp[,-which(colnames(bmp)%in%c("thresh","UID","strategy"))],1,get_max_score_column,colnames(bmp)[-which(colnames(bmp)%in%c("thresh","UID","strategy"))],group2))
   pds_pred = as.character(apply(pds[,-which(colnames(pds)%in%c("thresh","UID","strategy"))],1,get_max_score_column,colnames(pds)[-which(colnames(pds)%in%c("thresh","UID","strategy"))],group2))
   pis_pred = as.character(apply(pis[,-which(colnames(pis)%in%c("thresh","UID","strategy"))],1,get_max_score_column,colnames(pis)[-which(colnames(pis)%in%c("thresh","UID","strategy"))],group2))
-  bms_pred = as.character(apply(bms[,-which(colnames(bms)%in%c("thresh","UID","strategy"))],1,get_max_score_column,colnames(bms)[-which(colnames(bms)%in%c("thresh","UID","strategy"))],group2))
   
   # Combine with actual labels, and we will calculate accuracy for each
   # Note this only assesses TASK_CONTRAST (not done for just task, for example)
   pdp = data.frame(actual=gsub(paste(group1,"_",sep=""),"",pdp$UID),prediction=pdp_pred,thresh=pdp$thresh,strategy=pdp$strategy)
   pip = data.frame(actual=gsub(paste(group1,"_",sep=""),"",pip$UID),prediction=pip_pred,thresh=pip$thresh,strategy=pip$strategy)
-  bmp = data.frame(actual=gsub(paste(group1,"_",sep=""),"",bmp$UID),prediction=bmp_pred,thresh=bmp$thresh,strategy=bmp$strategy)
   pds = data.frame(actual=gsub(paste(group1,"_",sep=""),"",pds$UID),prediction=pds_pred,thresh=pds$thresh,strategy=pds$strategy)
   pis = data.frame(actual=gsub(paste(group1,"_",sep=""),"",pis$UID),prediction=pis_pred,thresh=pis$thresh,strategy=pis$strategy)
-  bms = data.frame(actual=gsub(paste(group1,"_",sep=""),"",bms$UID),prediction=bms_pred,thresh=bms$thresh,strategy=bms$strategy)
   
   # Return list of accuracy metrics
-  perf = rbind(accuracy_metrics(pdp),accuracy_metrics(pip),accuracy_metrics(bmp),accuracy_metrics(pds),accuracy_metrics(pis),accuracy_metrics(bms))  
+  perf = rbind(accuracy_metrics(pdp),accuracy_metrics(pip),accuracy_metrics(pds),accuracy_metrics(pis))  
   return(perf)
 }
 
@@ -275,27 +255,21 @@ plot_result = function(res,thresh,direction="posneg",outfile) {
 
   pdp = res$pdp[res$pdp$direction==direction,-which(colnames(res$pdp)=="direction")]
   pip = res$pip[res$pip$direction==direction,-which(colnames(res$pip)=="direction")]
-  bmp = res$bmp[res$bmp$direction==direction,-which(colnames(res$bmp)=="direction")]
   pds = res$pds[res$pds$direction==direction,-which(colnames(res$pds)=="direction")]
   pis = res$pis[res$pis$direction==direction,-which(colnames(res$pis)=="direction")]
-  bms = res$bms[res$bms$direction==direction,-which(colnames(res$bms)=="direction")]
   
   # Filter down to threshold of interest
   pdp = as.vector(as.matrix(pdp[pdp$thresh==thresh,-which(colnames(pdp)%in%c("thresh","UID"))]))
   pip = as.vector(as.matrix(pip[pip$thresh==thresh,-which(colnames(pip)%in%c("thresh","UID"))]))
-  bmp = as.vector(as.matrix(bmp[bmp$thresh==thresh,-which(colnames(bmp)%in%c("thresh","UID"))]))
   pds = as.vector(as.matrix(pds[pds$thresh==thresh,-which(colnames(pds)%in%c("thresh","UID"))]))
   pis = as.vector(as.matrix(pis[pis$thresh==thresh,-which(colnames(pis)%in%c("thresh","UID"))]))
-  bms = as.vector(as.matrix(bms[bms$thresh==thresh,-which(colnames(bms)%in%c("thresh","UID"))]))
     
   pdp = flatten(pdp,"intersect.pearson")
   pip = flatten(pip,"union.pearson")
-  bmp = flatten(bmp,"brain.mask.pearson")
   pds = flatten(pds,"intersect.spearman")
   pis = flatten(pis,"union.spearman")
-  bms = flatten(bms,"brain.mask.spearman")
   
-  flat = as.data.frame(rbind(pdp,pip,bmp,pds,pis,bms),stringsAsFactors=FALSE)
+  flat = as.data.frame(rbind(pdp,pip,pds,pis),stringsAsFactors=FALSE)
   flat$value = as.numeric(flat$value)
 
   # Remove values of 1 - comparing an image to itself
@@ -309,19 +283,22 @@ plot_result = function(res,thresh,direction="posneg",outfile) {
     flat = flat[-which(is.na(flat$value)),]
     nans$value = 1
   } else {
-    values = c(0,0,0,0,0,0)
+    values = c(0,0,0,0)
     variables = unique(flat$variable)
     # Make something tiny no one will see for empty plot
     nans = data.frame(value = values, variable=variables)
   }
+  nans$variable = as.character(nans$variable)
+  nans$variable[nans$variable == "intersect.pearson"] = "cca pearson"
+  nans$variable[nans$variable == "intersect.spearman"] = "cca spearman"
+  nans$variable[nans$variable == "union.pearson"] = "svi pearson"
+  nans$variable[nans$variable == "union.spearman"] = "svi spearman"
   
   densityplot = ggplot(flat,aes(x=value, fill=variable)) + 
     geom_density(alpha=0.25) + 
     ylab("Density") + 
     xlab(paste("Threshold",thresh)) + 
-    ylim(0,4) +
     xlim(-1,1) +
-    facet_wrap(~variable) +
     theme(legend.position="none")
   
   nanplot = ggplot(nans,aes(value, fill=variable)) + 
@@ -329,13 +306,12 @@ plot_result = function(res,thresh,direction="posneg",outfile) {
     xlab("NaN Count") + 
     ylab("") +
     facet_wrap(~variable,nrow=1) +
-    ylim(0,5000) +
     theme(strip.background = element_blank(),
           strip.text.x = element_blank()) +
     guides(fill=guide_legend(title=NULL)) +
     scale_x_discrete(breaks=NULL)
   
-  g = arrangeGrob(densityplot, ncol=1)
+  g = arrangeGrob(densityplot, nanplot, ncol=2)
   ggsave(file=outfile,g)    
 }
 
@@ -579,11 +555,14 @@ get_ranking = function(gs,sorted){
       
       # Which names did we get right?
       corr = names(ideal_subset)[which(names(ideal_subset) %in% names(predicted_subset))]
-      correct[corr] = "correct"
-      distances[corr] = 0
-      abs_distances[corr] = 0
-      
-      incorrect = names(ideal_subset)[-which(names(ideal_subset) %in% names(predicted_subset))]
+      if (length(corr)!=0){
+        correct[corr] = "correct"
+        distances[corr] = 0
+        abs_distances[corr] = 0
+        incorrect = names(ideal_subset)[-which(names(ideal_subset) %in% names(predicted_subset))]
+      } else {
+        incorrect = names(ideal_subset)        
+      }
       correct[incorrect] = "incorrect"
     
       # For the wrong predictions, we need to know how far off we were
