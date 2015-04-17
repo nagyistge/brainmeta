@@ -258,7 +258,7 @@ write.table(nanlog,file=paste(datadir,"/nanlog_cca-svi.tsv",sep=""),sep="\t",row
 
 
 # Specify direction
-direction = "pos"
+direction = "posneg"
 
 # For each image, for each threshold, we assess distance from the "gold standard" ordering based on task/contrast
 image_ids = unique(results[["pdp"]]$UID)
@@ -277,7 +277,7 @@ for (i in 1:length(image_ids)){
     for (label in labels){
       # Get ordering based on actual scores
       sorted = filter_single_result(df,thresh,label,other_ids,image_id)
-      acc = calculate_accuracy(gs,sorted)
+      acc = calculate_accuracy(gs,sorted,9)
       
       # For higher thresholds, for smaller groups we may not have an entire group, 
       # so the accuracy will not be calculatable, and we do not append these
@@ -312,9 +312,9 @@ for (i in 1:length(image_ids)){
   }
 }    
 colnames(acc_df) = c("image_id","thresh","strategy","accuracy","group","standard")
-save(acc_df,file=paste(datadir,"/accuracy_df_",direction,".Rda",sep="")#)
+save(acc_df,file=paste(datadir,"/accuracy_df_",direction,"9.Rda",sep=""))
 load(paste(datadir,"/accuracy_df_",direction,".Rda",sep=""))
-write.table(acc_df,file=paste(datadir,"/accuracy_df_",direction,".tsv",sep=""),sep="\t")
+write.table(acc_df,file=paste(datadir,"/accuracy_df_",direction,"9.tsv",sep=""),sep="\t")
 acc_df = as.data.frame(acc_df,stringsAsFactors=FALSE)
 
 # ? Visualize: How often are rankings significantly different? ##############################################################################
@@ -347,10 +347,11 @@ subset_summary = ddply(subset, c("strategy","thresh","standard"), summarise, msc
 ggplot(subset_summary, aes(x=thresh,y=mscore,ymax=up,ymin=down, fill=strategy,colour=strategy,standard=standard)) + 
   geom_line(size=1) + 
   geom_ribbon(alpha=0.15,linetype=0) +
-  xlab("Threshold +/-") +
+  xlab("Threshold +") +
   facet_wrap(~standard) +
   ylab("Accuracy")
-ggsave(paste(savedir,"/chunk_ranking_accuracy",direction,"_withCI.png",sep=""))
+ggsave(paste(savedir,"/chunk_ranking_accuracy",direction,"_withCI_9.png",sep=""))
+write.table(subset_summary,file=paste(datadir,"/chunkrank_summary_",direction,".tsv",sep=""),sep="\t",row.names=FALSE)
 
 # Let's just look at complete case analysis
 load(paste(datadir,"/accuracy_df_posneg.Rda",sep=""))
@@ -432,7 +433,7 @@ unique_groups = c(paste("GRP0",seq(1,9),sep=""),"GRP10")
 # We will keep track of which we have compared, so there are no repeats (eg, group1 vs group2 == group2 vs group1)
 repeat_check = c()
 all_acc = c()
-direction = "posneg"
+direction = "pos"
 
 # For each pairwise group, A and B
 for (group1 in unique_groups){
@@ -457,7 +458,12 @@ all_acc$strategy[all_acc$strategy=="intersect.spearman"] = "cca spearman"
 all_acc$strategy[all_acc$strategy=="union.pearson"] = "svi pearson"
 all_acc$strategy[all_acc$strategy=="union.spearman"] = "svi spearman"
 
-acc_summary = ddply(all_acc, c("strategy","thresh"), summarise, mscore = mean(acc), up=get_ci(acc,"upper"), down=get_ci(acc,"lower"))
+acc_summary = ddply(all_acc, c("strategy","thresh"), summarise, 
+                    accuracy_mean = mean(accuracy), accuracy_upper=get_ci(accuracy,"upper"), accuracy_down=get_ci(accuracy,"lower"),
+                    sensitivity_mean = mean(sensitivity), sensitivity_upper = get_ci(sensitivity,"upper"),sensitivty_lower = get_ci(sensivity,"lower"),
+                    specificity_mean = mean(specificity), specificity_upper = get_ci(specificity,"upper"),specificity_down = get_ci(specificity,"lower"),                   
+                    roc_mean = mean(roc), roc_upper = get_ci(roc,"upper"),roc_lower = get_ci(roc,"lower"))
+
 ggplot(acc_summary, aes(x=thresh,y=mscore,ymax=up,ymin=down, fill=strategy,colour=strategy)) + 
   geom_line(size=1.5) + 
   geom_ribbon(alpha=0.15,linetype=0) +
@@ -468,6 +474,7 @@ ggplot(acc_summary, aes(x=thresh,y=mscore,ymax=up,ymin=down, fill=strategy,colou
 ggsave(paste(savedir,"/ml_accuracy",direction,"_withCI.png",sep=""))
 write.table(acc_summary,file=paste(datadir,"/ml_accuracy_",direction,".tsv",sep=""),sep="\t")
 
+acc_summary = read.table(file=paste(datadir,"/ml_accuracy_",direction,".tsv",sep=""),sep="\t")
 # Woot!
 
 # Finally, if we match NeuroVault percent voxels in brainmap to our result, what accuracy can we expect to get?

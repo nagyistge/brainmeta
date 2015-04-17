@@ -124,6 +124,8 @@ get_max_score_column = function(row,column_names,group_name) {
 
 # Function to get accuracy, sensitivity, specificity, for each threshold, strategy for handling missing data
 # df has columns "actual", "prediction","thresh",and "strategy"
+# Function to get accuracy, sensitivity, specificity, for each threshold, strategy for handling missing data
+# df has columns "actual", "prediction","thresh",and "strategy"
 accuracy_metrics = function(df) {
   unique_thresholds = unique(df$thresh)
   unique_strategy = unique(df$strategy)
@@ -230,7 +232,6 @@ get_direction_result = function(results,direction="posneg") {
   }
   return(all_flat)
 }
-
 
 # PLOTTING FUNCTIONS ####################################################
 plot_distribution = function(df,title,ymax=2.6){
@@ -403,7 +404,7 @@ make_gold_standard_ranking = function(image_id,image_ids){
 }
 
 # The Chunk Indifferent Ranking Algorithm
-calculate_accuracy = function(gs,sorted){
+calculate_accuracy = function(gs,sorted,cutoff=100){
   
   # For each standard, we need to obtain the number of 1,2,3, etc.
   res = list()
@@ -443,6 +444,11 @@ calculate_accuracy = function(gs,sorted){
       # Now we get the actual indices for the ones we got wrong
       actual_indices = which(names(predicted)%in%incorrect)
       
+      # For accuracy we are only taking up to the cutoff
+      if (any(actual_indices>cutoff)){
+        actual_indices = actual_indices[-which(actual_indices>cutoff)]
+      }
+      
       # Case 1: If we are at the first group, we will measure from the last position of the group 1 label
       # [1,1,1<--last ok position,2,2,2,2<--worst case]
       if (group==1){
@@ -450,7 +456,6 @@ calculate_accuracy = function(gs,sorted){
       
         # Calculate the errors, the number of places we were off for each group member
         errors = abs(actual_indices - last_member)
-        
         # Each of the incorrect will get some portion of the remaining accuracy, depending on the distance away from the group chunk
         # A distance == the farthest away possible would get an weight of 0, meaning no additional accuracy
         # We give some percentage of accuracy for each deviation from that position
@@ -476,7 +481,7 @@ calculate_accuracy = function(gs,sorted){
         
         # Calculate weights as the actual distance (errors) as a percentage of the maximum distance away
         additional_error = errors / maximum_distance_away
-     
+        
       # Case 3: If we are at a middle group, we must measure distances in both directions (to end and front of list)
       # and depending on the direction of each incorrect, calculate distance in that direction. 
       # This approach makes the assumption that an error moving up in the list is equally bad to an error 
@@ -492,11 +497,11 @@ calculate_accuracy = function(gs,sorted){
         # Now we split the actual indices into two groups based on the direction
         up_in_list = actual_indices[actual_indices < first_member]
         down_in_list = actual_indices[actual_indices > last_member]
-      
+        
         # Calculate the errors, the number of places we were off for each group member
         errors_up = abs(first_member-up_in_list)
         errors_down = abs(last_member-down_in_list)
-      
+        
         # Give some portion of remaining accuracy based on distances away
         maximum_distance_away_up = abs(first_member - first_index)
         maximum_distance_away_down = abs(length(predicted) - last_member)
@@ -505,6 +510,7 @@ calculate_accuracy = function(gs,sorted){
         additional_error_up = errors_up / maximum_distance_away_up
         additional_error_down = errors_down / maximum_distance_away_down
         additional_error = c(additional_error_up,additional_error_down)
+        
       }
       additional_accuracy_weights = 1-additional_error
       additional_accuracy = additional_accuracy_weights * accuracy_each
