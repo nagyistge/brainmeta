@@ -13,7 +13,8 @@ contrasts = list(motor_ss_maps.columns)
 basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment3"
 standard = "%s/standard/MNI152_T1_2mm_brain_mask.nii.gz" %(basedir)
 
-for con in contrasts:
+for c in range(0,len(contrasts)):
+    con = contrasts[c]
     print "Processing %s" %(con)
     data_outfile_prefix = "%s/%s" %(data_directory,con)
     # Write job to file

@@ -32,8 +32,9 @@ for p in range(0,len(paths)):
     mr = nibabel.load(path)
     masked = apply_mask([mr],brain_mask,ensure_finite=False)[0]
     matrix.loc[subid] = masked
-    # Save to data directory
-    matrix.to_pickle("%s_brainmask.pkl" %(data_outfile_prefix))
+
+# Save to data directory
+matrix.to_pickle("%s_brainmask.pkl" %(data_outfile_prefix))
     
 
 # Now calculate similarity between all subjects
