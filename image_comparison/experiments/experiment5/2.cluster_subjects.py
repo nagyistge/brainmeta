@@ -10,10 +10,9 @@ import pandas
 import nibabel
 import sys
 
-contrast = sys.argv[0]
-data_outfile_prefix = sys.argv[1]
-standard = sys.argv[2]
-data_directory = sys.argv[3]
+contrast = sys.argv[1]
+data_outfile_prefix = sys.argv[2]
+standard = sys.argv[3]
 subject_path_pkl = sys.argv[4]
 
 # This is a matrix of all cope image paths, cols are contrasts, rows subjects
