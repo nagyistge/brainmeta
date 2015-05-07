@@ -4,7 +4,7 @@
 
 from similarity_metrics import weighted_correlation_coefficient
 from scipy.stats import pearsonr
-from nilearn.plotting import apply_mask
+from nilearn.masking import apply_mask
 import numpy
 import pandas
 import nibabel

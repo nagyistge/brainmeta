@@ -2,6 +2,7 @@
 
 import pandas
 import sys
+import os
 
 subject_path_pkl = "/scratch/users/vsochat/DATA/BRAINMETA/experiment5/doc/HCP_465_motor_cope_input.pkl"
 motor_ss_maps = pandas.read_pickle(subject_path_pkl)
