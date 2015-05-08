@@ -48,7 +48,8 @@ for s in range(0,len(motor_ss_maps.index)):
     for sub2 in motor_ss_maps.index:
         if sub1==sub2:
             sim_matrix.loc[sub1,sub2] = 1
-            sim_matrix_weighted.loc[sub1,sub2] = 1
+            sim_matrix_weighted_mean.loc[sub1,sub2] = 1
+            sim_matrix_weighted_min.loc[sub1,sub2] = 1
         elif numpy.isnan(sim_matrix.loc[sub1,sub2]):
             # Get complete case mask
             pdmask = numpy.zeros(len(matrix.columns))

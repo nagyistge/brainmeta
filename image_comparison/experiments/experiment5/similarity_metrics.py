@@ -37,6 +37,7 @@ def correlation_coefficient(image1_vector,image2_vector):
 
 
 # Weighted Correlation Coefficient
+# https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient#Weighted_correlation_coefficient
 def weighted_correlation_coefficient(image1_vector,image2_vector,weights):
     '''Correlation coefficient is ratio between covariance and product of standard deviations'''
     weighted_cov = weighted_covariance(image1_vector,image2_vector,weights)
