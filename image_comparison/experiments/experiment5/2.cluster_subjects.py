@@ -65,7 +65,7 @@ for s in range(0,len(motor_ss_maps.index)):
             pdmask[pdmask == 2] = 1
             image1_data = matrix.loc[sub1,numpy.where(pdmask==1)]
             image2_data = matrix.loc[sub2,numpy.where(pdmask==1)]
-            # 1) Standard pearson correlatio for all voxels
+            # 1) Standard pearson correlation for all voxels
             sim_matrix.loc[sub1,sub2] = pearsonr(image1_data,image2_data)[0]
             sim_matrix.loc[sub2,sub1] = pearsonr(image1_data,image2_data)[0]
             # 2) Weighted correlation - mean

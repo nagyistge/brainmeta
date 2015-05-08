@@ -1,0 +1,5 @@
+regional_activation
+overlap_regional_activation
+overlap_thresholded
+neurosynth_roi
+effect_size_estimates
