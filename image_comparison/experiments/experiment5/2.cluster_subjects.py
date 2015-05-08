@@ -81,9 +81,7 @@ for s in range(0,len(motor_ss_maps.index)):
             score = weighted_correlation_coefficient(image1_data,image2_data,weights)
             sim_matrix_weighted_min.loc[sub1,sub2] = score
             sim_matrix_weighted_min.loc[sub2,sub1] = score
-
-
-# Save the similarity matrices to file
-sim_matrix.to_csv("%s_pearsonr.tsv" %(data_outfile_prefix),sep="\t")
-sim_matrix_weighted_min.to_csv("%s_weightmin.tsv" %(data_outfile_prefix),sep="\t")
-sim_matrix_weighted_mean.to_csv("%s_weightmean.tsv" %(data_outfile_prefix),sep="\t")
+    # Save the similarity matrices to file
+    sim_matrix.to_csv("%s_pearsonrX.tsv" %(data_outfile_prefix),sep="\t")
+    sim_matrix_weighted_min.to_csv("%s_weightminX.tsv" %(data_outfile_prefix),sep="\t")
+    sim_matrix_weighted_mean.to_csv("%s_weightmeanX.tsv" %(data_outfile_prefix),sep="\t")
