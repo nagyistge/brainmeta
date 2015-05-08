@@ -82,12 +82,12 @@ for s in range(0,len(motor_ss_maps.index)):
             sim_matrix_weighted_min.loc[sub1,sub2] = score
             sim_matrix_weighted_min.loc[sub2,sub1] = score
     # Save the similarity matrices to file, delete last version
-    sim_matrix.to_csv("%s_pearsonr%s.tsv" %(data_outfile_prefix,p),sep="\t")
-    sim_matrix_weighted_min.to_csv("%s_weightmin%s.tsv" %(data_outfile_prefix,p),sep="\t")
-    sim_matrix_weighted_mean.to_csv("%s_weightmean%s.tsv" %(data_outfile_prefix,p),sep="\t")
-    if os.path.exists("%s_pearsonr%s.tsv" %(data_outfile_prefix,(p-1))):
-        os.remove("%s_pearsonr%s.tsv" %(data_outfile_prefix,(p-1)))
-    if os.path.exists("%s_weightmin%s.tsv" %(data_outfile_prefix,(p-1))):
-        os.remove("%s_weightmin%s.tsv" %(data_outfile_prefix,(p-1)))
-    if os.path.exists("%s_weightmean%s.tsv" %(data_outfile_prefix,(p-1))):
-        os.remove("%s_weightmean%s.tsv" %(data_outfile_prefix,(p-1)))
+    sim_matrix.to_csv("%s_pearsonr%s.tsv" %(data_outfile_prefix,s),sep="\t")
+    sim_matrix_weighted_min.to_csv("%s_weightmin%s.tsv" %(data_outfile_prefix,s),sep="\t")
+    sim_matrix_weighted_mean.to_csv("%s_weightmean%s.tsv" %(data_outfile_prefix,s),sep="\t")
+    if os.path.exists("%s_pearsonr%s.tsv" %(data_outfile_prefix,(s-1))):
+        os.remove("%s_pearsonr%s.tsv" %(data_outfile_prefix,(s-1)))
+    if os.path.exists("%s_weightmin%s.tsv" %(data_outfile_prefix,(s-1))):
+        os.remove("%s_weightmin%s.tsv" %(data_outfile_prefix,(s-1)))
+    if os.path.exists("%s_weightmean%s.tsv" %(data_outfile_prefix,(s-1))):
+        os.remove("%s_weightmean%s.tsv" %(data_outfile_prefix,(s-1)))
