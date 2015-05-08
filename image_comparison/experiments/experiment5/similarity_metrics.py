@@ -20,14 +20,14 @@ def standard_deviation(image1_vector):
 
 # Weighted mean
 def weighted_mean(image1_vector,weights):
-    return np.dot(image1_vector,weights)/numpy.sum(weights)
+    return np.dot(image1_vector,weights)/np.sum(weights)
    
 # Weighted covariance
 def weighted_covariance(image1_vector,image2_vector,weights):
      weighted_mean1 = weighted_mean(image1_vector,weights)
      weighted_mean2 = weighted_mean(image2_vector,weights)
      numerator = ((image1_vector-weighted_mean1)*(image2_vector-weighted_mean2)*weights).sum()
-     denominator = numpy.sum(weights)
+     denominator = np.sum(weights)
      return numerator/denominator
 
 # Correlation Coefficient
@@ -43,4 +43,4 @@ def weighted_correlation_coefficient(image1_vector,image2_vector,weights):
     weighted_cov = weighted_covariance(image1_vector,image2_vector,weights)
     image1_cov = weighted_covariance(image1_vector,image1_vector,weights)
     image2_cov = weighted_covariance(image2_vector,image2_vector,weights)   
-    return (weighted_cov / (numpy.sqrt((image1_cov*image2_cov))))
+    return (weighted_cov / (np.sqrt((image1_cov*image2_cov))))
