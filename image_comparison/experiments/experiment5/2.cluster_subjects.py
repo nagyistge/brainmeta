@@ -9,11 +9,13 @@ import numpy
 import pandas
 import nibabel
 import sys
+import os
 
 contrast = sys.argv[1]
 data_outfile_prefix = sys.argv[2]
 standard = sys.argv[3]
 subject_path_pkl = sys.argv[4]
+do_data_prep = bool(sys.argv[5])
 
 # This is a matrix of all cope image paths, cols are contrasts, rows subjects
 motor_ss_maps = pandas.read_pickle(subject_path_pkl)
@@ -21,21 +23,23 @@ motor_ss_maps = pandas.read_pickle(subject_path_pkl)
 # We will create a brain mask
 brain_mask = nibabel.load(standard)
 number_voxels = len(brain_mask.get_data()[brain_mask.get_data()==1])
+paths = motor_ss_maps[contrast]
 
 # Data preparation
-matrix = pandas.DataFrame(index=motor_ss_maps.index,columns=range(0,number_voxels))
-paths = motor_ss_maps[contrast]
-for p in range(0,len(paths)):
-    print "Processing %s of %s" %(p,len(paths))
-    path = paths[p]
-    subid = paths.index[p]
-    mr = nibabel.load(path)
-    masked = apply_mask([mr],brain_mask,ensure_finite=False)[0]
-    matrix.loc[subid] = masked
+if do_data_prep == True:
+    matrix = pandas.DataFrame(index=motor_ss_maps.index,columns=range(0,number_voxels))
+    for p in range(0,len(paths)):
+        print "Processing %s of %s" %(p,len(paths))
+        path = paths[p]
+        subid = paths.index[p]
+        mr = nibabel.load(path)
+        masked = apply_mask([mr],brain_mask,ensure_finite=False)[0]
+        matrix.loc[subid] = masked
 
-# Save to data directory
-matrix.to_pickle("%s_brainmask.pkl" %(data_outfile_prefix))
-    
+    # Save to data directory
+    matrix.to_pickle("%s_brainmask.pkl" %(data_outfile_prefix))
+else:
+    matrix = pandas.read_pickle("%s_brainmask.pkl" %(data_outfile_prefix))    
 
 # Now calculate similarity between all subjects
 sim_matrix = pandas.DataFrame(index=motor_ss_maps.index,columns=motor_ss_maps.index) # using all voxels

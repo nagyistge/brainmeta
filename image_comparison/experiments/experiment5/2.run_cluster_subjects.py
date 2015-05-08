@@ -13,6 +13,9 @@ contrasts = list(motor_ss_maps.columns)
 basedir = "/scratch/users/vsochat/DATA/BRAINMETA/experiment3"
 standard = "%s/standard/MNI152_T1_2mm_brain_mask.nii.gz" %(basedir)
 
+# Boolean to calculate original matrix or not
+do_data_prep = False
+
 for c in range(0,len(contrasts)):
     con = contrasts[c]
     print "Processing %s" %(con)
@@ -26,6 +29,6 @@ for c in range(0,len(contrasts)):
     filey.writelines("#SBATCH --error=.out/data_matrix_%s.err\n" %(con))
     filey.writelines("#SBATCH --time=2-00:00\n")
     filey.writelines("#SBATCH --mem=64000\n")
-    filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment5/2.cluster_subjects.py %s %s %s %s\n" %(con,data_outfile_prefix,standard,subject_path_pkl))
+    filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment5/2.cluster_subjects.py %s %s %s %s %s\n" %(con,data_outfile_prefix,standard,subject_path_pkl,do_data_prep))
     filey.close()
     os.system("sbatch -p russpold .job/data_matrix_%s.job" %(con))
