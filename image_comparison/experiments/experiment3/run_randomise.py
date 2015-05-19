@@ -21,7 +21,7 @@ for root, dirnames, filenames in os.walk(search_directory):
 
 volume_df = pandas.DataFrame(volumes)
 volume_df.columns = ["image_path"]
-volume_df.to_csv("%s/hcp_10groups_4Dlist.txt" %(doc_directory))
+volume_df.to_csv("%s/hcp_10groups_unrelated_4Dlist.txt" %(doc_directory))
 
 for volume in volumes:
   contrast_directory = os.path.split(volume)[0]
