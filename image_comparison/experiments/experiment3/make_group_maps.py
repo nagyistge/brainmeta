@@ -36,12 +36,13 @@ if nii.shape[3] != len(subject_ids):
   sys.exit(32)
 
 # Now we need to find the timepoints with our subjects (0 index)
-indices = [subject_ids.index(x) for x in subjects]
+# Don't include subjects that don't have all data
+indices = [subject_ids.index(x) for x in subjects if x in subject_ids]
 
 # Check #2: that we have all subjects in the 4D file
-if len(indices) != len(subjects):
-  print "ERROR: did not find all subjects in 4D group map. Exiting!"
-  sys.exit(32)
+#if len(indices) != len(subjects):
+#  print "ERROR: did not find all subjects in 4D group map. Exiting!"
+#  sys.exit(32)
 
 # Extract only those timepoints, and make a new image!
 data = nii.get_data()

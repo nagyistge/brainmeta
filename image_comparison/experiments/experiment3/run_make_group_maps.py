@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+import pandas
+
 # This script will first define 10 groups per task (N=46 per group) for a total of 860 groups for the 465 individuals in HCP.  Group membership will be constant across tasks/contrasts. Then we will derive the maps.
 
 ##### RUN! ############################################################
@@ -7,9 +9,18 @@
 # Variables to run jobs
 contrasts = pandas.read_csv("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/doc/hcp_contrasts_id.tsv",sep="\t")
 output_directory = "/scratch/users/vsochat/DATA/BRAINMETA/experiment3/group_maps"
-group_maps_directory = "/scratch/PI/russpold/work/HCP/group_maps/nii"
-groups = pickle.load(open("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/doc/hcp_10groups_alltasks.pkl","rb"))
 group_list_directory = "/scratch/PI/russpold/work/HCP/group_maps/copes"
+group_maps_directory = "/scratch/PI/russpold/work/HCP/group_maps/nii"
+#groups = pickle.load(open("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/doc/hcp_10groups_alltasks.pkl","rb"))
+
+groups = pandas.read_csv("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/doc/hcp_unrelated_groups.txt",sep="\t",header=None)
+group_list_directory = "/scratch/PI/russpold/work/HCP/group_maps/copes"
+# Parse into dict
+groupdict = dict()
+for g in groups.iterrows():
+    groupdict[g[1][0]] = g[1][1].split(",")
+
+groups = pickle.load(open("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/doc/hcp_unrelated_groups.pkl","rb"))
 
 # Now for each group, for each contrast, we will read in the image file, select the subjects, and run randomise to generate the group maps
 for grp,subs in groups.iteritems():
