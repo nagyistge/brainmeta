@@ -38,7 +38,7 @@ df["groups_tasks"] = groups_tasks
 df["groups_contrasts"] = groups_contrasts
 
 # Sort by uid
-df.to_csv("%s/hcp_groupmaps.tsv" %(doc_directory) ,sep="\t",index=False)
+df.to_csv("%s/hcp_groupmaps_unrelated.tsv" %(doc_directory) ,sep="\t",index=False)
 
 
 
