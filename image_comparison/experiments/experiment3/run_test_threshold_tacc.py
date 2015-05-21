@@ -10,7 +10,7 @@ from clusterhcp.database import get_hcp_paths
 from clusterhcp.stats import select_unrelated_samples
 
 # This is the top directory of the HCP data
-top_directory = "/corral-tacc/tacc/HCP/"
+top_directory = "/corral-tacc/tacc/HCP"
 basedir = "/scratch/02092/vsochat/DATA/BRAINMETA/IMAGE_COMPARISON/experiments/experiment3"
 outdirectory = "%s/permutations" %(basedir)
 
@@ -40,11 +40,7 @@ filey = open(filey,"w")
 # STEP 1: First we will make groups A and B maps for 500 runs x 96 contrasts
 nruns = 500
 for i in range(0,nruns):
-    # get unrelated samples, default is two groups
-    A,B = select_unrelated_samples(paths,size=size)
-    groupA = ",".join(A)
-    groupB = ",".join(B)
-
+    
     # Top level of output directory is for the iteration
     output_directory = "%s/%s" %(outdirectory,i)
     if not os.path.exists(output_directory):
@@ -55,10 +51,17 @@ for i in range(0,nruns):
 
     # Now generate images for each contrast, group
     for con in contrasts.iterrows():
+       
         task = con[1]["task"]
         contrast = con[1]["contrasts"]
         map_id = con[1]["id"]
         paths = get_hcp_paths(top_directory, tasks=task, contrasts=contrast, disks=disks)
+
+        # get unrelated samples, default is two groups
+        A,B = select_unrelated_samples(paths,size=size)
+        groupA = ",".join(A)
+        groupB = ",".join(B)
+
         filey.writelines("/work/02092/vsochat/SOFTWARE/python-venv/bin/python /work/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_maps_tacc.py %s %s %s %s\n" %(groupA,groupB,maps_directory,map_id))
 
 # Close the file
