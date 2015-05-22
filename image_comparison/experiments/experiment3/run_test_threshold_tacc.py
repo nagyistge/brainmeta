@@ -6,12 +6,13 @@
 
 import os
 import pandas
+from glob import glob
 from clusterhcp.database import get_hcp_paths
 from clusterhcp.stats import select_unrelated_samples
 
 # This is the top directory of the HCP data
 top_directory = "/corral-tacc/tacc/HCP"
-basedir = "/scratch/02092/vsochat/DATA/BRAINMETA/IMAGE_COMPARISON/experiments/experiment3"
+basedir = "/work/02092/vsochat/wrangler/DATA/BRAINMETA/IMAGE_COMPARISON/experiments/experiment3"
 outdirectory = "%s/permutations" %(basedir)
 
 # This is an optional dictionary to replace disk names {"lookup":"replacement"}
@@ -29,13 +30,6 @@ input_file = "%s/doc/hcp_contrasts_id_filter.csv" %(basedir)
 
 # Read in input file
 contrasts = pandas.read_csv(input_file,sep="\t")
-
-
-# We will submit a file with all jobs
-jobname = "experiment3_maps"
-filey = ".job/%s.job" %(jobname)
-filey = open(filey,"w")
-
 
 # STEP 1: First we will make groups A and B maps for 500 runs x 96 contrasts
 nruns = 500
@@ -62,35 +56,35 @@ for i in range(0,nruns):
         groupA = ",".join(A)
         groupB = ",".join(B)
 
-        filey.writelines("/work/02092/vsochat/SOFTWARE/python-venv/bin/python /work/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_maps_tacc.py %s %s %s %s\n" %(groupA,groupB,maps_directory,map_id))
-
-# Close the file
-filey.close()
-
-# Submit the job
-os.system("launch -s .job/%s.job -r 04:00:00 -p 1728 -e 1way -n exp3_maps -j Analysis_Lonestar -m vsochat@stanford.edu" %(jobname))
-
+        filey = ".job/%s_%s.job" %(i,map_id)
+        filey = open(filey,"w")
+        filey.writelines("#!/bin/bash\n")
+        filey.writelines("#SBATCH --job-name=%s_%s\n" %(i,map_id))
+        filey.writelines("#SBATCH --output=.out/%s_%s.out\n" %(i,map_id))
+        filey.writelines("#SBATCH --error=.out/%s_%s.err\n" %(i,map_id))
+        filey.writelines("#SBATCH --time=2-00:00\n")
+        filey.writelines("#SBATCH --mem=64000\n")
+        filey.writelines("module load fsl\n")
+        filey.writelines("/work/02092/vsochat/SOFTWARE/python-venv/bin/python /work/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_maps_tacc.py %s %s %s %s\n" %(groupA,groupB,maps_directory,map_id)) 
+        filey.close()
+        os.system("sbatch -p DS_1 -n 1 .job/%s_%s.job" %(i,map_id))
 
 
 # STEP 2: Now run analysis over each iteration folder
 
 # We will run over a set of thresholds
 thresholds = [0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0]
-thresholds = ",".join(thresholds)
+thresholds = ",".join([str(x) for x in thresholds])
 
 standard = "%s/standard/MNI152_T1_2mm_brain_mask.nii.gz" %(basedir)
-
-jobname = "experiment3_analysis"
-filey = ".job/%s.job" %(jobname)
-filey = open(filey,"w")
 
 for i in range(0,nruns):    
     output_directory = "%s/%s" %(outdirectory,i)
     maps_directory = "%s/maps" %(output_directory)
     # There will be one of group A for each of group B, unrelated
     image_pairs = pandas.DataFrame()
-    image_pairs["groupA"] = glob("%s/*_groupA_tstat1.nii.gz")
-    image_pairs["groupB"] = glob("%s/*_groupB_tstat1.nii.gz")
+    image_pairs["groupA"] = glob("%s/*_groupA_tstat1.nii.gz" %(outdirectory))
+    image_pairs["groupB"] = glob("%s/*_groupB_tstat1.nii.gz" %(outdirectory))
     for run in image_pairs.iterrows():
         #TODO: test to make sure the groups are ordered correctly (matching rows)
         groupA_path = run[1]["groupA"]
@@ -99,11 +93,15 @@ for i in range(0,nruns):
         dofA = int(open("%s/maps/%s_N.txt" %(output_directory,contrast_task),"r").readlines()[0].strip("\n"))
         dofB = int(open("%s/maps/%s_N.txt" %(output_directory,contrast_task),"r").readlines()[0].strip("\n"))
         output_pkl = "%s/comparisons/%s.pkl" %(output_directory,contrast_task)
-        filey.writelines("/work/02092/vsochat/SOFTWARE/python-venv/bin/python /work/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/run_test_threshold_tacc.py %s %s %s %s %s %s %s %s\n" %(groupA_path,groupB_path,thresholds,standard,output_pkl,dofA,dofB,contrast_task))
-
-
-# Close the file
-filey.close()
-
-# Submit the job
-os.system("launch -s .job/%s.job -r 04:00:00 -p 1728 -e 1way -n exp3_analysis -j Analysis_Lonestar -m vsochat@stanford.edu" %(jobname))
+        filey = ".job/%s_%s.job" %(i,contrast_task)
+        filey = open(filey,"w")
+        filey.writelines("#!/bin/bash\n")
+        filey.writelines("#SBATCH --job-name=%s_%s\n" %(i,contrast_task))
+        filey.writelines("#SBATCH --output=.out/%s_%s.out\n" %(i,contrast_task))
+        filey.writelines("#SBATCH --error=.out/%s_%s.err\n" %(i,contrast_task))
+        filey.writelines("#SBATCH --time=2-00:00\n")
+        filey.writelines("#SBATCH --mem=64000\n")
+        filey.writelines("module load fsl\n")
+        filey.writelines("/work/02092/vsochat/SOFTWARE/python-venv/bin/python /work/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/run_test_threshold_tacc.py %s %s %s %s %s %s %s %s\n" %(groupA_path,groupB_path,thresholds,standard,output_pkl,dofA,dofB,contrast_task))        
+        filey.close()
+        os.system("sbatch -p DS_1 -n 1 .job/%s_%s.job" %(i,contrast_task))
