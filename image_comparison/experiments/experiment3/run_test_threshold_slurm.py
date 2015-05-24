@@ -5,13 +5,14 @@
 # for different thresholds, to be used for higher level analysis
 
 import os
+import pickle
 import pandas
 from glob import glob
 from clusterhcp.database import get_hcp_paths
 from clusterhcp.stats import select_unrelated_samples
 
 # This is the top directory of the HCP data
-top_directory = "/corral-tacc/tacc/HCP"
+top_directory = "/scratch/projects/UT/poldracklab/data/HCP"
 basedir = "/work/02092/vsochat/wrangler/DATA/BRAINMETA/IMAGE_COMPARISON/experiments/experiment3"
 outdirectory = "%s/permutations" %(basedir)
 
@@ -34,7 +35,6 @@ contrasts = pandas.read_csv(input_file,sep="\t")
 # STEP 1: First we will make groups A and B maps for 500 runs x 96 contrasts
 nruns = 500
 for i in range(0,nruns):
-    
     # Top level of output directory is for the iteration
     output_directory = "%s/%s" %(outdirectory,i)
     if not os.path.exists(output_directory):
@@ -42,32 +42,26 @@ for i in range(0,nruns):
         os.mkdir("%s/maps" %(output_directory))
         os.mkdir("%s/comparisons" %(output_directory))
     maps_directory = "%s/maps" %(output_directory)
-
     # Now generate images for each contrast, group
-    for con in contrasts.iterrows():
-       
+    for con in contrasts.iterrows():     
         task = con[1]["task"]
         contrast = con[1]["contrasts"]
         map_id = con[1]["id"]
         paths = get_hcp_paths(top_directory, tasks=task, contrasts=contrast, disks=disks)
-
         # get unrelated samples, default is two groups
         A,B = select_unrelated_samples(paths,size=size)
         groupA = ",".join(A)
         groupB = ",".join(B)
-
         filey = ".job/%s_%s.job" %(i,map_id)
         filey = open(filey,"w")
         filey.writelines("#!/bin/bash\n")
         filey.writelines("#SBATCH --job-name=%s_%s\n" %(i,map_id))
         filey.writelines("#SBATCH --output=.out/%s_%s.out\n" %(i,map_id))
         filey.writelines("#SBATCH --error=.out/%s_%s.err\n" %(i,map_id))
-        filey.writelines("#SBATCH --time=2-00:00\n")
-        filey.writelines("#SBATCH --mem=64000\n")
-        filey.writelines("module load fsl\n")
-        filey.writelines("/work/02092/vsochat/SOFTWARE/python-venv/bin/python /work/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_maps_tacc.py %s %s %s %s\n" %(groupA,groupB,maps_directory,map_id)) 
+        filey.writelines("#SBATCH --time=48:00\n")
+        filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_maps_tacc.py %s %s %s %s\n" %(groupA,groupB,maps_directory,map_id)) 
         filey.close()
-        os.system("sbatch -p DS_1 -n 1 .job/%s_%s.job" %(i,map_id))
+        os.system("sbatch -p normal -A TG-CCR130001 -n 1 .job/%s_%s.job" %(i,map_id))
 
 
 # STEP 2: Now run analysis over each iteration folder
