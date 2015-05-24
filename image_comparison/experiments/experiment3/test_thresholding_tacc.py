@@ -26,8 +26,8 @@ import image_transformations as IT
 from scipy.stats import pearsonr, spearmanr
 from nilearn.masking import apply_mask
 
-groupA = sys.argv[1].split(",")
-groupB = sys.argv[2].split(",")
+groupA = sys.argv[1]
+groupB = sys.argv[2]
 thresholds = [float(x) for x in sys.argv[3].split(",")]
 standard = sys.argv[4]
 output_pkl = sys.argv[5]

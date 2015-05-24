@@ -144,7 +144,7 @@ for i in range(0,nruns):
             output_pkl = "%s/comparisons/%s.pkl" %(output_directory,contrast_task)
             if not os.path.exists(output_pkl):
                 if counter < 4096:
-                    filey.writelines("python /work/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/run_test_threshold_tacc.py %s %s %s %s %s %s %s %s\n" %(groupA_path,groupB_path,thresholds,standard,output_pkl,dofA,dofB,contrast_task))        
+                    filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/test_thresholding_tacc.py %s %s %s %s %s %s %s %s\n" %(groupA_path,groupB_path,thresholds,standard,output_pkl,dofA,dofB,contrast_task))        
                     counter = counter + 1
                 else:
                     filey.close()
@@ -153,7 +153,7 @@ for i in range(0,nruns):
                     launch_file = "sim3_%s.job" %(jobnum)
                     print "Writing to new %s" %(launch_file)
                     filey = open(launch_file,"wb")
-                    filey.writelines("python /work/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/run_test_threshold_tacc.py %s %s %s %s %s %s %s %s\n" %(groupA_path,groupB_path,thresholds,standard,output_pkl,dofA,dofB,contrast_task))        
+                    filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/test_thresholding_tacc.py %s %s %s %s %s %s %s %s\n" %(groupA_path,groupB_path,thresholds,standard,output_pkl,dofA,dofB,contrast_task))        
                     counter = 1
         else:
             print "Error, mismatch for run %s" %(run)
