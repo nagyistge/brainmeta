@@ -146,7 +146,7 @@ for con in contrasts.iterrows():
                 jobnum = jobnum + 1
                 launch_file = ".job/miss3_%s.job" %(jobnum)
                 filey = open(launch_file,"wb")    
-                filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(groupA,groupB,maps_directory,map_id)) 
+                filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(subjectsA,"A",maps_directory,map_id)) 
                 counter = 1 
         if not os.path.exists(outfileB):
             print "Missing %s" %(outfileB)        
@@ -161,7 +161,7 @@ for con in contrasts.iterrows():
                 jobnum = jobnum + 1
                 launch_file = ".job/miss3_%s.job" %(jobnum)
                 filey = open(launch_file,"wb")    
-                filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(groupA,groupB,maps_directory,map_id)) 
+                filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(subjectsB,"B",maps_directory,map_id)) 
                 counter = 1 
     
     
