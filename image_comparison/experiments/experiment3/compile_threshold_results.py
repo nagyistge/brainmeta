@@ -12,71 +12,52 @@ import numpy as np
 import nibabel as nib
 from glob import glob
 
-input_folders = np.sort(glob("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/scoresnew/thresh*")).tolist()
+top_directory = "/work/02092/vsochat/wrangler/DATA/BRAINMETA/IMAGE_COMPARISON/experiments/experiment3"
+inputs_directory = "%s/permutations" %(top_directory)
+output_directory = "%s/results" %(top_directory)
+nruns = 500
 
-# We will save all results to these lists
-pearsons_pd = []  # pearsonr scores
-pearsons_pi = []
-#pearsons_bm = []
-spearmans_pd = [] # spearmanr scores
-spearmans_pi = []
-#spearmans_bm = []
-pd_sizes = []     # size of final masks
-pi_sizes = []
-#bm_sizes = []
-nanlog_pd = []    # "success","nan_fewer_3_values","nan_no_overlap"
-nanlog_pi = []
-#nanlog_bm = []
+for r in range(0,nruns):
+    inputs = np.sort(glob("%s/%s/comparisons*.pkl" %(inputs_directory,r))).tolist()
+    input_ids = ["%s_%s" %(r,x.replace(".pkl","")) for x in inputs]
+    # We will save all results to these lists
+    pearsons_pi = []; pearsons_pd = []   # pearsonr scores
+    spearmans_pi = []; spearmans_pd = [] # spearmanr scores
+    pd_sizes = []; pi_sizes = []         # size of final masks
+    nanlog_pd = []; nanlog_pi = []       # "success","nan_fewer_3_values","nan_no_overlap"
+    for i in inputs:
+        tmp = pickle.load(open(i,"rb"))
+        input_id = "%s_%s" %(r,i.replace(".pkl",""))
+        column_labels = input_ids + ["thresh","direction","dof_mr1"]
+        # Load the first to get image ids and order
+        pearson_pd = pandas.DataFrame(columns=column_labels)
+        pearson_pi = pandas.DataFrame(columns=column_labels)
+        spearman_pd = pandas.DataFrame(columns=column_labels)
+        spearman_pi = pandas.DataFrame(columns=column_labels)
+        # We will also save matrices of size differences
+        pd_size = pandas.DataFrame(columns=column_labels)
+        pi_size = pandas.DataFrame(columns=column_labels)
+        # The nan logs keep track of if the comparison was successful, or if we appended nan
+        nanlog_pd_single = pandas.DataFrame(columns=column_labels)
+        nanlog_pi_single = pandas.DataFrame(columns=column_labels)
+        # Each row corresponds to one image, there will be nan for images vs. themselves
+        uids = [x for x in tmp["uid"] if x in column_labels]
+        size_ids = [x for x in tmp["size_ids"] if x in column_labels]
+        uid_index = [tmp["uid"].index(x) for x in uids]
+        size_index = [tmp["size_ids"].index(x) for x in size_ids]
+        pearson_pi.loc[input_id,uids] = [tmp["svi_pearson"][x] for x in uid_index]
+        pearson_pd.loc[input_id,uids] = [tmp["cca_pearson"][x] for x in uid_index]
+        spearman_pi.loc[input_id,uids] = [tmp["svi_spearman"][x] for x in uid_index]
+        spearman_pd.loc[input_id,uids] = [tmp["cca_spearman"][x] for x in uid_index]
+        # Save all mask sizes differences, again will be nan for image vs itself.
+        pd_size.loc[input_id,size_ids] = [tmp["sizes"]["cca"].tolist()[x] for x in size_index]
+        pi_size.loc[input_id,size_ids] = [tmp["sizes"]["svi"].tolist()[x] for x in size_index]
+        # Nanlog - did we append a nan and why?
+        nanlog_pd_single.loc[input_id,uids] = [tmp["nanlog_cca"][x] for x in uid_index]
+        nanlog_pi_single.loc[input_id,uids] = [tmp["nanlog_svi"][x] for x in uid_index]
+        # Add thresholding, directions, mr1 degrees of freedom
+  
 
-for input_folder in input_folders:
-  os.chdir(input_folder)
-  inputs = glob("%s/*.pkl" %input_folder)
-  thresh = os.path.split(input_folder)[1].split("_")[1]
-  direction = os.path.split(input_folder)[1].split("_")[2]
-  input_ids =  [i.replace("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/scoresnew/thresh_%s_%s/" %(thresh,direction),"").replace("_scores_thresh_%s.pkl" %(thresh),"") for i in inputs]
-  #groups = [x.split("_")[0] for x in input_ids]
-  #tasks = [x.split("_")[1] for x in input_ids]
-  #contrasts = [x.split("_")[2] for x in input_ids]
-  column_labels = input_ids + ["thresh","direction","dof_mr1"]
-  # Load the first to get image ids and order
-  pearson_pd = pandas.DataFrame(columns=column_labels)
-  pearson_pi = pandas.DataFrame(columns=column_labels)
-  #pearson_bm = pandas.DataFrame(columns=column_labels)
-  spearman_pd = pandas.DataFrame(columns=column_labels)
-  spearman_pi = pandas.DataFrame(columns=column_labels)
-  #spearman_bm = pandas.DataFrame(columns=column_labels)
-  # We will also save matrices of size differences
-  pd_size = pandas.DataFrame(columns=column_labels)
-  pi_size = pandas.DataFrame(columns=column_labels)
-  #bm_size = pandas.DataFrame(columns=column_labels)
-  # The nan logs keep track of if the comparison was successful, or if we appended nan
-  nanlog_pd_single = pandas.DataFrame(columns=column_labels)
-  nanlog_pi_single = pandas.DataFrame(columns=column_labels)
-  #nanlog_bm_single = pandas.DataFrame(columns=column_labels)
-  # Each row corresponds to one image, there will be nan for images vs. themselves
-  for i in inputs:
-    print "Processing %s" %i
-    input_id =  i.replace("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/scoresnew/thresh_%s_%s/" %(thresh,direction),"").replace("_scores_thresh_%s.pkl" %(thresh),"")
-    tmp = pickle.load(open(i,"rb"))
-    uids = [x for x in tmp["uid"] if x in column_labels]
-    size_ids = [x for x in tmp["size_ids"] if x in column_labels]
-    uid_index = [tmp["uid"].index(x) for x in uids]
-    size_index = [tmp["size_ids"].index(x) for x in size_ids]
-    pearson_pi.loc[input_id,uids] = [tmp["svi_pearson"][x] for x in uid_index]
-    pearson_pd.loc[input_id,uids] = [tmp["cca_pearson"][x] for x in uid_index]
-    #pearson_bm.loc[input_id,uids] = [tmp["mr_vs_thresh_pearson_bm"][x] for x in uid_index]
-    spearman_pi.loc[input_id,uids] = [tmp["svi_spearman"][x] for x in uid_index]
-    spearman_pd.loc[input_id,uids] = [tmp["cca_spearman"][x] for x in uid_index]
-    #spearman_bm.loc[input_id,uids] = [tmp["mr_vs_thresh_spearman_bm"][x] for x in uid_index]
-    # Save all mask sizes differences, again will be nan for image vs itself.
-    pd_size.loc[input_id,size_ids] = [tmp["sizes"]["cca"].tolist()[x] for x in size_index]
-    pi_size.loc[input_id,size_ids] = [tmp["sizes"]["svi"].tolist()[x] for x in size_index]
-    #bm_size.loc[input_id,size_ids] = [tmp["sizes"]["bm"].tolist()[x] for x in size_index]
-    # Nanlog - did we append a nan and why?
-    nanlog_pd_single.loc[input_id,uids] = [tmp["nanlog_cca"][x] for x in uid_index]
-    nanlog_pi_single.loc[input_id,uids] = [tmp["nanlog_svi"][x] for x in uid_index]
-    #nanlog_bm_single.loc[input_id,uids] = [tmp["nanlog_bm"][x] for x in uid_index]
-  # Add thresholding, directions, mr1 degrees of freedom
   pd_size["thresh"] = thresh; pd_size["direction"] = direction
   pi_size["thresh"] = thresh; pi_size["direction"] = direction
   #bm_size["thresh"] = thresh; bm_size["direction"] = direction
@@ -124,7 +105,7 @@ nanlogpi = pandas.tools.merge.concat(nanlog_pi,axis=0)
 #nanlogbm = pandas.tools.merge.concat(nanlog_bm,axis=0)
 
 # Save all data matrices to file
-os.chdir("/scratch/users/vsochat/DATA/BRAINMETA/experiment3/scoresnew/")
+os.chdir(output_directory)
 ppd.to_csv("860_pearson_cca.tsv",sep="\t")
 ppi.to_csv("860_pearson_svi.tsv",sep="\t")
 #pbm.to_csv("860_pearson_bm_v2.tsv",sep="\t")

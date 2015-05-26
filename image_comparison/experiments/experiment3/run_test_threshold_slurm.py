@@ -91,10 +91,6 @@ for con in contrasts.iterrows():
     contrast = con[1]["contrasts"]
     map_id = con[1]["id"]
     paths = get_hcp_paths(top_directory, tasks=task, contrasts=contrast, disks=disks)
-    A = [s for s in paths if s.split("/")[8] in subjectsA]
-    B = [s for s in paths if s.split("/")[8] in subjectsB]
-    groupA = ",".join(A)
-    groupB = ",".join(B)
     for i in range(0,nruns):
         # Top level of output directory is for the iteration
         output_directory = "%s/%s" %(outdirectory,i)
@@ -104,8 +100,12 @@ for con in contrasts.iterrows():
         subjectsB = open("%s/copesB.txt" %(output_directory),"r").readlines()
         subjectsA = [x.replace("\n","") for x in subjectsA]
         subjectsB = [x.replace("\n","") for x in subjectsB]
+        A = [s for s in paths if s.split("/")[8] in subjectsA]
+        B = [s for s in paths if s.split("/")[8] in subjectsB]
+        groupA = ",".join(A)
+        groupB = ",".join(B)
         if counter < 4096:
-            filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_maps_tacc.py %s %s %s %s\n" %(subjectsA,subjectsB,maps_directory,map_id)) 
+            filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_maps_tacc.py %s %s %s %s\n" %(groupA,groupB,maps_directory,map_id)) 
             counter = counter + 1
         else:
             filey.close()
@@ -113,7 +113,7 @@ for con in contrasts.iterrows():
             jobnum = jobnum + 1
             launch_file = ".job/experiment3_%s.job" %(jobnum)
             filey = open(launch_file,"wb")    
-            filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_maps_tacc.py %s %s %s %s\n" %(subjectsA,subjectsB,maps_directory,map_id)) 
+            filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_maps_tacc.py %s %s %s %s\n" %(groupA,groupB,maps_directory,map_id)) 
             counter = 1 
 
 
