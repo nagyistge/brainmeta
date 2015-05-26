@@ -176,7 +176,7 @@ for i in range(271,nruns):
 thresholds = [0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0]
 thresholds = ",".join([str(x) for x in thresholds])
 
-standard = "%s/standard/MNI152_T1_2mm_brain_mask.nii.gz" %(basedir)
+standard = "%s/standard/MNI152_T1_brain_mask_exp3.nii.gz" %(basedir)
 
 # We will again use launcher, and submit 4095 jobs at once
 counter = 1
