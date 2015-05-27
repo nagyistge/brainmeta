@@ -127,6 +127,7 @@ for con in contrasts.iterrows():
     task = con[1]["task"]
     contrast = con[1]["contrasts"]
     map_id = con[1]["id"]
+    paths = get_hcp_paths(top_directory, tasks=task, contrasts=contrast, disks=disks)
     for i in range(0,nruns):
         # Top level of output directory is for the iteration
         output_directory = "%s/%s" %(outdirectory,i)
@@ -137,8 +138,10 @@ for con in contrasts.iterrows():
             print "Missing %s" %(outfileA)        
             subjectsA = open("%s/copesA.txt" %(output_directory),"r").readlines()
             subjectsA = [x.replace("\n","") for x in subjectsA]
+            A = [s for s in paths if s.split("/")[8] in subjectsA]
+            groupA = ",".join(A)
             if counter < 4096:
-                filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(subjectsA,"A",maps_directory,map_id)) 
+                filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(groupA,"A",maps_directory,map_id)) 
                 counter = counter + 1
             else:
                 filey.close()
@@ -146,14 +149,16 @@ for con in contrasts.iterrows():
                 jobnum = jobnum + 1
                 launch_file = ".job/miss3_%s.job" %(jobnum)
                 filey = open(launch_file,"wb")    
-                filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(subjectsA,"A",maps_directory,map_id)) 
+                filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(groupA,"A",maps_directory,map_id)) 
                 counter = 1 
         if not os.path.exists(outfileB):
             print "Missing %s" %(outfileB)        
             subjectsB = open("%s/copesB.txt" %(output_directory),"r").readlines()
             subjectsB = [x.replace("\n","") for x in subjectsB]
+            B = [s for s in paths if s.split("/")[8] in subjectsB]
+            groupB = ",".join(B)
             if counter < 4096:
-                filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(subjectsB,"B",maps_directory,map_id)) 
+                filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(groupB,"B",maps_directory,map_id)) 
                 counter = counter + 1
             else:
                 filey.close()
@@ -161,7 +166,7 @@ for con in contrasts.iterrows():
                 jobnum = jobnum + 1
                 launch_file = ".job/miss3_%s.job" %(jobnum)
                 filey = open(launch_file,"wb")    
-                filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(subjectsB,"B",maps_directory,map_id)) 
+                filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(groupB,"B",maps_directory,map_id)) 
                 counter = 1 
     
     
