@@ -120,7 +120,7 @@ for con in contrasts.iterrows():
 ### STEP 3: Find any missing maps ###########################################################
 counter = 1  
 jobnum = 1
-launch_file = ".job/miss3_%s.job" %(jobnum)
+launch_file = "miss3_%s.job" %(jobnum)
 filey = open(launch_file,"wb")    
 for con in contrasts.iterrows(): 
     print "Processing contrast %s" %(con[1].id)  
@@ -133,7 +133,7 @@ for con in contrasts.iterrows():
         output_directory = "%s/%s" %(outdirectory,i)
         maps_directory = "%s/maps" %(output_directory)
         outfileA = "%s/%s_groupA_tstat1.nii.gz" %(maps_directory,map_id)
-        outfileB = "%s/%s_groupA_tstat1.nii.gz" %(maps_directory,map_id)
+        outfileB = "%s/%s_groupB_tstat1.nii.gz" %(maps_directory,map_id)
         if not os.path.exists(outfileA):
             print "Missing %s" %(outfileA)        
             subjectsA = open("%s/copesA.txt" %(output_directory),"r").readlines()
@@ -169,19 +169,115 @@ for con in contrasts.iterrows():
                 filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(groupB,"B",maps_directory,map_id)) 
                 counter = 1 
     
-    
+
+### STEP 4: Submit single jobs (script) ###########################################################
+counter = 1  
+jobnum = 1
+number_jobs = int(os.popen('squeue -u vsochat | wc -l').read().replace("\n",""))-1
+for con in contrasts.iterrows(): 
+    print "Processing contrast %s" %(con[1].id)  
+    task = con[1]["task"]
+    contrast = con[1]["contrasts"]
+    map_id = con[1]["id"]
+    paths = get_hcp_paths(top_directory, tasks=task, contrasts=contrast, disks=disks)
+    for i in range(0,nruns):
+        # Top level of output directory is for the iteration
+        output_directory = "%s/%s" %(outdirectory,i)
+        maps_directory = "%s/maps" %(output_directory)
+        outfileA = "%s/%s_groupA_tstat1.nii.gz" %(maps_directory,map_id)
+        outfileB = "%s/%s_groupA_tstat1.nii.gz" %(maps_directory,map_id)
+        if not os.path.exists(outfileA):
+            print "Missing %s" %(outfileA)        
+            subjectsA = open("%s/copesA.txt" %(output_directory),"r").readlines()
+            subjectsA = [x.replace("\n","") for x in subjectsA]
+            A = [s for s in paths if s.split("/")[8] in subjectsA]
+            groupA = ",".join(A)
+            filey = ".job/%s_%s.job" %("A",map_id)
+            filey = open(filey,"w")
+            filey.writelines("#!/bin/bash\n")
+            filey.writelines("#SBATCH --job-name=%s_%s\n" %("A",map_id))
+            filey.writelines("#SBATCH --output=.out/%s_%s.out\n" %("A",map_id))
+            filey.writelines("#SBATCH --error=.out/%s_%s.err\n" %("A",map_id))
+            filey.writelines("#SBATCH --time=1:00\n")
+            filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(groupA,"A",maps_directory,map_id)) 
+            filey.close()
+            while number_jobs >= 50:
+                time.sleep(15)
+            os.system("sbatch -p normal -A TG-CCR130001 -n 1 .job/%s_%s.job" %("A",map_id))
+            number_jobs = int(os.popen('squeue -u vsochat | wc -l').read().replace("\n",""))-1
+        if not os.path.exists(outfileB):
+            print "Missing %s" %(outfileB)        
+            subjectsB = open("%s/copesB.txt" %(output_directory),"r").readlines()
+            subjectsB = [x.replace("\n","") for x in subjectsB]
+            B = [s for s in paths if s.split("/")[8] in subjectsB]
+            groupB = ",".join(B)
+            filey = ".job/%s_%s.job" %("B",map_id)
+            filey = open(filey,"w")
+            filey.writelines("#!/bin/bash\n")
+            filey.writelines("#SBATCH --job-name=%s_%s\n" %("B",map_id))
+            filey.writelines("#SBATCH --output=.out/%s_%s.out\n" %("B",map_id))
+            filey.writelines("#SBATCH --error=.out/%s_%s.err\n" %("B",map_id))
+            filey.writelines("#SBATCH --time=1:00\n")
+            filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(groupB,"B",maps_directory,map_id)) 
+            filey.close()
+            while number_jobs >= 50:
+                time.sleep(15)
+            os.system("sbatch -p normal -A TG-CCR130001 -n 1 .job/%s_%s.job" %("B",map_id))            
+            number_jobs = int(os.popen('squeue -u vsochat | wc -l').read().replace("\n",""))-1
+
+
+### STEP 4: Submit single jobs (interactive) ###########################################################
+counter = 1  
+jobnum = 1
+number_jobs = int(os.popen('squeue -u vsochat | wc -l').read().replace("\n",""))-1
+for con in contrasts.iterrows(): 
+    print "Processing contrast %s" %(con[1].id)  
+    task = con[1]["task"]
+    contrast = con[1]["contrasts"]
+    map_id = con[1]["id"]
+    paths = get_hcp_paths(top_directory, tasks=task, contrasts=contrast, disks=disks)
+    iters = range(0,500)
+    iters.reverse()
+    for i in iters:
+        # Top level of output directory is for the iteration
+        output_directory = "%s/%s" %(outdirectory,i)
+        maps_directory = "%s/maps" %(output_directory)
+        outfileA = "%s/%s_groupA_tstat1.nii.gz" %(maps_directory,map_id)
+        outfileB = "%s/%s_groupB_tstat1.nii.gz" %(maps_directory,map_id)
+        if not os.path.exists(outfileB):
+            print "Missing %s" %(outfileB)        
+            subjectsB = open("%s/copesB.txt" %(output_directory),"r").readlines()
+            subjectsB = [x.replace("\n","") for x in subjectsB]
+            B = [s for s in paths if s.split("/")[8] in subjectsB]
+            groupB = ",".join(B)
+            os.system("python make_group_map_single_tacc.py %s %s %s %s\n" %(groupB,"B",maps_directory,map_id))
+        if not os.path.exists(outfileA):
+            print "Missing %s" %(outfileA)        
+            subjectsA = open("%s/copesA.txt" %(output_directory),"r").readlines()
+            subjectsA = [x.replace("\n","") for x in subjectsA]
+            A = [s for s in paths if s.split("/")[8] in subjectsA]
+            groupA = ",".join(A)
+            os.system("python make_group_map_single_tacc.py %s %s %s %s\n" %(groupA,"A",maps_directory,map_id)) 
+ 
+
 
 ### STEP 4: Which runs are done? ############################
 
 
 done = []
+count=0
 for i in range(0,nruns):
    num = glob("/work/02092/vsochat/wrangler/DATA/BRAINMETA/IMAGE_COMPARISON/experiments/experiment3/permutations/%s/maps/*_tstat1.nii.gz" %(i))
    if len(num)==94: done.append(i)
+   else:
+       count = count + (94-len(num))
+
+## Delete intermediate files to free up room
 
 redo = [x for x in range(0,500) if x not in done]
-for r in redo:
-  os.system("rm -rf /work/02092/vsochat/wrangler/DATA/BRAINMETA/IMAGE_COMPARISON/experiments/experiment3/permutations/%s" %(r))
+for r in range(0,500):
+  print r
+  os.system("rm /work/02092/vsochat/wrangler/DATA/BRAINMETA/IMAGE_COMPARISON/experiments/experiment3/permutations/%s/maps/*4D.nii.gz" %(r))
 
 
 ### STEP 5: Calculate similarities for maps that have all images generated ############################
@@ -216,16 +312,22 @@ for i in range(0,nruns):
 		    groupA_path = run[1]["groupA"]
 		    groupB_path = run[1]["groupB"]
 		    contrast_task = groupA_path.split("/")[-1].replace("_groupA_tstat1.nii.gz","")
-		    dofA = int(open("%s/maps/%s_groupA_N.txt" %(output_directory,contrast_task),"r").readlines()[0].strip("\n"))
-		    dofB = int(open("%s/maps/%s_groupB_N.txt" %(output_directory,contrast_task),"r").readlines()[0].strip("\n"))
-		    output_pkl = "%s/comparisons/%s.pkl" %(output_directory,contrast_task)
+                    try:
+   		        dofA = int(open("%s/maps/%s_groupA_N.txt" %(output_directory,contrast_task),"r").readlines()[0].strip("\n"))
+		    except:
+                        dofA = 46
+                    try:
+                        dofB = int(open("%s/maps/%s_groupB_N.txt" %(output_directory,contrast_task),"r").readlines()[0].strip("\n"))
+	            except: 
+                        dofB = 46
+   	            output_pkl = "%s/comparisons/%s.pkl" %(output_directory,contrast_task)
 		    if not os.path.exists(output_pkl):
 		        if counter < 4096:
 		            filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/test_thresholding_tacc.py %s %s %s %s %s %s %s %s\n" %(groupA_path,groupB_path,thresholds,standard,output_pkl,dofA,dofB,contrast_task))        
 		            counter = counter + 1
 		        else:
 		            filey.close()
-		            os.system("launch -s %s -r 48:00 -e 1way -n %s -j Analysis_Lonestar -m vsochat@stanford.edu" %(launch_file, launch_file.replace(".job","")))
+		            os.system("launch -s %s -r 15:00 -e 1way -n %s -j Analysis_Lonestar -m vsochat@stanford.edu" %(launch_file, launch_file.replace(".job","")))
 		            jobnum = jobnum + 1
 		            launch_file = "sim3_%s.job" %(jobnum)
 		            print "Writing to new %s" %(launch_file)
