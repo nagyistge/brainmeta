@@ -80,7 +80,7 @@ for con in contrasts.iterrows():
     contrast = con[1]["contrasts"]
     map_id = con[1]["id"]
     paths = get_hcp_paths(top_directory, tasks=task, contrasts=contrast)
-    for i in range(0,106):
+    for i in range(106,212):
         # Top level of output directory is for the iteration
         output_directory = "%s/%s" %(outdirectory,i)
         maps_directory = "%s/maps" %(output_directory)
@@ -181,7 +181,7 @@ counter = 1
 jobnum = 1
 launch_file = "sim3_%s.job" %(jobnum)
 filey = open(launch_file,"wb")
-
+counter = 1
 for i in range(0,nruns):    
     output_directory = "%s/%s" %(outdirectory,i)
     maps_directory = "%s/maps" %(output_directory)
@@ -199,31 +199,18 @@ for i in range(0,nruns):
 		    groupA_path = run[1]["groupA"]
 		    groupB_path = run[1]["groupB"]
 		    contrast_task = groupA_path.split("/")[-1].replace("_groupA_tstat1.nii.gz","")
-                    try:
-   		        dofA = int(open("%s/maps/%s_groupA_N.txt" %(output_directory,contrast_task),"r").readlines()[0].strip("\n"))
-		    except:
-                        dofA = 46
-                    try:
-                        dofB = int(open("%s/maps/%s_groupB_N.txt" %(output_directory,contrast_task),"r").readlines()[0].strip("\n"))
-	            except: 
-                        dofB = 46
-   	            output_pkl = "%s/comparisons/%s.pkl" %(output_directory,contrast_task)
+                    output_pkl = "%s/comparisons/%s.pkl" %(output_directory,contrast_task)
 		    if not os.path.exists(output_pkl):
-		        if counter < 4096:
-		            filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/test_thresholding_tacc.py %s %s %s %s %s %s %s %s\n" %(groupA_path,groupB_path,thresholds,standard,output_pkl,dofA,dofB,contrast_task))        
-		            counter = counter + 1
-		        else:
-		            filey.close()
-		            os.system("launch -s %s -r 15:00 -e 1way -n %s -j Analysis_Lonestar -m vsochat@stanford.edu" %(launch_file, launch_file.replace(".job","")))
-		            jobnum = jobnum + 1
-		            launch_file = "sim3_%s.job" %(jobnum)
-		            print "Writing to new %s" %(launch_file)
-		            filey = open(launch_file,"wb")
-		            filey.writelines("python /home1/02092/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/test_thresholding_tacc.py %s %s %s %s %s %s %s %s\n" %(groupA_path,groupB_path,thresholds,standard,output_pkl,dofA,dofB,contrast_task))        
-		            counter = 1
+                        filey = ".job/%s_%s.job" %(i,contrast_task)
+                        filey = open(filey,"w")
+                        filey.writelines("#!/bin/bash\n")
+                        filey.writelines("#SBATCH --job-name=%s_%s\n" %(i,contrast_task))
+                        filey.writelines("#SBATCH --output=.out/%s_%s.out\n" %(i,contrast_task))
+                        filey.writelines("#SBATCH --error=.out/%s_%s.err\n" %(i,contrast_task))
+                        filey.writelines("#SBATCH --time=30:00\n")
+                        filey.writelines("module load fsl\n")
+		        filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/test_thresholding_tacc.py %s %s %s %s %s %s %s %s\n" %(groupA_path,thresholds,standard,output_pkl,contrast_task))        
 		else:
 		    print "Error, mismatch for run %s %s" %(run[1].groupA,run[1].groupB)
     else:
         print "Error: iteration %s is missing maps, fix!" %(i)
-
-
