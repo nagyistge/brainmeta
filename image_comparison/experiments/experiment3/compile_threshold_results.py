@@ -15,11 +15,19 @@ from glob import glob
 top_directory = "/work/02092/vsochat/wrangler/DATA/BRAINMETA/IMAGE_COMPARISON/experiments/experiment3"
 inputs_directory = "%s/permutations" %(top_directory)
 output_directory = "%s/results" %(top_directory)
+contrast_file = "%s/doc/hcp_contrasts_id_filter.csv" %(top_directory)
+contrasts = pandas.read_csv(contrast_file,sep="\t").id.tolist()
+
 nruns = 500
+runs_missing = []
 
 for r in range(0,nruns):
-    inputs = np.sort(glob("%s/%s/comparisons*.pkl" %(inputs_directory,r))).tolist()
-    input_ids = ["%s_%s" %(r,x.replace(".pkl","")) for x in inputs]
+    inputs = np.sort(glob("%s/%s/comparisons/*.pkl" %(inputs_directory,r))).tolist()
+    input_ids = ["%s_%s" %(r,x.replace(".pkl","").replace("%s/%s/comparisons/" %(inputs_directory,r),"")) for x in inputs]
+    # Find contrast ids that are missing
+    contrast_ids = ["%s" %(x.replace(".pkl","").replace("%s/%s/comparisons/" %(inputs_directory,r),"")) for x in inputs]
+    missing = ["%s_%s" %(r,c) for c in contrasts if c not in contrast_ids]
+    runs_missing = runs_missing + missing
     # We will save all results to these lists
     pearsons_pi = []; pearsons_pd = []   # pearsonr scores
     spearmans_pi = []; spearmans_pd = [] # spearmanr scores
@@ -27,7 +35,7 @@ for r in range(0,nruns):
     nanlog_pd = []; nanlog_pi = []       # "success","nan_fewer_3_values","nan_no_overlap"
     for i in inputs:
         tmp = pickle.load(open(i,"rb"))
-        input_id = "%s_%s" %(r,i.replace(".pkl",""))
+        input_id = "%s_%s" %(r,x.replace(".pkl","").replace("%s/%s/comparisons/" %(inputs_directory,r),""))
         column_labels = input_ids + ["thresh","direction","dof_mr1"]
         # Load the first to get image ids and order
         pearson_pd = pandas.DataFrame(columns=column_labels)
@@ -41,7 +49,7 @@ for r in range(0,nruns):
         nanlog_pd_single = pandas.DataFrame(columns=column_labels)
         nanlog_pi_single = pandas.DataFrame(columns=column_labels)
         # Each row corresponds to one image, there will be nan for images vs. themselves
-        uids = [x for x in tmp["uid"] if x in column_labels]
+        uids = [x for x in tmp["id"] if "%s_%s" %(r,x) in column_labels]
         size_ids = [x for x in tmp["size_ids"] if x in column_labels]
         uid_index = [tmp["uid"].index(x) for x in uids]
         size_index = [tmp["size_ids"].index(x) for x in size_ids]
