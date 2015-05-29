@@ -80,7 +80,7 @@ for con in contrasts.iterrows():
     contrast = con[1]["contrasts"]
     map_id = con[1]["id"]
     paths = get_hcp_paths(top_directory, tasks=task, contrasts=contrast)
-    for i in range(106,212):
+    for i in range(424,500):
         # Top level of output directory is for the iteration
         output_directory = "%s/%s" %(outdirectory,i)
         maps_directory = "%s/maps" %(output_directory)
@@ -156,7 +156,7 @@ for con in contrasts.iterrows():
 done = []
 count=0
 for i in range(0,nruns):
-   num = glob("/share/PI/russpold/work/IMAGE_COMPARISON/experiments/experiment3/permutations/%s/maps/*_tstat1.nii.gz" %(i))
+   num = glob("/share/PI/russpold/work/IMAGE_COMPARISON/experiment3/permutations/%s/maps/*_tstat1.nii.gz" %(i))
    if len(num)==94: done.append(i)
    else:
        count = count + (94-len(num))
@@ -165,7 +165,7 @@ for i in range(0,nruns):
 
 for r in range(0,500):
   print r
-  os.system("rm /share/PI/russpold/work/IMAGE_COMPARISON/experiments/experiment3/permutations/%s/maps/*4D.nii.gz" %(r))
+  os.system("rm /share/PI/russpold/work/IMAGE_COMPARISON/experiment3/permutations/%s/maps/*4D.nii.gz" %(r))
 
 
 ### STEP 5: Calculate similarities for maps that have all images generated ############################
@@ -174,14 +174,8 @@ for r in range(0,500):
 thresholds = [0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0]
 thresholds = ",".join([str(x) for x in thresholds])
 
-standard = "%s/standard/MNI152_T1_brain_mask_exp3.nii.gz" %(basedir)
+standard = "%s/standard/MNI152_T1_2mm_brain_mask.nii.gz" %(basedir)
 
-# We will again use launcher, and submit 4095 jobs at once
-counter = 1
-jobnum = 1
-launch_file = "sim3_%s.job" %(jobnum)
-filey = open(launch_file,"wb")
-counter = 1
 for i in range(0,nruns):    
     output_directory = "%s/%s" %(outdirectory,i)
     maps_directory = "%s/maps" %(output_directory)
@@ -201,6 +195,7 @@ for i in range(0,nruns):
 		    contrast_task = groupA_path.split("/")[-1].replace("_groupA_tstat1.nii.gz","")
                     output_pkl = "%s/comparisons/%s.pkl" %(output_directory,contrast_task)
 		    if not os.path.exists(output_pkl):
+if 1==1:
                         filey = ".job/%s_%s.job" %(i,contrast_task)
                         filey = open(filey,"w")
                         filey.writelines("#!/bin/bash\n")
@@ -209,7 +204,9 @@ for i in range(0,nruns):
                         filey.writelines("#SBATCH --error=.out/%s_%s.err\n" %(i,contrast_task))
                         filey.writelines("#SBATCH --time=30:00\n")
                         filey.writelines("module load fsl\n")
-		        filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/test_thresholding_tacc.py %s %s %s %s %s %s %s %s\n" %(groupA_path,thresholds,standard,output_pkl,contrast_task))        
+		        filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/test_thresholding_tacc.py %s %s %s %s %s\n" %(groupA_path,thresholds,standard,output_pkl,contrast_task))     
+                        filey.close()   
+                        os.system("sbatch -p russpold .job/%s_%s.job" %(i,contrast_task))
 		else:
 		    print "Error, mismatch for run %s %s" %(run[1].groupA,run[1].groupB)
     else:

@@ -154,10 +154,10 @@ for groupB in groupB_maps:
 		        svi_pearson.append(np.nan)
 		        svi_spearman.append(np.nan)
 		        nanlog_svi.append("nan_no_overlap")
-		# Save sizes of all masks
-		sizes.loc[idx] = [len(datacca[0]),len(datasvi[0])]
-		size_ids.append("%s_%s" %(thresh,absolute_value))
-	    idx+=1
+		    # Save sizes of all masks
+		    sizes.loc[idx] = [len(datacca[0]),len(datasvi[0])]
+		    size_ids.append("%s_%s" %(thresh,absolute_value))
+	        idx+=1
 
 # Save all data to output dictionary
 output = {"id":map_id,
