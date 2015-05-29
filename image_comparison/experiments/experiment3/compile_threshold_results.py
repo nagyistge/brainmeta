@@ -12,117 +12,81 @@ import numpy as np
 import nibabel as nib
 from glob import glob
 
-top_directory = "/work/02092/vsochat/wrangler/DATA/BRAINMETA/IMAGE_COMPARISON/experiments/experiment3"
+top_directory = "/share/PI/russpold/work/IMAGE_COMPARISON/experiment3"
 inputs_directory = "%s/permutations" %(top_directory)
 output_directory = "%s/results" %(top_directory)
 contrast_file = "%s/doc/hcp_contrasts_id_filter.csv" %(top_directory)
 contrasts = pandas.read_csv(contrast_file,sep="\t").id.tolist()
 
-nruns = 500
-runs_missing = []
+# Lets work from the output directory
+os.chdir(output_directory)
 
+nruns = 500
 for r in range(0,nruns):
     inputs = np.sort(glob("%s/%s/comparisons/*.pkl" %(inputs_directory,r))).tolist()
     input_ids = ["%s_%s" %(r,x.replace(".pkl","").replace("%s/%s/comparisons/" %(inputs_directory,r),"")) for x in inputs]
     # Find contrast ids that are missing
     contrast_ids = ["%s" %(x.replace(".pkl","").replace("%s/%s/comparisons/" %(inputs_directory,r),"")) for x in inputs]
     missing = ["%s_%s" %(r,c) for c in contrasts if c not in contrast_ids]
-    runs_missing = runs_missing + missing
-    # We will save all results to these lists
-    pearsons_pi = []; pearsons_pd = []   # pearsonr scores
-    spearmans_pi = []; spearmans_pd = [] # spearmanr scores
-    pd_sizes = []; pi_sizes = []         # size of final masks
-    nanlog_pd = []; nanlog_pi = []       # "success","nan_fewer_3_values","nan_no_overlap"
-    for i in inputs:
-        tmp = pickle.load(open(i,"rb"))
-        input_id = "%s_%s" %(r,x.replace(".pkl","").replace("%s/%s/comparisons/" %(inputs_directory,r),""))
-        column_labels = input_ids + ["thresh","direction","dof_mr1"]
-        # Load the first to get image ids and order
-        pearson_pd = pandas.DataFrame(columns=column_labels)
-        pearson_pi = pandas.DataFrame(columns=column_labels)
-        spearman_pd = pandas.DataFrame(columns=column_labels)
-        spearman_pi = pandas.DataFrame(columns=column_labels)
-        # We will also save matrices of size differences
-        pd_size = pandas.DataFrame(columns=column_labels)
-        pi_size = pandas.DataFrame(columns=column_labels)
-        # The nan logs keep track of if the comparison was successful, or if we appended nan
-        nanlog_pd_single = pandas.DataFrame(columns=column_labels)
-        nanlog_pi_single = pandas.DataFrame(columns=column_labels)
-        # Each row corresponds to one image, there will be nan for images vs. themselves
-        uids = [x for x in tmp["id"] if "%s_%s" %(r,x) in column_labels]
-        size_ids = [x for x in tmp["size_ids"] if x in column_labels]
-        uid_index = [tmp["uid"].index(x) for x in uids]
-        size_index = [tmp["size_ids"].index(x) for x in size_ids]
-        pearson_pi.loc[input_id,uids] = [tmp["svi_pearson"][x] for x in uid_index]
-        pearson_pd.loc[input_id,uids] = [tmp["cca_pearson"][x] for x in uid_index]
-        spearman_pi.loc[input_id,uids] = [tmp["svi_spearman"][x] for x in uid_index]
-        spearman_pd.loc[input_id,uids] = [tmp["cca_spearman"][x] for x in uid_index]
-        # Save all mask sizes differences, again will be nan for image vs itself.
-        pd_size.loc[input_id,size_ids] = [tmp["sizes"]["cca"].tolist()[x] for x in size_index]
-        pi_size.loc[input_id,size_ids] = [tmp["sizes"]["svi"].tolist()[x] for x in size_index]
-        # Nanlog - did we append a nan and why?
-        nanlog_pd_single.loc[input_id,uids] = [tmp["nanlog_cca"][x] for x in uid_index]
-        nanlog_pi_single.loc[input_id,uids] = [tmp["nanlog_svi"][x] for x in uid_index]
-        # Add thresholding, directions, mr1 degrees of freedom
-  
-
-  pd_size["thresh"] = thresh; pd_size["direction"] = direction
-  pi_size["thresh"] = thresh; pi_size["direction"] = direction
-  #bm_size["thresh"] = thresh; bm_size["direction"] = direction
-  nanlog_pd_single["thresh"] = thresh; nanlog_pd_single["direction"] = direction
-  nanlog_pi_single["thresh"] = thresh; nanlog_pi_single["direction"] = direction
-  #nanlog_bm_single["thresh"] = thresh; nanlog_bm_single["direction"] = direction
-  pearson_pd["thresh"] = thresh; pearson_pd["direction"] = direction
-  #pearson_bm["thresh"] = thresh; pearson_bm["direction"] = direction
-  pearson_pi["thresh"] = thresh; pearson_pi["direction"] = direction
-  spearman_pd["thresh"] = thresh; spearman_pd["direction"] = direction
-  #spearman_bm["thresh"] = thresh; spearman_bm["direction"] = direction
-  spearman_pi["thresh"] = thresh; spearman_pi["direction"] = direction
-  pearson_pd["mr_df"] = tmp["mr_df"] 
-  #pearson_bm["mr_df"] = tmp["mr_df"]
-  pearson_pi["mr_df"] = tmp["mr_df"]
-  spearman_pd["mr_df"] = tmp["mr_df"]
-  #spearman_bm["mr_df"] = tmp["mr_df"]
-  spearman_pi["mr_df"] = tmp["mr_df"]
-  # Append to lists
-  pearsons_pd.append(pearson_pd)
-  pearsons_pi.append(pearson_pi)
-  #pearsons_bm.append(pearson_bm)
-  spearmans_pd.append(spearman_pd)
-  spearmans_pi.append(spearman_pi)
-  #spearmans_bm.append(spearman_bm)
-  pd_sizes.append(pd_size)
-  pi_sizes.append(pi_size)
-  #bm_sizes.append(bm_size)
-  nanlog_pd.append(nanlog_pd_single)
-  nanlog_pi.append(nanlog_pi_single)
-  #nanlog_bm.append(nanlog_bm_single)
-
-# Finally, merge them into one!
-#pbm = pandas.tools.merge.concat(pearsons_bm,axis=0)
-ppi = pandas.tools.merge.concat(pearsons_pi,axis=0)
-ppd = pandas.tools.merge.concat(pearsons_pd,axis=0)
-#sbm = pandas.tools.merge.concat(spearmans_bm,axis=0)
-spi = pandas.tools.merge.concat(spearmans_pi,axis=0)
-spd = pandas.tools.merge.concat(spearmans_pd,axis=0)
-#bmsize = pandas.tools.merge.concat(bm_sizes,axis=0)
-pdsize = pandas.tools.merge.concat(pd_sizes,axis=0)
-pisize = pandas.tools.merge.concat(pi_sizes,axis=0)
-nanlogpd = pandas.tools.merge.concat(nanlog_pd,axis=0)
-nanlogpi = pandas.tools.merge.concat(nanlog_pi,axis=0)
-#nanlogbm = pandas.tools.merge.concat(nanlog_bm,axis=0)
-
-# Save all data matrices to file
-os.chdir(output_directory)
-ppd.to_csv("860_pearson_cca.tsv",sep="\t")
-ppi.to_csv("860_pearson_svi.tsv",sep="\t")
-#pbm.to_csv("860_pearson_bm_v2.tsv",sep="\t")
-spd.to_csv("860_spearman_cca.tsv",sep="\t")
-spi.to_csv("860_spearman_svi.tsv",sep="\t")
-#sbm.to_csv("860_spearman_bm_v2.tsv",sep="\t")
-#bmsize.to_csv("860_bm_sizes_v2.tsv",sep="\t")
-pdsize.to_csv("860_cca_sizes.tsv",sep="\t")
-pisize.to_csv("860_svi_sizes.tsv",sep="\t")
-nanlogpd.to_csv("860_nanlog_cca.tsv",sep="\t")
-nanlogpi.to_csv("860_nanlog_svi.tsv",sep="\t")
-nanlogbm.to_csv("860_nanlog_bm_v2.tsv",sep="\t")
+    if len(missing) > 0:
+        print "ERROR: Missing output for run %s, re-run when runs available." %(r)
+    else:
+        # Read in the first input to get threshold ids, etc.
+        tmp = pickle.load(open(inputs[0],"rb"))
+        # Our dataframe index must have image id, thresh, and direction (to be unique)
+        row_index = []
+        thresholds = np.unique(tmp["thresh"])
+        directions = ["posneg","pos"]
+        for i in input_ids:
+            for t in thresholds:
+                for d in directions:
+                    row_index.append("%s_%s_%s" %(i,t,d))
+        # We will save all results to these lists
+        pearsons_pi = pandas.DataFrame(index=row_index) 
+        pearsons_pd = pandas.DataFrame(index=row_index)     # pearsonr scores
+        spearmans_pi = pandas.DataFrame(index=row_index) 
+        spearmans_pd = pandas.DataFrame(index=row_index)    # spearmanr scores
+        pd_sizes = pandas.DataFrame(index=row_index) 
+        pi_sizes = pandas.DataFrame(index=row_index)        # size of final masks
+        nanlog_pd = pandas.DataFrame(index=row_index) 
+        nanlog_pi = pandas.DataFrame(index=row_index)       # "success","nan_fewer_3_values","nan_no_overlap"
+        # And we will keep a column of thresholds, and one of directions
+        pearsons_pi["direction"] = [x.split("_")[4] for x in row_index]
+        pearsons_pd["direction"] = [x.split("_")[4] for x in row_index]
+        spearmans_pi["direction"] = [x.split("_")[4] for x in row_index]
+        spearmans_pd["direction"] = [x.split("_")[4] for x in row_index]
+        pi_sizes["direction"] = [x.split("_")[4] for x in row_index]
+        pd_sizes["direction"] = [x.split("_")[4] for x in row_index]
+        nanlog_pd["direction"] = [x.split("_")[4] for x in row_index]
+        nanlog_pi["direction"] = [x.split("_")[4] for x in row_index]
+        pearsons_pi["thresh"] = [x.split("_")[3] for x in row_index]
+        pearsons_pd["thresh"] = [x.split("_")[4] for x in row_index]
+        spearmans_pi["thresh"] = [x.split("_")[4] for x in row_index]
+        spearmans_pd["thresh"] = [x.split("_")[4] for x in row_index]
+        nanlog_pd["thresh"] = [x.split("_")[4] for x in row_index]
+        nanlog_pi["thresh"] = [x.split("_")[4] for x in row_index]
+        pi_sizes["thresh"] = [x.split("_")[4] for x in row_index]
+        pd_sizes["thresh"] = [x.split("_")[4] for x in row_index]
+        for i in inputs:
+            tmp = pickle.load(open(i,"rb"))
+            # Each image is an entire column, with threshold and image_ids in rows
+            input_id = "%s_%s" %(r,tmp["id"]) # This will be the column name
+            uids = ["%s_%s_%s" %(r,tmp["idB"][x],tmp["size_ids"][x]) for x in range(0,len(tmp["idB"]))]
+            pearsons_pi.loc[uids,input_id] = tmp["svi_pearson"]
+            pearsons_pd.loc[uids,input_id] = tmp["cca_pearson"]
+            spearmans_pi.loc[uids,input_id] = tmp["svi_spearman"]
+            spearmans_pd.loc[uids,input_id] = tmp["cca_spearman"]
+            # Save all mask sizes differences, again will be nan for image vs itself.
+            pd_sizes.loc[uids,input_id] = tmp["sizes"]["cca"].tolist()
+            pi_sizes.loc[uids,input_id] = tmp["sizes"]["svi"].tolist()
+            # Nanlog - did we append a nan and why?
+            nanlog_pd.loc[uids,input_id] = tmp["nanlog_cca"]
+            nanlog_pi.loc[uids,input_id] = tmp["nanlog_svi"]  
+        pearsons_pd.to_csv("%s_pearson_cca.tsv" %(r),sep="\t")
+        pearsons_pi.to_csv("%s_pearson_svi.tsv" %(r),sep="\t")
+        spearmans_pd.to_csv("%s_spearman_cca.tsv" %(r),sep="\t")
+        spearmans_pi.to_csv("%s_spearman_svi.tsv" %(r),sep="\t")
+        pd_sizes.to_csv("%s_sizes_cca.tsv" %(r),sep="\t")
+        pi_sizes.to_csv("%s_sizes_svi.tsv" %(r),sep="\t")
+        nanlog_pd.to_csv("%s_nanlog_cca.tsv" %(r),sep="\t")
+        nanlog_pi.to_csv("%s_nanlog_svi.tsv" %(r),sep="\t")

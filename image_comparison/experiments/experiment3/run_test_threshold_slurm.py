@@ -134,6 +134,8 @@ for con in contrasts.iterrows():
             filey.writelines("#SBATCH --time=1:00\n")
             filey.writelines("module load fsl\n")
             filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(groupA,"A",maps_directory,map_id)) 
+            filey.close()
+            os.system("sbatch -p russpold .job/%s_A_%s.job" %(i,map_id))
         if not os.path.exists(outfileB):
             print "Missing %s" %(outfileB)        
             subjectsB = open("%s/copesB.txt" %(output_directory),"r").readlines()
@@ -149,6 +151,8 @@ for con in contrasts.iterrows():
             filey.writelines("#SBATCH --time=1:00\n")
             filey.writelines("module load fsl\n")
             filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/image_comparison/experiments/experiment3/make_group_map_single_tacc.py %s %s %s %s\n" %(groupB,"B",maps_directory,map_id))           
+            filey.close()
+            os.system("sbatch -p russpold .job/%s_B_%s.job" %(i,map_id))
 
 
 ### STEP 4: Which runs are done? ############################
@@ -176,7 +180,8 @@ thresholds = ",".join([str(x) for x in thresholds])
 
 standard = "%s/standard/MNI152_T1_2mm_brain_mask.nii.gz" %(basedir)
 
-for i in range(0,nruns):    
+for i in range(410,500): 
+    print i   
     output_directory = "%s/%s" %(outdirectory,i)
     maps_directory = "%s/maps" %(output_directory)
     # There will be one of group A for each of group B, unrelated
@@ -195,7 +200,6 @@ for i in range(0,nruns):
 		    contrast_task = groupA_path.split("/")[-1].replace("_groupA_tstat1.nii.gz","")
                     output_pkl = "%s/comparisons/%s.pkl" %(output_directory,contrast_task)
 		    if not os.path.exists(output_pkl):
-if 1==1:
                         filey = ".job/%s_%s.job" %(i,contrast_task)
                         filey = open(filey,"w")
                         filey.writelines("#!/bin/bash\n")
