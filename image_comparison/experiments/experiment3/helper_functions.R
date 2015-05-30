@@ -7,17 +7,6 @@ library(ggplot2)
 
 # FILTER FUNCTIONS ######################################################
 
-filter_columns = function(tmp,extra_cols){
-  column_names = gsub("GRP[0-9]+_","",colnames(tmp)[1:(ncol(tmp)-extra_cols)])
-  #keepers = get_keepers()
-  # First we are filtering columns
-  #filtered = tmp[,which(column_names %in% keepers)]
-  filtered$direction = tmp$direction
-  filtered$thresh = tmp$thresh
-  filtered$UID = tmp$X
-  return(filtered)
-}
-
 # Function to eliminate particular column name
 remove_columns = function(df,column_names){
   idx = which(colnames(df)%in%column_names)
@@ -27,27 +16,65 @@ remove_columns = function(df,column_names){
 }
 
 # Function to filter data down to non-redundant contrasts
-filter_data = function(input_file,output_file,extra_cols){
-  tmp = read.csv(input_file,sep="\t")
-  filtered = filter_columns(tmp,extra_cols)
-  # Now we filter rows
-  row_names = gsub("GRP[0-9]+_","",tmp$X)
-  filtered = filtered[which(row_names %in% keepers),]
-  write.table(filtered,file=output_file,row.names=TRUE,col.names=TRUE)
+compile_data = function(files){
+  # Read in first data to get the column names
+  tmp = read.csv(files[1],sep="\t",stringsAsFactors=FALSE,row.names=1)
+  number = strsplit(colnames(tmp)[3],"_")[[1]][1]
+  colnames(tmp) = gsub(paste(number,"_",sep=""),"",colnames(tmp))
+  # rows: 47 contrasts by 13 thresholds by 2 directions, columns: 47 contrasts + thresh,direction
+  data = array(dim=c(nrow(tmp),ncol(tmp)))
+  colnames(data) = colnames(tmp)
+  rownames(data) = gsub(paste("^",gsub("X","",number),"_",sep=""),"",rownames(tmp))
+  # Now calculate an average for each coordinate
+  for (r in 1:nrow(data)){
+    averagerow = array(dim=c(length(files),ncol(data)-2))
+    rowname = rownames(data)[r]
+    thresh = strsplit(rowname,"_")[[1]][3]
+    direction = strsplit(rowname,"_")[[1]][4]
+    for (f in 1:length(files)) {
+      file = files[f]
+      tmp = read.csv(file,sep="\t",stringsAsFactors=FALSE,row.names=1)
+      number = strsplit(colnames(tmp)[3],"_")[[1]][1]
+      rownames(tmp) = gsub(paste("^",gsub("X","",number),"_",sep=""),"",rownames(tmp))      
+      averagerow[f,] = as.numeric(tmp[which(rownames(tmp)==rowname),][3:49])
+    }
+    data[r,3:49] = colMeans(averagerow)
+    data[r,1] =  direction
+    data[r,2] =  thresh  
+  }
+  return(data)
 }
 
-
-# Get list to keep
-get_keepers = function() {
-  return(c("TASK06_CON01","TASK06_CON02","TASK06_CON06","TASK01_CON07","TASK01_CON08","TASK01_CON09",
-         "TASK05_CON13","TASK05_CON14","TASK05_CON15","TASK03_CON19","TASK03_CON20","TASK03_CON22",
-         "TASK02_CON25","TASK02_CON26","TASK02_CON27","TASK07_CON31","TASK07_CON32","TASK07_CON33",
-         "TASK07_CON34","TASK07_CON35","TASK07_CON36","TASK07_CON37","TASK07_CON38","TASK07_CON39",
-         "TASK07_CON40","TASK07_CON41","TASK07_CON45","TASK07_CON46","TASK07_CON47","TASK07_CON48",
-         "TASK07_CON49","TASK07_CON50","TASK07_CON51","TASK07_CON52","TASK04_CON61","TASK04_CON62",
-         "TASK04_CON63","TASK04_CON64","TASK04_CON65","TASK04_CON66","TASK04_CON67","TASK04_CON68",
-         "TASK04_CON69","TASK04_CON70","TASK04_CON71","TASK04_CON72","TASK04_CON73"))
+# Try doing on big mem node
+compile_data = function(files){
+  # Read in first data to get the column names
+  tmp = read.csv(files[1],sep="\t",stringsAsFactors=FALSE,row.names=1)
+  number = strsplit(colnames(tmp)[3],"_")[[1]][1]
+  colnames(tmp) = gsub(paste(number,"_",sep=""),"",colnames(tmp))
+  # rows: 47 contrasts by 13 thresholds by 2 directions, columns: 47 contrasts + thresh,direction
+  data = array(dim=c(nrow(tmp),ncol(tmp)))
+  colnames(data) = colnames(tmp)
+  rownames(data) = gsub(paste("^",gsub("X","",number),"_",sep=""),"",rownames(tmp))
+  # Now calculate an average for each row
+  for (r in 1:nrow(data)){
+    averagerow = array(dim=c(length(files),ncol(data)-2))
+    rowname = rownames(data)[r]
+    thresh = strsplit(rowname,"_")[[1]][3]
+    direction = strsplit(rowname,"_")[[1]][4]
+    for (f in 1:length(files)) {
+      file = files[f]
+      tmp = read.csv(file,sep="\t",stringsAsFactors=FALSE,row.names=1)
+      number = strsplit(colnames(tmp)[3],"_")[[1]][1]
+      rownames(tmp) = gsub(paste("^",gsub("X","",number),"_",sep=""),"",rownames(tmp))      
+      averagerow[f,] = as.numeric(tmp[which(rownames(tmp)==rowname),][3:49])
+    }
+    data[r,3:49] = colMeans(averagerow)
+    data[r,1] =  direction
+    data[r,2] =  thresh  
+  }
+  return(data)
 }
+
 
 # Get mask sizes for a threshold and direction
 get_masksize_dist = function(df,thresh,direction="posneg"){

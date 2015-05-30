@@ -20,9 +20,11 @@ contrasts = pandas.read_csv(contrast_file,sep="\t").id.tolist()
 
 # Lets work from the output directory
 os.chdir(output_directory)
+notdone = []
 
 nruns = 500
-for r in range(0,nruns):
+for r in [231, 237, 253]:
+    print "Processing %s" %(r)
     inputs = np.sort(glob("%s/%s/comparisons/*.pkl" %(inputs_directory,r))).tolist()
     input_ids = ["%s_%s" %(r,x.replace(".pkl","").replace("%s/%s/comparisons/" %(inputs_directory,r),"")) for x in inputs]
     # Find contrast ids that are missing
@@ -30,6 +32,7 @@ for r in range(0,nruns):
     missing = ["%s_%s" %(r,c) for c in contrasts if c not in contrast_ids]
     if len(missing) > 0:
         print "ERROR: Missing output for run %s, re-run when runs available." %(r)
+        notdone.append(r)
     else:
         # Read in the first input to get threshold ids, etc.
         tmp = pickle.load(open(inputs[0],"rb"))
@@ -60,13 +63,13 @@ for r in range(0,nruns):
         nanlog_pd["direction"] = [x.split("_")[4] for x in row_index]
         nanlog_pi["direction"] = [x.split("_")[4] for x in row_index]
         pearsons_pi["thresh"] = [x.split("_")[3] for x in row_index]
-        pearsons_pd["thresh"] = [x.split("_")[4] for x in row_index]
-        spearmans_pi["thresh"] = [x.split("_")[4] for x in row_index]
-        spearmans_pd["thresh"] = [x.split("_")[4] for x in row_index]
-        nanlog_pd["thresh"] = [x.split("_")[4] for x in row_index]
-        nanlog_pi["thresh"] = [x.split("_")[4] for x in row_index]
-        pi_sizes["thresh"] = [x.split("_")[4] for x in row_index]
-        pd_sizes["thresh"] = [x.split("_")[4] for x in row_index]
+        pearsons_pd["thresh"] = [x.split("_")[3] for x in row_index]
+        spearmans_pi["thresh"] = [x.split("_")[3] for x in row_index]
+        spearmans_pd["thresh"] = [x.split("_")[3] for x in row_index]
+        nanlog_pd["thresh"] = [x.split("_")[3] for x in row_index]
+        nanlog_pi["thresh"] = [x.split("_")[3] for x in row_index]
+        pi_sizes["thresh"] = [x.split("_")[3] for x in row_index]
+        pd_sizes["thresh"] = [x.split("_")[3] for x in row_index]
         for i in inputs:
             tmp = pickle.load(open(i,"rb"))
             # Each image is an entire column, with threshold and image_ids in rows
@@ -81,7 +84,7 @@ for r in range(0,nruns):
             pi_sizes.loc[uids,input_id] = tmp["sizes"]["svi"].tolist()
             # Nanlog - did we append a nan and why?
             nanlog_pd.loc[uids,input_id] = tmp["nanlog_cca"]
-            nanlog_pi.loc[uids,input_id] = tmp["nanlog_svi"]  
+            nanlog_pi.loc[uids,input_id] = tmp["nanlog_svi"]
         pearsons_pd.to_csv("%s_pearson_cca.tsv" %(r),sep="\t")
         pearsons_pi.to_csv("%s_pearson_svi.tsv" %(r),sep="\t")
         spearmans_pd.to_csv("%s_spearman_cca.tsv" %(r),sep="\t")

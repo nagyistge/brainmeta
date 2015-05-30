@@ -1,36 +1,22 @@
 library(plyr)
 
 # First, read in all input files
-datadir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/experiment3"
-input_files = list.files(datadir,pattern="*.tsv")
-input_data = list.files(datadir,pattern="*spearman*|*pearson*") # data files have extra column, parse differently
-other_files = input_files[-which(input_files %in% input_data)]
+datadir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/experiment3_unrelated"
+
+# We will take an average for each sample, for each threshold, strategy, score
+groups = 1:500
+pearsons_pd = compile_data(paste(groups,"_pearson_cca.tsv",sep="")) 
+pearsons_pi = compile_data(paste(groups,"_pearson_svi.tsv",sep=""))
+spearmans_pd = compile_data(paste(groups,"_spearman_cca.tsv",sep=""))
+spearmans_pi = compile_data(paste(groups,"_spearman_svi.tsv",sep="")) 
+size_pd = compile_data(paste(groups,"_sizes_cca.tsv",sep="")) 
+size_pi = compile_data(paste(groups,"_sizes_svi.tsv",sep=""))
+nanlog_pd = compile_data(paste(groups,"_nanlog_cca.tsv",sep="")) 
+nanlog_pi = compile_data(paste(groups,"_nanlog_svi.tsv",sep=""))
+
 setwd("/home/vanessa/Documents/Dropbox/Code/Python/brainmeta/image_comparison/experiments/experiment3")
 source("helper_functions.R")
 setwd(datadir)
-
-# We first will filter data to remove redundant contrasts (negative and inverse subtractions)
-for (input_file in other_files){
-  cat("Filtering",input_file,"\n")
-  output_file = paste(datadir,"/",gsub(".tsv","_filter.tsv",input_file),sep="")
-  filter_data(input_file,output_file,extra_cols=3)  
-}
-
-# Data files have an extra column, df_mr
-for (input_file in input_data){
-  cat("Filtering",input_file,"\n")
-  output_file = paste(datadir,"/",gsub(".tsv","_filter.tsv",input_file),sep="")
-  filter_data(input_file,output_file,extra_cols=4)  
-}
-
-# Read in all filtered data
-input_size_files = list.files(datadir,pattern="*sizes.tsv")
-input_data_files = list.files(datadir,pattern="*n_cca.tsv|*n_svi.tsv")
-input_nanlog_files = list.files(datadir,pattern="*g_cca.tsv|*g_svi.tsv")
-pearsons_pd = remove_columns(read.csv(input_data_files[1],stringsAsFactors=FALSE,sep="\t"),c("dof_mr1","mr_df"))
-pearsons_pi = remove_columns(read.csv(input_data_files[2],stringsAsFactors=FALSE,sep="\t"),c("dof_mr1","mr_df"))
-spearman_pd = remove_columns(read.csv(input_data_files[3],stringsAsFactors=FALSE,sep="\t"),c("dof_mr1","mr_df"))
-spearman_pi = remove_columns(read.csv(input_data_files[4],stringsAsFactors=FALSE,sep="\t"),c("dof_mr1","mr_df"))
 
 thresholds = sort(unique(pearsons_pd$thresh))
 

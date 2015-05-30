@@ -80,7 +80,7 @@ for con in contrasts.iterrows():
     contrast = con[1]["contrasts"]
     map_id = con[1]["id"]
     paths = get_hcp_paths(top_directory, tasks=task, contrasts=contrast)
-    for i in range(424,500):
+    for i in [231, 237, 253]:
         # Top level of output directory is for the iteration
         output_directory = "%s/%s" %(outdirectory,i)
         maps_directory = "%s/maps" %(output_directory)
@@ -180,7 +180,7 @@ thresholds = ",".join([str(x) for x in thresholds])
 
 standard = "%s/standard/MNI152_T1_2mm_brain_mask.nii.gz" %(basedir)
 
-for i in range(410,500): 
+for i in [231, 237, 253]: 
     print i   
     output_directory = "%s/%s" %(outdirectory,i)
     maps_directory = "%s/maps" %(output_directory)
@@ -201,6 +201,7 @@ for i in range(410,500):
                     output_pkl = "%s/comparisons/%s.pkl" %(output_directory,contrast_task)
 		    if not os.path.exists(output_pkl):
                         filey = ".job/%s_%s.job" %(i,contrast_task)
+                        print filey
                         filey = open(filey,"w")
                         filey.writelines("#!/bin/bash\n")
                         filey.writelines("#SBATCH --job-name=%s_%s\n" %(i,contrast_task))
