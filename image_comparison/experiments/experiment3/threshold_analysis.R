@@ -147,37 +147,6 @@ for (thresh in thresholds){
   }
 }
 
-# STOPPED HERE - this needs to finish running!
-
-# For each pairwise group, A and B
-for (group1 in unique_groups){
-  for (group2 in unique_groups){
-    if (group1!=group2){
-      #  Subset data to groups A and B, remove group from the labels
-      # We will create a label with sorted names to eliminate repeats
-      label = paste(sort(c(group1,group2)),collapse="vs")
-      if (!(label %in% repeat_check)){
-        acc_scores = get_group_result(group1,group2,results,direction=direction)
-        acc_scores$label = label
-        all_acc = rbind(all_acc,acc_scores)      
-        repeat_check = c(repeat_check,label)
-      }
-    }
-  }  
-}
-
-# Finally, we can calculate a mean accuracy for each threshold, strategy
-all_acc$strategy[all_acc$strategy=="intersect.pearson"] = "cca pearson"
-all_acc$strategy[all_acc$strategy=="intersect.spearman"] = "cca spearman"
-all_acc$strategy[all_acc$strategy=="union.pearson"] = "svi pearson"
-all_acc$strategy[all_acc$strategy=="union.spearman"] = "svi spearman"
-
-acc_summary = ddply(all_acc, c("strategy","thresh"), summarise, 
-                    accuracy_mean = mean(accuracy), accuracy_upper=get_ci(accuracy,"upper"), accuracy_down=get_ci(accuracy,"lower"),
-                    sensitivity_mean = mean(sensitivity), sensitivity_upper = get_ci(sensitivity,"upper"),sensitivty_lower = get_ci(sensivity,"lower"),
-                    specificity_mean = mean(specificity), specificity_upper = get_ci(specificity,"upper"),specificity_down = get_ci(specificity,"lower"),                   
-                    roc_mean = mean(roc), roc_upper = get_ci(roc,"upper"),roc_lower = get_ci(roc,"lower"))
-
 direction="pos"
 ggplot(allres[allres$direction==direction,], aes(x=thresh,y=accuracy_mean,ymax=up,ymin=down, fill=strategy,colour=strategy)) + 
   geom_line(size=1.5) + 
