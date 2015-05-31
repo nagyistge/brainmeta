@@ -22,9 +22,9 @@ os.chdir(output_directory)
 # Parse data files
 
 pearsons_cca = glob("*pearson_cca.tsv")
-pearsons_svi = glob("*pearson_cca.tsv")
-spearmans_cca = glob("*pearson_cca.tsv")
-spearmans_svi = glob("*pearson_cca.tsv")
+pearsons_svi = glob("*pearson_svi.tsv")
+spearmans_cca = glob("*spearman_cca.tsv")
+spearmans_svi = glob("*spearman_svi.tsv")
 
 inputs = {"pearsons_cca":pearsons_cca,
           "pearsons_svi":pearsons_svi,
