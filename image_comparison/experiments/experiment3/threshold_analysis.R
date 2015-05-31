@@ -102,7 +102,7 @@ ggsave(paste(savedir,"/mask_percsizes_atthresh_",direction,".png",sep=""))
 
 
 # Part II: Image Classification
-iters = 0:500
+iters = 0:499
 
 # For each of 500 permutations:
 #  Subset data to unrelated groups A and B
@@ -113,13 +113,12 @@ iters = 0:500
 #           Assign correct classification if contrast Ai most similar to equivalent contrast in B
 # Calculate (and save) accuracy
 
-direction = "posneg"
 
 setwd("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/experiment3_unrelated/permutations")
 
 # We will save a data frame of accuracies
 directions = c("pos","posneg")
-
+thresholds=1:13
 allres = c()
 for (thresh in thresholds){
   for (direction in directions){
@@ -144,6 +143,7 @@ for (thresh in thresholds){
     # Calculate the mean across thresholds and directions
     res = ddply(res,c("direction","thresh","strategy"), summarise, accuracy_mean=mean(acc),up=get_ci(acc,"upper"),down=get_ci(acc,"lower"))
     allres = rbind(allres,res)
+    save(allres,file="accuracy_df_finished.Rda")
   }
 }
 
@@ -178,67 +178,15 @@ acc_summary = ddply(all_acc, c("strategy","thresh"), summarise,
                     specificity_mean = mean(specificity), specificity_upper = get_ci(specificity,"upper"),specificity_down = get_ci(specificity,"lower"),                   
                     roc_mean = mean(roc), roc_upper = get_ci(roc,"upper"),roc_lower = get_ci(roc,"lower"))
 
-ggplot(acc_summary, aes(x=thresh,y=mscore,ymax=up,ymin=down, fill=strategy,colour=strategy)) + 
+direction="pos"
+ggplot(allres[allres$direction==direction,], aes(x=thresh,y=accuracy_mean,ymax=up,ymin=down, fill=strategy,colour=strategy)) + 
   geom_line(size=1.5) + 
   geom_ribbon(alpha=0.15,linetype=0) +
-  xlab("Threshold +/-") +
+  xlab("Threshold +") +
   ylab("Accuracy") +
   ylim(0,1) +
   scale_x_continuous(breaks = round(seq(0, 13, by = 1.0),1))
 ggsave(paste(savedir,"/ml_accuracy",direction,"_withCI.png",sep=""))
-write.table(acc_summary,file=paste(datadir,"/ml_accuracy_",direction,".tsv",sep=""),sep="\t")
+write.table(allres,file=paste(datadir,"/ml_accuracy.tsv",sep=""),sep="\t")
 
-acc_summary = read.table(file=paste(datadir,"/ml_accuracy_",direction,".tsv",sep=""),sep="\t")
 # Woot!
-
-# Finally, if we match NeuroVault percent voxels in brainmap to our result, what accuracy can we expect to get?
-load(file=paste(datadir,"/dist_masksizes_flat_",direction,"_df.Rda",sep=""))
-mask_sizes = df 
-
-# Read in the threshold report for all neurovault images!
-brainmask_size = 228235
-subset = df[df$strategy=="complete case analysis",]
-subset$value = as.numeric(as.character(subset$mask.size/brainmask_size))
-subset = subset[,-c(1,3)]
-# Get the mean for each size
-ss = unique(subset$thresh)
-df=c()
-for (s in ss){
-  sub = subset[which(subset$thresh==s),]
-  df=rbind(df,cbind(s,mean(sub$value)))
-}
-colnames(df) = c("thresh","perc_nonzero_voxels")
-
-# Here is where we can load accuracy values for posneg, or pos
-load(paste(datadir,"/accuracy_df_posneg.Rda",sep="")) #(acc_df)
-acc_df = as.data.frame(acc_df,stringsAsFactors=FALSE)
-acc_df = acc_df[which(acc_df$standard=="contrast"),]
-
-# Here we will save lists of accuracies based on the real thresholding, we only care about contrast
-pd_q=c()
-pi_q=c()
-
-thresh_report = read.csv("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/analysis/nv_all_774_threshold_report.tsv",sep="\t")
-for (it in 1:1000){
-  cat("iteration",it,"\n")
-  for (t in 1:nrow(thresh_report)){
-    percent_nonzero = thresh_report$percent_nonzero[t]
-    # Find the most similar sized value (smallest squared distance)
-    tmp = abs(df[,2] - percent_nonzero)
-    idx = which(tmp==min(tmp))[1]
-    thresh = df[idx,1]
-    # Now we sample an accuracy at that threshold
-    acc_pd = acc_df[which(acc_df$strategy=="intersect.pearson"),]
-    if (thresh %in% acc_pd$thresh) {
-      pd_q=c(pd_q,sample(acc_pd$accuracy[which(acc_pd$thresh==thresh)],1))  
-    }    
-    acc_pi = acc_df[which(acc_df$strategy=="intersect.spearman"),]
-    if (thresh %in% acc_pi$thresh) {
-      pi_q=c(pi_q,sample(acc_pi$accuracy[which(acc_pi$thresh==thresh)],1))  
-    }
-  }
-}
-
-# Calculate mean accuracy
-mean(as.numeric(pi_q))
-mean(as.numeric(pd_q))
