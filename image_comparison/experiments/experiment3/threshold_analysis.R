@@ -44,8 +44,20 @@ ALL = as.data.frame(rbind(pearsons_pd,pearsons_pi,spearmans_pi,spearmans_pd),str
 ALL$score = as.numeric(ALL$value)
 ALL$thresh = as.numeric(ALL$thresh)
 ALL$strategy = as.character(ALL$strategy)
-save(ALL,file=paste(datadir,"/all_scores.Rda",sep=""))
-#load(file=paste(datadir,"/all_scores.Rda",sep=""))
+#save(ALL,file=paste(datadir,"/all_scores.Rda",sep=""))
+load(file=paste(datadir,"/all_scores.Rda",sep=""))
+
+# Plot distributions separately
+ALL = ALL[ALL$thresh<=7.0,]
+ALL = ALL[ALL$strategy=="cca.pearson",]
+ggplot(ALL[ALL$direction=="posneg",],aes(x=value, fill=strategy, thresh=thresh)) + 
+  geom_density(alpha=0.25) + 
+  facet_wrap(~thresh,ncol=2) +
+  ylab("Density") + 
+  xlab("Threshold +/-") + 
+  xlim(-1,1) +
+  theme(legend.position="none")
+ggsave(paste(savedir,"/density_ccapearson_posneg.png",sep=""))
 
 direction = "pos"
 ALLSUM = ALL[ALL$direction==direction,]
@@ -147,11 +159,11 @@ for (thresh in thresholds){
   }
 }
 
-direction="pos"
-ggplot(allres[allres$direction==direction,], aes(x=thresh,y=accuracy_mean,ymax=up,ymin=down, fill=strategy,colour=strategy)) + 
+direction="posneg"
+ggplot(all[all$direction==direction,], aes(x=thresh,y=accuracy_mean,ymax=up,ymin=down, fill=strategy,colour=strategy)) + 
   geom_line(size=1.5) + 
   geom_ribbon(alpha=0.15,linetype=0) +
-  xlab("Threshold +") +
+  xlab("Threshold +/-") +
   ylab("Accuracy") +
   ylim(0,1) +
   scale_x_continuous(breaks = round(seq(0, 13, by = 1.0),1))
