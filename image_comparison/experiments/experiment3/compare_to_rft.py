@@ -34,7 +34,7 @@ brain_mask = nibabel.load(mask)
 brain_voxels = len(brain_mask.get_data()[brain_mask.get_data()!=0])
 
 for f in range(0,len(grf_files)):
-  f1 = IT.T_to_Z(nibabel.load(input_files[f]))
+  f1 = IT.t_to_z(nibabel.load(input_files[f]),46)
   f2 = nibabel.load(grf_files[f])
   print "Comparing %s vs %s" %(os.path.basename(grf_files[f]),os.path.basename(input_files[f]))
   mrthresh = IT.threshold_abs(f1,thresholds=[0.0,1.0,2.0])
@@ -58,3 +58,11 @@ voxel_counts["perc_difference_1.0"] = voxel_counts["absolute_difference_1.0"] / 
 voxel_counts["perc_difference_2.0"] = voxel_counts["absolute_difference_2.0"] / brain_voxels
 
 voxel_counts.to_csv("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/experiment3/voxel_counts_rft_vs_thresh.tsv",sep="\t")
+
+# Estimate accuracy with simple interpolation between 2.0 and 3.0
+acc2 = 0.976882272 # cca pearson, 2.0
+acc3 = 0.9036074796 # cca pearson, 3.0
+pertenth = (acc2 - acc3) / 10 # accuracy lost for each 10th
+(pertenth*3)                  # accuracy lost going from 2.0 to 2.3
+
+
