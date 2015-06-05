@@ -167,13 +167,42 @@ calculate_accuracy = function(input,queryimages,thresholds,directions,label) {
         } else {
           acc = c(acc,0)
         }
-        acc = sum(acc) / length(acc)
-        res = rbind(res,cbind(acc,thresh,direction))
-      }     
+      }
+      acc = sum(acc) / length(acc)
+      res = rbind(res,cbind(acc,thresh,direction))
     }
   }
   res = as.data.frame(res)
   res$acc = as.numeric(as.character(res$acc))
+  res$thresh = as.numeric(as.character(res$thresh))
+  res$strategy = label
+  return(res)
+}
+
+get_classifications = function(input,queryimages,thresholds,directions,label) {
+  
+  res = c()
+  
+  for (thresh in thresholds){
+    sub = input[which(input$thresh==thresh),]
+    for (direction in directions){
+      sub1 = sub[which(sub$direction==direction),]
+      # For each query image, calculate accuracy
+      acc = c()
+      for (image in queryimages){
+        sub2 = sub1[which(sub1$queryimage==image),]
+        sub2 = sub2[with(sub2, order(-score)), ]
+        if (sub2$comparisonimage[1] == image) {
+          acc = c(acc,1)
+        } else {
+          acc = c(acc,0)
+        }
+      }     
+      names(acc) = queryimages
+      res = rbind(res,cbind(acc,thresh,direction))
+    }
+  }
+  res = as.data.frame(res)
   res$thresh = as.numeric(as.character(res$thresh))
   res$strategy = label
   return(res)

@@ -60,9 +60,13 @@ voxel_counts["perc_difference_2.0"] = voxel_counts["absolute_difference_2.0"] / 
 voxel_counts.to_csv("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/experiment3/voxel_counts_rft_vs_thresh.tsv",sep="\t")
 
 # Estimate accuracy with simple interpolation between 2.0 and 3.0
+acc1 = 0.9842199809
 acc2 = 0.976882272 # cca pearson, 2.0
 acc3 = 0.9036074796 # cca pearson, 3.0
 pertenth = (acc2 - acc3) / 10 # accuracy lost for each 10th
 (pertenth*3)                  # accuracy lost going from 2.0 to 2.3
+acc2.3 = acc2 - pertenth*3
+loss_in_acc = acc1 - acc2.3
+# 0.02932
 
 

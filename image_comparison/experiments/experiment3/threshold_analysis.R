@@ -171,3 +171,50 @@ ggsave(paste(savedir,"/ml_accuracy",direction,"_withCI.png",sep=""))
 write.table(allres,file=paste(datadir,"/ml_accuracy.tsv",sep=""),sep="\t")
 
 # Woot!
+
+# Finally, we want to create a confusion matrix - and get a sense for which contrasts are misclassified
+iters=0:499
+setwd("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/experiment3_unrelated/permutations")
+
+# We will save a data frame of accuracies
+directions = c("pos","posneg")
+thresholds=0:13
+allres = c()
+for (thresh in thresholds){
+  for (direction in directions){
+    cat("THRESHOLD:",thresh,"DIRECTION",direction,"\n")
+    res = c()
+    for (iter in iters){
+      # Read in each of the input files
+      cat(iter,"\n")
+      pi = parse_single_input(read.csv(paste(iter,"_pearson_svi.tsv",sep=""),sep="\t",row.names=1))  
+      pd = parse_single_input(read.csv(paste(iter,"_pearson_cca.tsv",sep=""),sep="\t",row.names=1))  
+      si = parse_single_input(read.csv(paste(iter,"_spearman_svi.tsv",sep=""),sep="\t",row.names=1))  
+      sd = parse_single_input(read.csv(paste(iter,"_spearman_cca.tsv",sep=""),sep="\t",row.names=1))  
+      queryimages = unique(pi$queryimage) 
+      thresholds = unique(pi$thresh)  
+      piacc = get_classifications(pi,queryimages,thresh,direction,"svi.pearson")
+      pdacc = get_classifications(pd,queryimages,thresh,direction,"cca.pearson")
+      siacc = get_classifications(si,queryimages,thresh,direction,"svi.spearman")
+      sdacc = get_classifications(sd,queryimages,thresh,direction,"cca.spearman")
+      allacc = rbind(piacc,pdacc,siacc,sdacc)
+      res = rbind(res,allacc)
+    }
+    # Calculate the mean across thresholds and directions
+    res$direction = as.character(res$direction)
+    res = ddply(res,c("direction","thresh","strategy"), summarise, accuracy_mean=mean(acc),up=get_ci(acc,"upper"),down=get_ci(acc,"lower"))
+    allres = rbind(allres,res)
+    save(allres,file="accuracy_df_finished.Rda")
+  }
+}
+
+direction="posneg"
+ggplot(all[all$direction==direction,], aes(x=thresh,y=accuracy_mean,ymax=up,ymin=down, fill=strategy,colour=strategy)) + 
+  geom_line(size=1.5) + 
+  geom_ribbon(alpha=0.15,linetype=0) +
+  xlab("Threshold +/-") +
+  ylab("Accuracy") +
+  ylim(0,1) +
+  scale_x_continuous(breaks = round(seq(0, 13, by = 1.0),1))
+ggsave(paste(savedir,"/ml_accuracy",direction,"_withCI.png",sep=""))
+write.table(allres,file=paste(datadir,"/ml_accuracy.tsv",sep=""),sep="\t")
