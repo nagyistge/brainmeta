@@ -234,8 +234,9 @@ write.table(allres,file=paste(datadir,"/ml_accuracy.tsv",sep=""),sep="\t")
 
 
 ## Table 1 for Paper - accuracy and confidence intervals (by contrast) for best performing classifier
-accuracy_table = function(threshold=1.0,direction="posneg",label="cca.pearson",queryimages)
-  
+accuracy_table = accuracy_table(threshold=1.0,direction="posneg",label="cca.pearson",queryimages)
+save(tableone,file="confmatrix_pd_posneg_1_table1.Rda")
+
 # confmatrix = matrices["confmatrix_pd_posneg_1"]$confmatrix_pd_posneg_1
 
 # Make sure that rownames == colnames, so index [r,r] is correct classifications
@@ -256,4 +257,3 @@ accuracy_table = function(threshold=1.0,direction="posneg",label="cca.pearson",q
 #  result = cbind(accuracy,lowerci,upperci)
 #  tableone = rbind(tableone,result)
 #}
-# save(tableone,file="confmatrix_pd_posneg_1_table1.Rda")

@@ -222,13 +222,13 @@ accuracy_table = function(threshold=1.0,direction="posneg",label="cca.pearson",q
         }
     }
     df = as.data.frame(accuracies,stringsAsFactors=FALSE)
-    colnames(accuracies) = c("contrast","classification","iteration")
+    colnames(df) = c("contrast","classification","iteration")
     # Now we need a mean accuracy and standard deviation for each contrast, across iterations
     tableone = c()
     for (image in queryimages){
       sub = df[df$contrast==image,]
-      accuracy_mean = mean(sub$classification)
-      accuracy_sd = sd(sub$classification)
+      accuracy_mean = mean(as.numeric(sub$classification))
+      accuracy_sd = sd(as.numeric(sub$classification))
       result = cbind(image,accuracy_mean,accuracy_sd)
       tableone = rbind(tableone,result)
     }
