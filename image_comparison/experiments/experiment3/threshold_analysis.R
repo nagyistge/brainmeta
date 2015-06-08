@@ -172,18 +172,31 @@ write.table(allres,file=paste(datadir,"/ml_accuracy.tsv",sep=""),sep="\t")
 
 # Woot!
 
+
+## II.1: Confusion Matrices for web application
+
 # Finally, we want to create a confusion matrix - and get a sense for which contrasts are misclassified
 iters=0:499
 setwd("/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/experiment3_unrelated/permutations")
 
-# We will save a data frame of accuracies
-directions = c("pos","posneg")
+# Read in one output file to get image list
+pi = parse_single_input(read.csv("0_pearson_svi.tsv",sep="\t",row.names=1))  
+queryimages = unique(pi$queryimage) 
+confmatrixbase = array(0,dim=c(length(queryimages),length(queryimages)))
+rownames(confmatrixbase) = queryimages
+colnames(confmatrixbase) = queryimages
+matrices = list()
+
+# We will append to this matrix
+directions = c("posneg","pos")
 thresholds=0:13
-allres = c()
 for (thresh in thresholds){
   for (direction in directions){
     cat("THRESHOLD:",thresh,"DIRECTION",direction,"\n")
-    res = c()
+    confmatrixpi = confmatrixbase
+    confmatrixpd = confmatrixbase
+    confmatrixsi = confmatrixbase
+    confmatrixsd = confmatrixbase
     for (iter in iters){
       # Read in each of the input files
       cat(iter,"\n")
@@ -191,30 +204,56 @@ for (thresh in thresholds){
       pd = parse_single_input(read.csv(paste(iter,"_pearson_cca.tsv",sep=""),sep="\t",row.names=1))  
       si = parse_single_input(read.csv(paste(iter,"_spearman_svi.tsv",sep=""),sep="\t",row.names=1))  
       sd = parse_single_input(read.csv(paste(iter,"_spearman_cca.tsv",sep=""),sep="\t",row.names=1))  
-      queryimages = unique(pi$queryimage) 
       thresholds = unique(pi$thresh)  
-      piacc = get_classifications(pi,queryimages,thresh,direction,"svi.pearson")
-      pdacc = get_classifications(pd,queryimages,thresh,direction,"cca.pearson")
-      siacc = get_classifications(si,queryimages,thresh,direction,"svi.spearman")
-      sdacc = get_classifications(sd,queryimages,thresh,direction,"cca.spearman")
-      allacc = rbind(piacc,pdacc,siacc,sdacc)
-      res = rbind(res,allacc)
+      confmatrixpi = make_confmatrix(pi,confmatrixpi,thresh,direction,"svi.pearson")
+      confmatrixpd = make_confmatrix(pd,confmatrixpd,thresh,direction,"cca.pearson")
+      confmatrixsi = make_confmatrix(si,confmatrixsi,thresh,direction,"svi.spearman")
+      confmatrixsd = make_confmatrix(sd,confmatrixsd,thresh,direction,"cca.spearman")
     }
-    # Calculate the mean across thresholds and directions
-    res$direction = as.character(res$direction)
-    res = ddply(res,c("direction","thresh","strategy"), summarise, accuracy_mean=mean(acc),up=get_ci(acc,"upper"),down=get_ci(acc,"lower"))
-    allres = rbind(allres,res)
-    save(allres,file="accuracy_df_finished.Rda")
+    matrices[[paste("confmatrix_pd_",direction,"_",thresh,sep="")]] = confmatrixpd
+    matrices[[paste("confmatrix_pi_",direction,"_",thresh,sep="")]] = confmatrixpi
+    matrices[[paste("confmatrix_si_",direction,"_",thresh,sep="")]] = confmatrixsi
+    matrices[[paste("confmatrix_sd_",direction,"_",thresh,sep="")]] = confmatrixsd
+    save(confmatrixpd,file=paste("confmatrix_cca_pearson_",direction,"_",thresh,".Rda",sep=""))
+    save(confmatrixpi,file=paste("confmatrix_svi_pearson_",direction,"_",thresh,".Rda",sep=""))
+    save(confmatrixsd,file=paste("confmatrix_cca_spearman_",direction,"_",thresh,".Rda",sep=""))
+    save(confmatrixsi,file=paste("confmatrix_svi_spearman_",direction,"_",thresh,".Rda",sep=""))
   }
 }
-
-direction="posneg"
-ggplot(all[all$direction==direction,], aes(x=thresh,y=accuracy_mean,ymax=up,ymin=down, fill=strategy,colour=strategy)) + 
+save(matrices,file="confmatrices_all.Rda")
+direction="pos"
+ggplot(allres[allres$direction==direction,], aes(x=thresh,y=accuracy_mean,ymax=up,ymin=down, fill=strategy,colour=strategy)) + 
   geom_line(size=1.5) + 
   geom_ribbon(alpha=0.15,linetype=0) +
-  xlab("Threshold +/-") +
+  xlab("Threshold +") +
   ylab("Accuracy") +
   ylim(0,1) +
   scale_x_continuous(breaks = round(seq(0, 13, by = 1.0),1))
 ggsave(paste(savedir,"/ml_accuracy",direction,"_withCI.png",sep=""))
 write.table(allres,file=paste(datadir,"/ml_accuracy.tsv",sep=""),sep="\t")
+
+
+## Table 1 for Paper - accuracy and confidence intervals (by contrast) for best performing classifier
+accuracy_table = function(threshold=1.0,direction="posneg",label="cca.pearson",queryimages)
+  
+# confmatrix = matrices["confmatrix_pd_posneg_1"]$confmatrix_pd_posneg_1
+
+# Make sure that rownames == colnames, so index [r,r] is correct classifications
+# all(rownames(confmatrix) == colnames(confmatrix))
+# TRUE
+
+# For each row (actual) contrast, sum the number of correct vs incorrect
+# tableone = c()
+# for (r in 1:nrow(confmatrix)) {
+#  label = rownames(confmatrix)[r]
+#  row = confmatrix[r,]
+#  correct = row[r]
+#  incorrect = sum(row[-r])
+#  total = sum(row)
+#  upperci = get_ci(c(rep(1,correct),rep(0,incorrect)),direction="upper")
+#  lowerci = get_ci(c(rep(1,correct),rep(0,incorrect)),direction="lower")
+#  accuracy = correct / total
+#  result = cbind(accuracy,lowerci,upperci)
+#  tableone = rbind(tableone,result)
+#}
+# save(tableone,file="confmatrix_pd_posneg_1_table1.Rda")

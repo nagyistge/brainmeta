@@ -179,31 +179,58 @@ calculate_accuracy = function(input,queryimages,thresholds,directions,label) {
   return(res)
 }
 
-get_classifications = function(input,queryimages,thresholds,directions,label) {
-  
-  res = c()
+make_confmatrix = function(input,confmatrix,thresholds,directions,label) {
   
   for (thresh in thresholds){
     sub = input[which(input$thresh==thresh),]
     for (direction in directions){
       sub1 = sub[which(sub$direction==direction),]
-      # For each query image, calculate accuracy
-      acc = c()
-      for (image in queryimages){
-        sub2 = sub1[which(sub1$queryimage==image),]
+      # For each query image, find actual and predicted
+      for (actual in queryimages){
+        sub2 = sub1[which(sub1$queryimage==actual),]
         sub2 = sub2[with(sub2, order(-score)), ]
-        if (sub2$comparisonimage[1] == image) {
-          acc = c(acc,1)
-        } else {
-          acc = c(acc,0)
-        }
+        predicted = sub2$comparisonimage[1]
+        confmatrix[actual,predicted] = confmatrix[actual,predicted] + 1        
       }     
-      names(acc) = queryimages
-      res = rbind(res,cbind(acc,thresh,direction))
     }
   }
-  res = as.data.frame(res)
-  res$thresh = as.numeric(as.character(res$thresh))
-  res$strategy = label
-  return(res)
+  return(confmatrix)
+}
+
+# Get mean accuracy and sd across iterations for one task
+accuracy_table = function(threshold=1.0,direction="posneg",label="cca.pearson",queryimages) {
+  
+    accuracies = c()
+    for (iter in iters){
+        # Read in each of the input files
+        cat(iter,"\n")
+        pd = parse_single_input(read.csv(paste(iter,"_pearson_cca.tsv",sep=""),sep="\t",row.names=1)) 
+        # Subset to threshold and direction
+        pd = pd[pd$thresh==threshold,]
+        pd = pd[pd$direction==direction,]
+        for (actual in queryimages){
+          sub = pd[which(pd$queryimage==actual),]
+          sub2 = sub[with(sub, order(-score)), ]
+          predicted = sub2$comparisonimage[1]
+          if (predicted==actual){
+            result = cbind(actual,1,iter)
+            accuracies = rbind(accuracies,result)
+          } else {
+            result = cbind(actual,0,iter)
+            accuracies = rbind(accuracies,result)
+          }
+        }
+    }
+    df = as.data.frame(accuracies,stringsAsFactors=FALSE)
+    colnames(accuracies) = c("contrast","classification","iteration")
+    # Now we need a mean accuracy and standard deviation for each contrast, across iterations
+    tableone = c()
+    for (image in queryimages){
+      sub = df[df$contrast==image,]
+      accuracy_mean = mean(sub$classification)
+      accuracy_sd = sd(sub$classification)
+      result = cbind(image,accuracy_mean,accuracy_sd)
+      tableone = rbind(tableone,result)
+    }
+    return(tableone)
 }
