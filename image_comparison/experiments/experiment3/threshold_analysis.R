@@ -19,7 +19,6 @@ thresholds = sort(unique(pearsons_pi$thresh))
 # Part I: Handling Missing Values to Optimize Similarity Search Ranking
 # ? Visualize: How do distributions of scores change? ###################################################################
 
-# NOTE: R can get buggy and not correctly return plots from a function, so this was run manually.
 savedir = "/home/vanessa/Documents/Work/BRAINMETA/IMAGE_COMPARISON/img/experiment3_unrelated"
 results = list(pds=spearmans_pd,pis=spearmans_pi,pdp=pearsons_pd,pip=pearsons_pi)
 for (thresh in thresholds){
@@ -48,7 +47,7 @@ ALL$strategy = as.character(ALL$strategy)
 load(file=paste(datadir,"/all_scores.Rda",sep=""))
 
 # Plot distributions separately
-ALL = ALL[ALL$thresh<=7.0,]
+#ALL = ALL[ALL$thresh<=7.0,]
 ALL = ALL[ALL$strategy=="cca.pearson",]
 ggplot(ALL[ALL$direction=="posneg",],aes(x=value, fill=strategy, thresh=thresh)) + 
   geom_density(alpha=0.25) + 
@@ -237,23 +236,51 @@ write.table(allres,file=paste(datadir,"/ml_accuracy.tsv",sep=""),sep="\t")
 accuracy_table = accuracy_table(threshold=1.0,direction="posneg",label="cca.pearson",queryimages)
 save(tableone,file="confmatrix_pd_posneg_1_table1.Rda")
 
-# confmatrix = matrices["confmatrix_pd_posneg_1"]$confmatrix_pd_posneg_1
+## Figure 2 for Paper: Accuracy across all variables for worst performing contrast
+image = "TASK07_CON35"
 
-# Make sure that rownames == colnames, so index [r,r] is correct classifications
-# all(rownames(confmatrix) == colnames(confmatrix))
-# TRUE
+directions = c("pos","posneg")
+thresholds=0:13
+allres = c()
+for (thresh in thresholds){
+  for (direction in directions){
+    cat("THRESHOLD:",thresh,"DIRECTION",direction,"\n")
+    res = c()
+    for (iter in iters){
+      # Read in each of the input files
+      cat(iter,"\n")
+      pi = parse_single_input(read.csv(paste(iter,"_pearson_svi.tsv",sep=""),sep="\t",row.names=1))  
+      pd = parse_single_input(read.csv(paste(iter,"_pearson_cca.tsv",sep=""),sep="\t",row.names=1))  
+      si = parse_single_input(read.csv(paste(iter,"_spearman_svi.tsv",sep=""),sep="\t",row.names=1))  
+      sd = parse_single_input(read.csv(paste(iter,"_spearman_cca.tsv",sep=""),sep="\t",row.names=1))  
+      # We only care about one image
+      pi = pi[pi$queryimage==image,]
+      pd = pd[pd$queryimage==image,]
+      si = si[si$queryimage==image,]
+      sd = sd[sd$queryimage==image,]
+      piacc = calculate_single_accuracy(pi,image,thresh,direction,"svi.pearson",iter)
+      pdacc = calculate_single_accuracy(pd,image,thresh,direction,"cca.pearson",iter)
+      siacc = calculate_single_accuracy(si,image,thresh,direction,"svi.spearman",iter)
+      sdacc = calculate_single_accuracy(sd,image,thresh,direction,"cca.spearman",iter)
+      allacc = rbind(piacc,pdacc,siacc,sdacc)
+      res = rbind(res,allacc)
+    }
+    # Calculate the mean across thresholds and directions
+    res$direction = as.character(res$direction)
+    res$iter = as.numeric(res$iter)
+    df = ddply(res,c("direction","thresh","strategy"), summarise, accuracy_mean=mean(acc),up=get_ci(acc,"upper"),down=get_ci(acc,"lower"))
+    allres = rbind(allres,df)
+    save(allres,file=paste("accuracy_df_",image,".Rda",sep=""))
+  }
+}
 
-# For each row (actual) contrast, sum the number of correct vs incorrect
-# tableone = c()
-# for (r in 1:nrow(confmatrix)) {
-#  label = rownames(confmatrix)[r]
-#  row = confmatrix[r,]
-#  correct = row[r]
-#  incorrect = sum(row[-r])
-#  total = sum(row)
-#  upperci = get_ci(c(rep(1,correct),rep(0,incorrect)),direction="upper")
-#  lowerci = get_ci(c(rep(1,correct),rep(0,incorrect)),direction="lower")
-#  accuracy = correct / total
-#  result = cbind(accuracy,lowerci,upperci)
-#  tableone = rbind(tableone,result)
-#}
+direction="pos"
+ggplot(allres[allres$direction==direction,], aes(x=thresh,y=accuracy_mean,ymax=up,ymin=down, fill=strategy,colour=strategy)) + 
+  geom_line(size=1.5) + 
+  geom_ribbon(alpha=0.15,linetype=0) +
+  xlab("Threshold +") +
+  ylab("Accuracy") +
+  ylim(0,1) +
+  scale_x_continuous(breaks = round(seq(0, 13, by = 1.0),1))
+ggsave(paste(savedir,"/ml_accuracy",image,direction,"_withCI.png",sep=""))
+write.table(allres,file=paste(datadir,"/ml_accuracy",image,".tsv",sep=""),sep="\t")
