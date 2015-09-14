@@ -3,29 +3,24 @@ library(CogatSimilar) # https://github.com/CognitiveAtlas/cogat-similaR
 
 args <- commandArgs(TRUE)
 i = as.numeric(args[1])
-output_file = args[2]
-image_file = args[3]
+j = as.numeric(args[2])
+output_file = args[3]
+image_file = args[4]
 
 # Read in table with images
 images = read.csv(image_file,sep="\t",head=TRUE,stringsAsFactors=FALSE)
 
-# A vector to hold similarities
-similarities = array(dim=nrow(images))
-
 cat("Processing",i,"of",nrow(images),"\n")
 mr1 = images[i,]
 CAID1 = mr1$cognitive_contrast_cogatlas_id
-for (j in 1:nrow(images)){
-  mr2 = images[j,]
-  CAID2 = mr2$cognitive_contrast_cogatlas_id
-  score = CogatSimilar(CAID1,CAID2)
-  similarities[j] = score
-}
-names(similarities) = images$image_id
+mr2 = images[j,]
+CAID2 = mr2$cognitive_contrast_cogatlas_id
+score = CogatSimilar(CAID1,CAID2)
 
 result = list()
-result$scores = similarities
-result$row = i
+result$score = score
+result$row1 = i
+result$row2 = j
 
 # Export to file
-save(result,filename=output_file)
+save(result,file=output_file)

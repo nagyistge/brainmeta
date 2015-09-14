@@ -10,7 +10,7 @@ colnames(similarities) = images$image_id
 
 for (file in input_files){
   load(file)
-  similarities[result$row,] = result$scores
+  similarities[result$row1,result$row2] = result$score
 }
 
 output_file = cat(output_folder,"/contrast_defined_images_wang.tsv",sep="")
