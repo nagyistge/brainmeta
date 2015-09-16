@@ -9,7 +9,7 @@ images = pandas.read_csv("%s/contrast_defined_images.tsv" %outfolder,sep="\t")
 
 
 ## STEP 1: GENERATE TRIPLES DATA STRUCTURE
-from cognitiveatlas.datastructure import concept_node_triples
+from cognitiveatlas.datastructure import concept_node_triples, get_concept_categories
 
 '''
   id    parent  name
@@ -33,9 +33,26 @@ output_triples_file = "%s/task_contrast_triples.tsv" % outfolder
 # Create a data structure of tasks and contrasts for our analysis
 concept_node_triples(image_dict=image_lookup,output_file=output_triples_file)
 
-data_structure = read_csv(output_triples_file,sep="\t")
+relationship_table = pandas.read_csv(output_triples_file,sep="\t")
 
-## STEP 2: REVERSE INFERENCE WITH PYBRAINCOMPARE
+# We want to give the concept categories as meta data so we produce category nodes
+meta_data = get_concept_categories()
 
-# under development!
+## STEP 2: VISUALIZATION WITH PYBRAINCOMPARE
 
+from pybraincompare.ontology.inference import calculate_reverse_inference
+from pybraincompare.ontology.tree import named_ontology_tree_from_tsv, 
+from pybraincompare.template.visual import view
+
+# First let's look at the tree structure
+output_json = "%s/task_contrast_tree.json" % outfolder
+tree = named_ontology_tree_from_tsv(relationship_table,output_json=None,meta=meta_data)
+html_snippet = make_ontology_tree_d3(tree)
+view(html_snippet)
+
+## STEP 3: REVERSE INFERENCE WITH PYBRAINCOMPARE
+
+# Here is top path for images defined above (resampled to MNI 2mm)
+mrpath = "/home/vanessa/Documents/Work/BRAINMETA/reverse_inference/resampled"
+
+# IN PROGRESS
