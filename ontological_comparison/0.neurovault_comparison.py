@@ -6,6 +6,7 @@ import nibabel
 import pandas
 from pyneurovault import api
 from cognitiveatlas.api import get_task, get_concept
+from pybraincompare.compare.maths import TtoZ
 
 ## STEP 1: DOWNLOAD OF NV IMAGES ######################################################
 
@@ -25,6 +26,9 @@ images = api.get_images(collection_pks=collections.collection_id.tolist())
 # Filter images to those with contrasts defined (N=93)
 images = images[images.cognitive_contrast_cogatlas_id.isnull()==False]
 images.to_csv("%s/contrast_defined_images.tsv" %outfolder,encoding="utf-8",sep="\t")
+
+# We will want to convert T images to Z, make sure all are Z
+# TODO: when on Sherlock
 
 standard = "/usr/share/fsl/data/standard/MNI152_T1_2mm_brain.nii.gz"
 api.download_images(dest_dir = outfolder,images_df=images,target=standard)
