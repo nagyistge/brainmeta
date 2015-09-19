@@ -36,7 +36,7 @@ for p in range(0,len(priors_pickles)):
     priors_tables_ranges_in = [x for x in priors_tables if re.search("in_ranges",x)][0]
     priors_tables_binary = [x for x in priors_tables if x not in priors_tables_ranges_in + priors_tables_ranges_out]
     priors_tables_binary_out = [x for x in priors_tables_binary if re.search("df_out",x)][0]
-    priors_tables_binary_in = [x for x in priors_tables if re.search("df_in",x)][0]
+    priors_tables_binary_in = [x for x in priors_tables_binary if re.search("df_in",x)][0]
     
     print "Priors tables ranges out is %s" % priors_tables_ranges_out
     print "Priors tables ranges in is %s" % priors_tables_ranges_in
