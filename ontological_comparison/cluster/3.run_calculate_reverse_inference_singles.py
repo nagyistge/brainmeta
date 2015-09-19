@@ -16,6 +16,7 @@ images = glob("%s/*"%images_folder)
 
 # Generate an output file for each image
 for i in range(0,len(images)):
+if 1==1:
     input_image = images[i]
     image_id = os.path.split(images[i])[-1].replace(".nii.gz","")
     filey = ".jobs/inf_%s.job" %(image_id)
@@ -26,6 +27,6 @@ for i in range(0,len(images)):
     filey.writelines("#SBATCH --error=.out/%s.err\n" %(image_id))
     filey.writelines("#SBATCH --time=2-00:00\n")
     filey.writelines("#SBATCH --mem=64000\n")
-    filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/ontological_comparison/cluster/3.calculate_reverse_inference_single.py %s %s %s %s" %(input_image, tables_folder, scores_folder, priors_folder))
+    filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/ontological_comparison/cluster/3.calculate_reverse_inference_singles.py %s %s %s %s" %(input_image, tables_folder, scores_folder, priors_folder))
     filey.close()
     os.system("sbatch -p russpold " + ".jobs/inf_%s.job" %(image_id)) 
