@@ -9,6 +9,7 @@ from pybraincompare.mr.datasets import get_standard_mask
 from pybraincompare.compare.mrutils import get_images_df
 import pickle
 import pandas
+import sys
 
 priors_pkl = sys.argv[1]    # input pickle with groups
 tables_folder = sys.argv[2] # output folder for priors tables
