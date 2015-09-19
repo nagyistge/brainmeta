@@ -30,6 +30,7 @@ for p in range(0,len(priors_pickles)):
     print "Calculating RI for priors %s of %s" %(p,len(priors_pickles))
     group = pickle.load(open(priors_pickles[p],"rb"))
     nid = group["nid"]
+
     # Find the calculated priors tables
     priors_tables = glob("%s/*%s*" %(tables_folder,nid))
     priors_tables_ranges_out = [x for x in priors_tables if re.search("out_ranges",x)][0]
