@@ -13,21 +13,28 @@ from pybraincompare.compare.maths import TtoZ
 ## STEP 1: DOWNLOAD OF NV IMAGES ######################################################
 
 # Set up work folders for data
-outfolder = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON"
+# For the VM: these paths will be environmental variables
+base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON"
+results = "%s/results" %base  # any kind of tsv/result file
+data = "%s/data" %base        # mostly images
+
+os.mkdirs(base)
+os.mkdir(results)
+os.mkdir(data)
 
 # Get all collections
 collections = api.get_collections()
 
 # Filter images to those that have a DOI
 collections = collections[collections.DOI.isnull()==False]
-collections.to_csv("%s/collections_with_dois.tsv" %outfolder,encoding="utf-8",sep="\t")
+collections.to_csv("%s/collections_with_dois.tsv" %results,encoding="utf-8",sep="\t")
 
 # Get image meta data for collections (N=1023)
 images = api.get_images(collection_pks=collections.collection_id.tolist())
 
 # Filter images to those with contrasts defined (N=98)
 images = images[images.cognitive_contrast_cogatlas_id.isnull()==False]
-images.to_csv("%s/contrast_defined_images.tsv" %outfolder,encoding="utf-8",sep="\t")
+images.to_csv("%s/contrast_defined_images.tsv" %results,encoding="utf-8",sep="\t")
 
 # Get rid of any not in MNI
 images = images[images.not_mni == False]
@@ -47,10 +54,10 @@ images = z.append(t)
 
 # Download images
 standard = "/scratch/users/vsochat/DATA/ATLAS/FSL/MNI152_T1_2mm_brain.nii.gz"
-api.download_images(dest_dir = outfolder,images_df=images,target=standard)
+api.download_images(dest_dir = data,images_df=images,target=standard)
 
 # For T images, convert to Z
-tmaps = [ "%s/resampled/%06d.nii.gz" %(outfolder,x) for x in t.image_id.tolist()]
+tmaps = [ "%s/resampled/%06d.nii.gz" %(data,x) for x in t.image_id.tolist()]
 
 # Look up number of subjects, and calculate dofs
 dofs = []
@@ -58,7 +65,7 @@ for row in t.iterrows():
     dof = collections.number_of_subjects[collections.collection_id == int(row[1].collection)].tolist()[0] -2
     dofs.append(dof)
 
-outfolder_z = "%s/resampled_z" %(outfolder)
+outfolder_z = "%s/resampled_z" %(data)
 os.mkdir(outfolder_z)
 
 for tt in range(0,len(tmaps)):
@@ -68,7 +75,7 @@ for tt in range(0,len(tmaps)):
     TtoZ(tmap,output_nii=zmap_new,dof=dof)
 
 # Copy all (already) Z maps to the folder
-zmaps = [ "%s/resampled_z/%06d.nii.gz" %(outfolder,x) for x in z.image_id.tolist()]
+zmaps = [ "%s/resampled_z/%06d.nii.gz" %(data,x) for x in z.image_id.tolist()]
 for zmap in zmaps:
     zmap_new = "%s/%s" %(outfolder_z,os.path.split(zmap)[-1])
     shutil.copyfile(zmap,zmap_new)
@@ -93,16 +100,17 @@ def pad_zeros(the_id,total_length=6):
 
 # Calculate image similarity with pearson correlation
 # Feasible to run in serial for small number of images
+print "Calculating spatial image similarity with pearson score, complete case analysis (set of overlapping voxels) for pairwise images..."
 image_ids = images.image_id.tolist()
 simmatrix = pandas.DataFrame(columns=image_ids,index=image_ids)
 for id1 in image_ids:
     print "Processing %s..." %id1
     mr1_id = pad_zeros(id1)
-    mr1_path = "%s/resampled_z/%s.nii.gz" %(outfolder,mr1_id)
+    mr1_path = "%s/resampled_z/%s.nii.gz" %(data,mr1_id)
     mr1 = nibabel.load(mr1_path)
     for id2 in image_ids:
         mr2_id = pad_zeros(id2)
-        mr2_path = "%s/resampled_z/%s.nii.gz" %(outfolder,mr2_id)
+        mr2_path = "%s/resampled_z/%s.nii.gz" %(data,mr2_id)
         mr2 = nibabel.load(mr2_path)
         # Make a pairwise deletion / complete case analysis mask
         pdmask = make_binary_deletion_mask([mr1,mr2])
@@ -111,4 +119,4 @@ for id1 in image_ids:
         simmatrix.loc[id1,id2] = score
         simmatrix.loc[id2,id1] = score
 
-simmatrix.to_csv("%s/contrast_defined_images_pearsonpd_similarity.tsv" %outfolder,sep="\t")
+simmatrix.to_csv("%s/contrast_defined_images_pearsonpd_similarity.tsv" %results,sep="\t")
