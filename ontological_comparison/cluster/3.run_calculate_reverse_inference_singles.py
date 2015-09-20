@@ -15,7 +15,7 @@ if not os.path.exists(scores_folder):
 images = glob("%s/*"%images_folder)
 
 # Generate an output file for each image
-for i in range(1,len(images)):
+for i in range(0,len(images)):
     input_image = images[i]
     image_id = os.path.split(images[i])[-1].replace(".nii.gz","")
     filey = ".jobs/inf_%s.job" %(image_id)

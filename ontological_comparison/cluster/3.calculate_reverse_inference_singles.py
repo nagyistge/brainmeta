@@ -10,6 +10,7 @@ from pybraincompare.compare.mrutils import get_images_df
 from glob import glob
 import pickle
 import pandas
+import os
 import re
 import sys
 
