@@ -19,7 +19,6 @@ for i in range(0,len(likelihood_pickles)):
     for image in all_images:
         image_id = os.path.split(image)[1].replace(".nii.gz","")
         output_pkl = "%s/%s_%s.pkl" %(scores_folder,group["nid"],image_id)
-if 1==1:
         if not os.path.exists(output_pkl):
             filey = ".jobs/ri_%s.job" %(image_id)
             filey = open(filey,"w")
@@ -29,13 +28,13 @@ if 1==1:
             filey.writelines("#SBATCH --error=.out/%s.err\n" %(image_id))
             filey.writelines("#SBATCH --time=2-00:00\n")
             filey.writelines("#SBATCH --mem=64000\n")
-            filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/ontological_comparison/cluster/3.calculate_reverse_inference.py %s %s %s" %(image, node, output_pkl))
+            filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/ontological_comparison/cluster/classification-framework/4.calculate_reverse_inference.py %s %s %s" %(image, node, output_pkl))
             filey.close()
             os.system("sbatch -p russpold " + ".jobs/ri_%s.job" %(image_id)) 
 
 
 
-# Instead we want to do the following, a LOO cross validation procedure:
+# This will produce data for a LOO cross validation procedure:
 # For each image node (defined with the likelihood group pickles above)
 #     For each image: select him to leave out
 #     With the remaining images, calculate likelihood tables, prior, and, RI for the query image
@@ -57,21 +56,3 @@ if 1==1:
 #     For each of the above, calculate a CE score, and compare distributions.
 #     We would want "correct" tags to have higher scores
 # This means that we need, for each node: to save a reverse inference score for ALL query images in the databases (against the node) and to save the priors values (not including the image) and then a reverse inference score.
-
-if not os.path.exists(tables_folder):
-    os.mkdir(tables_folder)
-
-for p in range(1,len(likelihood_pickles)):
-    pkl = likelihood_pickles[p]
-    contrast_id = os.path.split(pkl)[-1].split("_")[-1].replace(".pkl","")
-    filey = ".jobs/revinf_%s.job" %(contrast_id)
-    filey = open(filey,"w")
-    filey.writelines("#!/bin/bash\n")
-    filey.writelines("#SBATCH --job-name=%s\n" %(contrast_id))
-    filey.writelines("#SBATCH --output=.out/%s.out\n" %(contrast_id))
-    filey.writelines("#SBATCH --error=.out/%s.err\n" %(contrast_id))
-    filey.writelines("#SBATCH --time=2-00:00\n")
-    filey.writelines("#SBATCH --mem=64000\n")
-    filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/ontological_comparison/cluster/classification-framework/2.calculate_likelihood.py %s %s" %(pkl, tables_folder))
-    filey.close()
-    os.system("sbatch -p russpold " + ".jobs/revinf_%s.job" %(contrast_id)) 
