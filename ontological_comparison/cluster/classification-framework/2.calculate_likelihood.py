@@ -13,8 +13,6 @@ import sys
 
 likelihood_pkl = sys.argv[1]    # input pickle with groups
 tables_folder = sys.argv[2]     # output folder for priors tables
-scores_folder = sys.argv[3]     # folder to output results to
-                                # "scores" subdirectory will be 
 
 group = pickle.load(open(likelihood_pkl,"rb"))
 standard_mask = get_standard_mask()
