@@ -162,7 +162,9 @@ for s in range(0,len(single_scores)):
                            "journal":collection_row["journal_name"].tolist()[0],
                            "url":collection_row["url"].tolist()[0],
                            "subjects":collection_row["number_of_subjects"].tolist()[0],
-                           "smoothing_fwhm":str(collection_row["smoothing_fwhm"].tolist()[0]).encode("utf-8")}
+                           "smoothing_fwhm":str(collection_row["smoothing_fwhm"].tolist()[0]).encode("utf-8"),
+                           "title":collection_row["name"].tolist()[0]}
+    meta_single["collection"] = collection_meta
     meta_single["url"] = neurovault_row["url"].tolist()[0]
     meta_single["thumbnail"] = neurovault_row["thumbnail"].tolist()[0]
     meta_single["images"] = neurovault_row["thumbnail"].tolist()
