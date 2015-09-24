@@ -30,8 +30,7 @@ for i in range(0,len(likelihood_pickles)):
             filey.writelines("#SBATCH --mem=64000\n")
             filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/ontological_comparison/cluster/classification-framework/4.calculate_reverse_inference.py %s %s %s" %(image, node, output_pkl))
             filey.close()
-            os.system("sbatch -p russpold " + ".jobs/ri_%s.job" %(image_id)) 
-
+            os.system("sbatch -p russpold " + ".jobs/ri_%s.job" %(image_id))
 
 
 # This will produce data for a LOO cross validation procedure:
