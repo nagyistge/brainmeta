@@ -216,12 +216,33 @@ ggplot(tmp, aes(x=sort,y=mscore,task=task,colour=mscore)) +
   scale_x_discrete(limits=tmp$sort,labels=tmp$name) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-# Plot association between group "in" size 
-ggplot(tmp, aes(x=task, group=direction,y=mscore,fill=direction,colour=direction)) + 
+countin = c()
+countout = c()
+for (t in tmp$task){
+  subset= groups[groups$group==t,]
+  countin = c(countin,nrow(subset[subset$direction=="in",]))
+  countout = c(countout,nrow(subset[subset$direction=="out",]))
+}
+tmp$countin = countin
+tmp$countout = countout
+
+# Look at overall mean reverse inference scores
+ggplot(tmp, aes(x=sort,y=mscore,task=task,countin=countin,countout=countout,colour=mscore)) + 
   geom_bar(stat="identity") + 
-  xlab("Threshold +") +
-  ylab("Mean Score") + title("Scores with Different Strategies for Handling Missing Data")
-ggsave(paste(savedir,"/meanscores_with_ci_pos.png",sep=""))
+  xlab("concept") +
+  ylab(paste("mean reverse inference score")) +
+  scale_x_discrete(limits=tmp$sort,labels=tmp$name) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# Look at count in and out of set
+ggplot(tmp, aes(x=sort,task=task,countin=countin,countout=countout)) + 
+  geom_point(aes(y = countin,colour='pink')) +
+  geom_point(aes(y = countout)) +
+  scale_x_discrete(limits=tmp$sort,labels=tmp$name) +
+  xlab("concept") +
+  ylab(paste("count in (pink) and out")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),legend.position="none")
+
 
 
 # NEXT: What we would want to do is look at the change in bayes score as we add concepts KNOWN to be in the set.
