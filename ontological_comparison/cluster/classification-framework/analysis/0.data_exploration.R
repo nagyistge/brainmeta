@@ -89,6 +89,8 @@ for (node in nodes){
     }
 }
 
+### STEP 1: VISUALIZATION #########################################################################
+
 cr = melt(count_bin)
 colnames(cr) = c("node","direction","value")
 
@@ -135,10 +137,7 @@ for (node in nodes){
 }
 dev.off()
 
-
-### STEP 1: VISUALIZATION #########################################################################
-
-# basic visualization of reverse inference scores
+# Basic visualization of reverse inference scores
 riranges$image_id = rownames(ri_ranges)
 ribinary$image_id = rownames(ri_binary)
 riranges = as.matrix(ri_ranges)
@@ -160,7 +159,7 @@ rib$task = as.character(rib$task)
 rib$image = as.character(rib$image)
 rib$value = as.numeric(rib$value)
 
-# ggplot is being stupid, so let's look at the distributions individually for each task!
+# Let's look at the distributions individually for each concept!
 # we will write to pdf
 # We will also safe a data frame with number in, number out, and average RI scores
 
@@ -192,20 +191,34 @@ for (node in nodes){
 }
 dev.off()
 
-# Plot association between group "in" size 
-  ylab("Density") + 
-  xlab("Threshold +/-") + 
-  xlim(-1,1) +
-  theme(legend.position="none")
-ggsave(paste(savedir,"/density_ccapearson_posneg.png",sep=""))
+# Function to calculate confidence intervals
+get_ci = function(dat,direction="upper"){
+  error = qnorm(0.975)*sd(dat)/sqrt(length(dat))
+  if (direction=="upper"){
+    return(mean(dat)+error)
+  } else {
+    return(mean(dat)-error)    
+  }
+}
 
-direction = "pos"
-ALLSUM = ALL[ALL$direction==direction,]
-ALLSUM = ALLSUM[-which(is.na(ALLSUM$score)),]
-ALLSUM = ddply(ALLSUM, c("strategy","thresh"), summarise, mscore = mean(score), up=get_ci(score,"upper"), down=get_ci(score,"lower"))
-ggplot(ALLSUM, aes(x=thresh, group=strategy,y=mscore,ymin=down,ymax=up,fill=strategy,colour=strategy)) + 
-  geom_line(size=1.5) + 
-  geom_ribbon(alpha=0.15,linetype=0) +
+# Let's look at mean RI scores for each concept node
+ribsum = ddply(rib, c("task"), summarise, mscore = mean(value))
+ribsum$name = as.character(node_lookup[ribsum$task])
+
+# Sort by meanscore
+tmp = ribsum[with(ribsum, order(-mscore)), ]
+rownames(tmp) = seq(1,nrow(tmp))
+tmp$sort = as.numeric(rownames(tmp))
+ggplot(tmp, aes(x=sort,y=mscore,task=task,colour=mscore)) + 
+  geom_bar(stat="identity") + 
+  xlab("concept") +
+  ylab(paste("mean reverse inference score")) +
+  scale_x_discrete(limits=tmp$sort,labels=tmp$name) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# Plot association between group "in" size 
+ggplot(tmp, aes(x=task, group=direction,y=mscore,fill=direction,colour=direction)) + 
+  geom_bar(stat="identity") + 
   xlab("Threshold +") +
   ylab("Mean Score") + title("Scores with Different Strategies for Handling Missing Data")
 ggsave(paste(savedir,"/meanscores_with_ci_pos.png",sep=""))
