@@ -92,15 +92,49 @@ for (node in nodes){
 cr = melt(count_bin)
 colnames(cr) = c("node","direction","value")
 
+# Evidence for and against the concepts, not normalized
 pdf("img/evidence_for_concepts.pdf")
 for (node in nodes){
   subset = cr[cr$node==node,] 
-  p = ggplot(subset,aes(x=value,y=node,fill=direction)) + 
+  p = ggplot(subset,aes(x=direction,y=value,fill=direction)) + 
   geom_histogram(alpha=0.25,stat="identity",binwidth=1) +
-  labs(title = "Evidence for and against Concepts")
+  labs(title = paste("Evidence for/against",node_lookup[node]))
   print(p)
 }
 dev.off()
+
+# Evidence for and against the concepts, but now we only want to consider the images that are tagged AT the node:
+count_bin_in = matrix(0,nrow=ncol(bayes_in_bin),ncol=2)
+rownames(count_bin_in) = colnames(bayes_in_bin)
+colnames(count_bin_in) = c("for","against")
+
+for (node in nodes){
+  cat("Parsing",node,"\n")  
+  # Find in group
+  group = groups[groups$group==node,]
+  in_group = group$image[which(group$direction=="in")]
+  # Look at bayes for range and bin given "in" group
+  for (image in in_group){
+    count_bin_in = count_for_against(image,node,bayes_in_bin,bayes_out_bin,count_bin_in,"gt")    
+  }
+}
+
+crin = melt(count_bin_in)
+colnames(crin) = c("node","direction","value")
+
+pdf("img/evidence_for_concepts_ins.pdf")
+for (node in nodes){
+  subset = crin[crin$node==node,] 
+  if (sum(subset$value)>0) {
+  p = ggplot(subset,aes(x=direction,y=value,fill=direction)) + 
+    geom_histogram(alpha=0.25,stat="identity",binwidth=1) +
+    scale_y_continuous(limits = c(0, 93)) +
+    labs(title = paste("Evidence for/against",node_lookup[node]))
+    print(p)
+  }
+}
+dev.off()
+
 
 ### STEP 1: VISUALIZATION #########################################################################
 
