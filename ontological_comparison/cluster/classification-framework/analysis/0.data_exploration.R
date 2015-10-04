@@ -90,6 +90,7 @@ for (node in nodes){
 }
 
 ### STEP 1: VISUALIZATION #########################################################################
+# Note - this does not completely coincide with order of google site
 
 cr = melt(count_bin)
 colnames(cr) = c("node","direction","value")
@@ -105,6 +106,7 @@ for (node in nodes){
 }
 dev.off()
 
+# Idea 1: If the "in" group images provide evidence for the concept, on the level of the node
 # Evidence for and against the concepts, but now we only want to consider the images that are tagged AT the node:
 count_bin_in = matrix(0,nrow=ncol(bayes_in_bin),ncol=2)
 rownames(count_bin_in) = colnames(bayes_in_bin)
@@ -161,8 +163,8 @@ rib$value = as.numeric(rib$value)
 
 # Let's look at the distributions individually for each concept!
 # we will write to pdf
-# We will also safe a data frame with number in, number out, and average RI scores
-
+# We will also save a data frame with number in, number out, and average RI scores
+# (not not used)
 df=c("countin","countout","meanin","meanout")
 
 par(mfrow=c(1,1))
@@ -244,5 +246,41 @@ ggplot(tmp, aes(x=sort,task=task,countin=countin,countout=countout)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1),legend.position="none")
 
 
+# Idea 2: Can reverse inference scores be used to predict image labels
+# First make a matrix of images by labels, with 1 if the image is in the "in group"
+unique_ids = unique(image_ids)
+labels = array(0,dim=c(length(unique_ids),length(nodes)))
+rownames(labels) = unique_ids
+colnames(labels) = nodes
+for (node in nodes){
+  subset = groups[groups$group==node,]
+  ingroup = subset$image_ids[subset$direction=="in"]
+  labels[which(rownames(labels)%in%ingroup),node] = 1
+}
+
+# Let's first be stupid and see if we can cluster concepts based on image scores
+library(pheatmap)
+
+ribname = ri_binary
+colnames(ribname) = as.character(node_lookup[colnames(ribname)])
+disty = dist(ribname)
+dmat = as.matrix(disty)
+
+# Correlation of concepts by image scores
+corr = cor(ribname)
+pheatmap(corr,fontsize_row=8)
+
+# Correlation of images by image scores
+corr = cor(t(ribname))
+pheatmap(corr,fontsize_row=8)
+
+# Get contrast names for the images
+images = read.csv("/home/vanessa/Documents/Work/BRAINMETA/reverse_inference/contrast_defined_images.tsv",sep="\t")
+contrast_names = as.character(images$cognitive_contrast_cogatlas[as.character(images$image_id)%in%rownames(ribname)])
+contrast_names = strtrim(contrast_names, 25)
+rownames(corr) = contrast_names
+colnames(corr) = contrast_names
+pheatmap(corr,fontsize_row=8)
 
 # NEXT: What we would want to do is look at the change in bayes score as we add concepts KNOWN to be in the set.
+# want to get feedback on this first before doing it
