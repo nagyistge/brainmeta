@@ -20,7 +20,7 @@ ri_priors_out = pandas.read_csv("%s/reverse_inference_priors_out.tsv" %data,sep=
 bayes_in_ranges = pandas.read_csv("%s/reverse_inference_bayes_in_ranges" %data,sep="\t")
 bayes_out_ranges = pandas.read_csv("%s/reverse_inference_bayes_out_ranges.tsv" %data,sep="\t")
 bayes_in_bin = pandas.read_csv("%s/reverse_inference_bayes_in_binary.tsv" %data,sep="\t")
-bayes_out_bin = panads.read_csv("%s/reverse_inference_bayes_out_binary.tsv" %data,sep="\t")
+bayes_out_bin = pandas.read_csv("%s/reverse_inference_bayes_out_binary.tsv" %data,sep="\t")
 
 count_bin = pandas.DataFrame(0,columns=["for","against"],index=bayes_in_bin.columns)
 count_range = pandas.DataFrame(0,columns=["for","against"],index=bayes_in_bin.columns)
