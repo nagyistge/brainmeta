@@ -80,14 +80,27 @@ for (node in nodes){
    out_group = group$image[which(group$direction=="out")]
    # Look at bayes for range and bin given "in" group
    for (image in in_group){
-      count_range = count_for_against(image,node,bayes_in_ranges,bayes_out_range,count_range,"gt")    
+      count_range = count_for_against(image,node,bayes_in_ranges,bayes_out_ranges,count_range,"gt")    
       count_bin = count_for_against(image,node,bayes_in_bin,bayes_out_bin,count_bin,"gt")    
   }
    for (image in out_group){
      count_range = count_for_against(image,node,bayes_in_ranges,bayes_out_ranges,count_range,"lt")    
-     count_range = count_for_against(image,node,bayes_in_bin,bayes_out_bin,count_bin,"lt")    
+     count_bin = count_for_against(image,node,bayes_in_bin,bayes_out_bin,count_bin,"lt")    
     }
 }
+
+cr = melt(count_bin)
+colnames(cr) = c("node","direction","value")
+
+pdf("img/evidence_for_concepts.pdf")
+for (node in nodes){
+  subset = cr[cr$node==node,] 
+  p = ggplot(subset,aes(x=value,y=node,fill=direction)) + 
+  geom_histogram(alpha=0.25,stat="identity",binwidth=1) +
+  labs(title = "Evidence for and against Concepts")
+  print(p)
+}
+dev.off()
 
 ### STEP 1: VISUALIZATION #########################################################################
 
@@ -145,7 +158,7 @@ for (node in nodes){
 }
 dev.off()
 
-
+# Plot association between group "in" size 
   ylab("Density") + 
   xlab("Threshold +/-") + 
   xlim(-1,1) +
