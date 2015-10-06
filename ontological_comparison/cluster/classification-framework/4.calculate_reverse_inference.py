@@ -73,15 +73,15 @@ image_id = os.path.split(image)[1].replace(".nii.gz","")
 # it to the prior, we can determine if the image adds new evidence for the concept (or not)
 ri_ranges = calculate_reverse_inference(image_df,like_in_ranges,like_out_ranges,in_count,out_count,range_table)
 result["ri_ranges"] = ri_ranges
-result["bayes_factor_ranges_in"] = ri_ranges / prior_in
-result["bayes_factor_ranges_out"] = ri_ranges / prior_out
+result["bayes_factor_ranges_in"] = ri_ranges / 0.5
+result["bayes_factor_ranges_out"] = ri_ranges / 0.5
 
 # REVERSE INFERENCE TO CLASSIFY IMAGES - USING BINARY ACTIVATION THRESHOLD
 # When we don't provide range table, threshold is extracted from priors_* column name
 ri_bin = calculate_reverse_inference(image_df,like_in_bin,like_out_bin,in_count,out_count)
 result["ri_binary"] = ri_bin
-result["bayes_factor_bin_in"] = ri_bin / prior_in
-result["bayes_factor_bin_out"] = ri_bin / prior_out
+result["bayes_factor_bin_in"] = ri_bin / 0.5
+result["bayes_factor_bin_out"] = ri_bin / 0.5
 
 # Save rest of varibles to result object
 result["in_count"] = in_count
