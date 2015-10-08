@@ -44,7 +44,7 @@ result = dict()
 # P(activation|mental process): my voxelwise prior map
 
 # This is a reverse inference score, the p(cognitive process | query)
-ri = calculate_reverse_inference_distance(image,in_group,out_group)
+ri = calculate_reverse_inference_distance(image,in_group,out_group,standard_mask)
 result["ri_query"] = ri
 result["bayes_factor"] = ri / 0.5
 

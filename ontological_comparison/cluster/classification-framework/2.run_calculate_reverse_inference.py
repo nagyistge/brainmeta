@@ -26,7 +26,7 @@ for i in range(0,len(likelihood_pickles)):
             filey.writelines("#SBATCH --job-name=%s\n" %(image_id))
             filey.writelines("#SBATCH --output=.out/%s.out\n" %(image_id))
             filey.writelines("#SBATCH --error=.out/%s.err\n" %(image_id))
-            filey.writelines("#SBATCH --time=2-00:00\n")
+            filey.writelines("#SBATCH --time=0-01:00\n")
             filey.writelines("#SBATCH --mem=64000\n")
             filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/ontological_comparison/cluster/classification-framework/2.calculate_reverse_inference.py %s %s %s" %(image, node, output_pkl))
             filey.close()
