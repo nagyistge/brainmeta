@@ -6,14 +6,12 @@ setwd("/home/vanessa/Documents/Dropbox/Code/Python/brainmeta/ontological_compari
 
 # Reading in the result data
 
-ri_ranges = read.csv("data/reverse_inference_scores_ranges.tsv",sep="\t",stringsAsFactors=FALSE,row.names=1) # reverse inference ranges scores  
-ri_binary = read.csv("data/reverse_inference_scores_binary.tsv",sep="\t",stringsAsFactors=FALSE,row.names=1) # binary scores
-ri_priors_in = read.csv("data/reverse_inference_priors_in.tsv",sep="\t",stringsAsFactors=FALSE,row.names=1) # priors for in and out of node sets
-ri_priors_out = read.csv("data/reverse_inference_priors_out.tsv",sep="\t",stringsAsFactors=FALSE,row.names=1)
-bayes_in_ranges = read.csv("data/reverse_inference_bayes_in_ranges",sep="\t",stringsAsFactors=FALSE,row.names=1) # bayes for query images, ranges in
-bayes_out_ranges = read.csv("data/reverse_inference_bayes_out_ranges.tsv",sep="\t",stringsAsFactors=FALSE,row.names=1) # ranges out
-bayes_in_bin = read.csv("data/reverse_inference_bayes_in_binary.tsv",sep="\t",stringsAsFactors=FALSE,row.names=1)      # bayes binary bin
-bayes_out_bin = read.csv("data/reverse_inference_bayes_out_binary.tsv",sep="\t",stringsAsFactors=FALSE,row.names=1)    # bayes binary out
+ri_score = read.csv("data/reverse_inference_scores.tsv",sep="\t",stringsAsFactors=FALSE,row.names=1) # reverse inference scores
+counts_in = read.csv("data/reverse_inference_counts_in.tsv",sep="\t",stringsAsFactors=FALSE,row.names=1) # bayes for query images, ranges in
+counts_out = read.csv("data/reverse_inference_counts_out.tsv",sep="\t",stringsAsFactors=FALSE,row.names=1) # bayes for query images, ranges in
+
+# Let's look at the overall posterior scores
+hist(as.matrix(ri_score),main="Reverse Inference Scores",col="orange",xlab="posterior probability")
 
 # Read in all groups
 groups = read.csv("data/groups/all_groups.tsv",sep="\t",stringsAsFactors=FALSE)
@@ -25,13 +23,6 @@ for (image in groups$image){
 }
 groups$image_ids = image_ids
 
-count_bin = matrix(0,nrow=ncol(bayes_in_bin),ncol=2)
-rownames(count_bin) = colnames(bayes_in_bin)
-colnames(count_bin) = c("for","against")
-count_range = matrix(0,nrow=ncol(bayes_in_ranges),ncol=2)
-rownames(count_range) = colnames(bayes_in_ranges)
-colnames(count_range) = c("for","against")
-
 # Make a lookup table for the node name
 nodes = unique(groups$group)
 node_lookup = c()
@@ -41,6 +32,186 @@ for (node in nodes){
 }
 length(node_lookup) == length(nodes)
 names(node_lookup) = nodes
+
+# For each group, calculate an accuracy across thresholds
+df = c()
+
+# Calculate accuracy for each node group
+# Count evidence for (meaning bayes_in > bayes_out or against (bayes_out > bayes_in)) each concept
+# for each of ranges and bin data
+for (threshold in seq(0,1,by=0.05)){
+  cat("Parsing",threshold,"\n")  
+  accuracies = c()
+  for (node in nodes){
+    # Find in group
+    group = groups[groups$group==node,]
+    in_group = group$image_ids[which(group$direction=="in")]
+    out_group = group$image_ids[which(group$direction=="out")]
+    # Get reverse inference scores
+    if (node %in% colnames(ri_score)){
+      scores = ri_score[,node]
+      names(scores) = rownames(ri_score)
+      # This case happens when N=1 for the node in question, since we removed the image from the group. The score should be 1.
+      scores[is.na(scores)] = 1
+      # Image index will have 1 for belonging to class, 0 otherwise
+      real = array(0,dim=length(unique(image_ids)))
+      predicted = array(0,dim=length(unique(image_ids)))
+      names(real) = unique(image_ids)
+      names(predicted) = unique(image_ids)
+      predicted[names(which(scores>=threshold))] = 1
+      real[as.character(in_group)] = 1
+      # Calculate metrics
+      # c("TP","FP","TN","FN","accuracy","in_count","out_count")
+      TP = sum(real*predicted)  
+      TN = length(intersect(names(which(real==0)),names(which(predicted==0))))
+      FP = length(intersect(names(which(real==0)),names(which(predicted==1))))
+      FN = length(intersect(names(which(real==1)),names(which(predicted==0))))
+      if (TP+FP==0){
+          sens = 0
+      } else {
+          sens = TP / (TP + FN)
+      }
+      if (TN+FN==0){
+         spec = 0        
+      } else {
+         spec = TN / (TN + FP)
+      }
+      accuracy = (TP + TN)/ (TP + TN + FP + FN)
+      accuracies = rbind(accuracies,c(node,TP,FP,TN,FN,sens,spec,accuracy,length(in_group),length(out_group),threshold))
+    }
+  
+  }
+  df = rbind(df,accuracies)
+}
+
+# Now look at accuracies for each threshold!
+rownames(df) = seq(1,nrow(df))
+colnames(df) = c("nid","TP","FP","TN","FN","sensitivity","specificity","accuracy","in_count","out_count","threshold")
+df = as.data.frame(df,stringsAsFactors=FALSE)
+save(df,file="accuracies_df_all.rda")
+
+# Plot a basic ROC for each class
+pdf("roc_all.pdf")
+nodes = unique(df$nid)
+pdf("roc_gr30.pdf")
+for (node in nodes){
+  subset = df[df$nid==node,]
+  N = unique(subset$in_count)
+  if (as.numeric(N)>30){
+    title = paste("ROC Curve ",as.character(node_lookup[node])," N=(",N,")",sep="")
+    plot(1-as.numeric(subset$specificity),as.numeric(subset$sensitivity),
+         xlab="1-specificity",ylab="sensitivity",main=title,
+         xlim=c(0,1),ylim=c(0,1),type="n")
+    lines(1-as.numeric(subset$specificity),as.numeric(subset$sensitivity),col="blue",lwd=2,xlim=c(0,1),ylim=c(0,1))
+    lines(seq(0,1,0.05),seq(0,1,0.05),col="red",lwd=2,xlim=c(0,1),ylim=c(0,1))
+  }
+}
+dev.off()
+
+
+
+# Now we want to assess a multilabel confusion matrix for each threshold.
+
+# Here is a function to assess a multilabel confusion matrix
+# From Sanmi Koyejo
+# computes the confusion between labels Zt and predictions Ze.
+# Assumes that Zt is coded as 0/1 0r -1/+1
+# Assumes that the threshold has already been applied to Ze, so sign(Ze) corresponds to a decision
+# Includes optional normalization wrt the rows
+
+multilabel_confusion = function(Zt, Ze, normalize=FALSE) {
+  L = dim(Zt)[2]
+  M = array(0,dim=c(L, L))
+  
+  for (ix in seq(1,L)) {
+    t = Zt[,ix]>0
+    for (jx in seq(1,L)){
+      p = Ze[,jx]>0
+      M[ix, jx] = length(which((p & t)==TRUE))
+    }
+  }
+  
+  if (normalize==TRUE){
+    M = sweep(M, 2, colSums(M), FUN="/")
+  }
+  return(M)
+}
+
+unique_images = unique(image_ids)
+
+# Our inputs are Zt, the labels, and Ze, the predictions.
+# Each is an N by M matrix of N images and M contrasts
+# A 1 at index Ze[N,M] indicates image N is predicted to be concept M
+# A 1 at index Zt[N,M] means that this is actually the case 
+
+# First let's build our "actual label" matrix, Zt
+Zt = array(-1,dim=c(length(unique_images),length(nodes)))
+rownames(Zt) = unique_images
+colnames(Zt) = nodes
+# 1 means labeled == YES, -1 means NO
+for (node in nodes){
+  # Find in group
+  group = groups[groups$group==node,]
+  in_group = group$image_ids[which(group$direction=="in")]
+  Zt[which(rownames(Zt)%in% in_group),node] = 1
+}
+
+# Now let's build a matrix to compare, for each threshold
+# We will save a list of score matrices.
+pdf("multilabel_confusions.pdf")
+for (threshold in seq(0,1,by=0.05)){
+  cat("Parsing",threshold,"\n")  
+  Ze = array(-1,dim=c(length(unique_images),length(nodes)))
+  rownames(Ze) = unique_images
+  colnames(Ze) = nodes
+  for (node in nodes){
+    # Find in group
+    group = groups[groups$group==node,]
+    in_group = group$image_ids[which(group$direction=="in")]
+    out_group = group$image_ids[which(group$direction=="out")]
+    # Get reverse inference scores
+    if (node %in% colnames(ri_score)){
+      scores = ri_score[,node]
+      names(scores) = rownames(ri_score)
+      # This case happens when N=1 for the node in question, since we removed the image from the group. The score should be 1.
+      scores[is.na(scores)] = 1
+      # Image index will have 1 for belonging to class, 0 otherwise
+      real = array(0,dim=length(unique(image_ids)))
+      predicted = array(0,dim=length(unique(image_ids)))
+      names(real) = unique(image_ids)
+      names(predicted) = unique(image_ids)
+      correct_predictions = names(which(scores>=threshold))
+      Ze[which(rownames(Ze) %in% correct_predictions),node] = 1 
+    }
+  }
+  # Calculate multilabel confusion score
+  mat = multilabel_confusion(Zt,Ze,FALSE)
+  rownames(mat) = node_lookup[nodes]
+  colnames(mat) = node_lookup[nodes]
+  pheatmap(mat,cluster_rows=FALSE,cluster_cols=FALSE,main=paste("Multi-class confusion for threshold",threshold),fontsize=4)
+}
+dev.off()
+
+
+  # Look at bayes for range and bin given "in" group
+  for (image in in_group){
+    count_range = count_for_against(image,node,bayes_in_ranges,bayes_out_ranges,count_range,"gt")    
+    count_bin = count_for_against(image,node,bayes_in_bin,bayes_out_bin,count_bin,"gt")    
+  }
+  for (image in out_group){
+    count_range = count_for_against(image,node,bayes_in_ranges,bayes_out_ranges,count_range,"lt")    
+    count_bin = count_for_against(image,node,bayes_in_bin,bayes_out_bin,count_bin,"lt")    
+  }
+}
+
+
+count_bin = matrix(0,nrow=ncol(bayes_in_bin),ncol=2)
+rownames(count_bin) = colnames(bayes_in_bin)
+colnames(count_bin) = c("for","against")
+count_range = matrix(0,nrow=ncol(bayes_in_ranges),ncol=2)
+rownames(count_range) = colnames(bayes_in_ranges)
+colnames(count_range) = c("for","against")
+
 
 # Write a function to generate evidence "for" or "against" a concept
 count_for_against = function(image,node,bayesin,bayesout,count_df,direction){
