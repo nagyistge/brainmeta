@@ -196,58 +196,54 @@ for (threshold in seq(0,1,by=0.05)){
   mat = multilabel_confusion(Zt,Ze,TRUE)
   rownames(mat) = node_lookup[nodes]
   colnames(mat) = node_lookup[nodes]
-  pheatmap(mat,cluster_rows=FALSE,cluster_cols=FALSE,main=paste("Multi-class confusion for threshold",threshold),fontsize=4)
+  pheatmap(mat,cluster_rows=FALSE,cluster_cols=FALSE,main=paste("Multi-label confusion for threshold",threshold),fontsize=4)
 }
 dev.off()
 
+# Now lets generate a single vector of AUC scores - one for each concept
+library(ROCR)
 
-  # Look at bayes for range and bin given "in" group
-  for (image in in_group){
-    count_range = count_for_against(image,node,bayes_in_ranges,bayes_out_ranges,count_range,"gt")    
-    count_bin = count_for_against(image,node,bayes_in_bin,bayes_out_bin,count_bin,"gt")    
-  }
-  for (image in out_group){
-    count_range = count_for_against(image,node,bayes_in_ranges,bayes_out_ranges,count_range,"lt")    
-    count_bin = count_for_against(image,node,bayes_in_bin,bayes_out_bin,count_bin,"lt")    
+# As a reminder, our matrix Zt has actual labels in it
+# Let's calculate an AUC for each node
+aucs =c()
+nodes_defined = c()
+for (node in nodes){
+  if (node %in% colnames(ri_score)){
+    actual = as.numeric(Zt[which(rownames(Zt)%in%rownames(ri_score)),node])
+    # Find in group
+    group = groups[groups$group==node,]
+    in_group = group$image_ids[which(group$direction=="in")]
+    predictions = ri_score[,node]
+    predictions[is.na(predictions)]=1
+    pred = prediction(predictions, actual)
+    perf = performance(pred,"auc")
+    aucs = c(aucs,perf@y.values[[1]])
+    nodes_defined = c(nodes_defined,node)
   }
 }
 
+# Now let's plot the AUCs
+library(dplyr)
+library(reshape2)
+names(aucs) = node_lookup[nodes_defined]
+save(aucs,file="data/aucs_139.Rda")
+aucdf = as.data.frame(aucs)
+aucdf$concept = rownames(aucdf)
+tmp = melt(aucdf,id.vars=c("concept"))
 
-count_bin = matrix(0,nrow=ncol(bayes_in_bin),ncol=2)
-rownames(count_bin) = colnames(bayes_in_bin)
-colnames(count_bin) = c("for","against")
-count_range = matrix(0,nrow=ncol(bayes_in_ranges),ncol=2)
-rownames(count_range) = colnames(bayes_in_ranges)
-colnames(count_range) = c("for","against")
+# Let's sort! MAKE IT PINK.
+tmp = tmp[with(tmp, order(-value)), ]
+rownames(tmp) = seq(1,nrow(tmp))
+tmp$sort = as.numeric(rownames(tmp))
+ggplot(tmp, aes(x=sort,y=value,fill=value)) + 
+  geom_bar(stat="identity",ylim=c(0,1)) + 
+  xlab("concept") +
+  ylab(paste("AUC")) +
+  scale_x_discrete(limits=tmp$sort,labels=tmp$concept) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),legend.position="none")
 
 
-# Write a function to generate evidence "for" or "against" a concept
-count_for_against = function(image,node,bayesin,bayesout,count_df,direction){
-  image_id = strsplit(image,"/")[[1]]
-  image_id = as.character(as.numeric(sub(".nii.gz","",image_id[length(image_id)])))
-  
-  score_in = bayesin[image_id,node]
-  score_out = bayesout[image_id,node]
-  
-  if (!is.na(score_in) && (!is.na(score_out))) {
-    if (direction=="gt"){
-      if (score_in > score_out){
-        count_df[node,"for"] =  count_df[node,"for"] + 1
-      } else {
-        count_df[node,"against"] =  count_df[node,"against"] + 1
-      }
-    } else {
-     
-      if (score_in < score_out){
-        count_df[node,"for"] =  count_df[node,"for"] + 1
-      } else {
-        count_df[node,"against"] =  count_df[node,"against"] + 1
-      }
-      
-    }
-  }
-      return(count_df)  
-}
+## OLD CODE BELOW HERE
 
 # Count evidence for (meaning bayes_in > bayes_out or against (bayes_out > bayes_in)) each concept
 # for each of ranges and bin data
