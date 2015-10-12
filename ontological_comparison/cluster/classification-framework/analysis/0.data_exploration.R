@@ -131,8 +131,15 @@ multilabel_confusion = function(Zt, Ze, normalize=FALSE) {
     }
   }
   
+  # To normalize, we divide by number of images tagged with the concept
   if (normalize==TRUE){
-    M = sweep(M, 2, colSums(M), FUN="/")
+    # The images are in rows, concepts in columns
+    # so getting a sum for each column --> total number of images tagged
+    msums = as.numeric(colSums(Zt))
+    for (ix in nrow(M)){
+      # Dividing the number we got right by the possible gives an accuracy
+      M[ix,] = M[ix,]/msums
+    }
   }
   return(M)
 }
@@ -145,7 +152,7 @@ unique_images = unique(image_ids)
 # A 1 at index Zt[N,M] means that this is actually the case 
 
 # First let's build our "actual label" matrix, Zt
-Zt = array(-1,dim=c(length(unique_images),length(nodes)))
+Zt = array(0,dim=c(length(unique_images),length(nodes)))
 rownames(Zt) = unique_images
 colnames(Zt) = nodes
 # 1 means labeled == YES, -1 means NO
@@ -161,7 +168,7 @@ for (node in nodes){
 pdf("multilabel_confusions.pdf")
 for (threshold in seq(0,1,by=0.05)){
   cat("Parsing",threshold,"\n")  
-  Ze = array(-1,dim=c(length(unique_images),length(nodes)))
+  Ze = array(0,dim=c(length(unique_images),length(nodes)))
   rownames(Ze) = unique_images
   colnames(Ze) = nodes
   for (node in nodes){
