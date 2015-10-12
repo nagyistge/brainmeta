@@ -23,7 +23,7 @@ import os
 image = sys.argv[1]             # Full path of input image
 node = sys.argv[2]              # pickle with groups for concept node
 output_pkl = sys.argv[3]        # Path to save output file pickle
-group_size = sys.argv[4]        # Number of other images to randomly select
+group_size = int(sys.argv[4])   # Number of other images to randomly select
                                 # Note that as group_size approaches size of "in" set,
                                 # we are randomly sampling to get the same image set
 

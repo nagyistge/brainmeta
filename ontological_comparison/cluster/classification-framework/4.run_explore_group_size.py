@@ -24,13 +24,12 @@ for i in range(0,len(likelihood_pickles)):
     node = likelihood_pickles[i]
     group = pickle.load(open(node,"rb"))
     # We will vary the size of the "in" set from 1 to the number of "in" images.
-    in_group = group["in"]
-    for j in range(1,len(in_group)-1):
+    for j in range(1,len(group["in"])-1):
         all_images = group["in"] + group["out"]
         for image in all_images:
             image_id = os.path.split(image)[1].replace(".nii.gz","")
             # Output convention is [node]_size_[size]_[image_id].pkl
-            run_id = "%s_size_%s_%s" %(group["nid"],in_group_index,image_id)
+            run_id = "%s_size_%s_%s" %(group["nid"],j,image_id)
             output_pkl = "%s/%s.pkl" %(scores_folder,run_id)
             if not os.path.exists(output_pkl):
                 filey = ".jobs/ri_%s.job" %(run_id)
@@ -41,6 +40,6 @@ for i in range(0,len(likelihood_pickles)):
                 filey.writelines("#SBATCH --error=.out/%s.err\n" %(run_id))
                 filey.writelines("#SBATCH --time=2-00:00\n")
                 filey.writelines("#SBATCH --mem=64000\n")
-                filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/ontological_comparison/cluster/classification-framework/4.explore_group_sizes.py %s %s %s %s" %(image, node, output_pkl,j))
+                filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/ontological_comparison/cluster/classification-framework/4.explore_group_size.py %s %s %s %s" %(image, node, output_pkl,j))
                 filey.close()
-                os.system("sbatch -p russpold " + ".jobs/ri_%s.job" %(image_id))
+                os.system("sbatch -p russpold " + ".jobs/ri_%s.job" %(run_id))
