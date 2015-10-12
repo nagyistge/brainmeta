@@ -119,7 +119,7 @@ dev.off()
 # Assumes that the threshold has already been applied to Ze, so sign(Ze) corresponds to a decision
 # Includes optional normalization wrt the rows
 
-multilabel_confusion = function(Zt, Ze, normalize=FALSE) {
+multilabel_confusion = function(Zt, Ze, normalize=TRUE) {
   L = dim(Zt)[2]
   M = array(0,dim=c(L, L))
   
@@ -136,10 +136,11 @@ multilabel_confusion = function(Zt, Ze, normalize=FALSE) {
     # The images are in rows, concepts in columns
     # so getting a sum for each column --> total number of images tagged
     msums = as.numeric(colSums(Zt))
-    for (ix in nrow(M)){
-      # Dividing the number we got right by the possible gives an accuracy
-      M[ix,] = M[ix,]/msums
-    }
+        for (ix in seq(1,nrow(M))) {
+          for (iy in seq(1,ncol(M))){
+            M[ix,iy] = M[ix,iy]/msums[ix]
+          }
+        }
   }
   return(M)
 }
@@ -192,7 +193,7 @@ for (threshold in seq(0,1,by=0.05)){
     }
   }
   # Calculate multilabel confusion score
-  mat = multilabel_confusion(Zt,Ze,FALSE)
+  mat = multilabel_confusion(Zt,Ze,TRUE)
   rownames(mat) = node_lookup[nodes]
   colnames(mat) = node_lookup[nodes]
   pheatmap(mat,cluster_rows=FALSE,cluster_cols=FALSE,main=paste("Multi-class confusion for threshold",threshold),fontsize=4)
