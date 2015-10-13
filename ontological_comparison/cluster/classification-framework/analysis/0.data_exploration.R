@@ -243,6 +243,129 @@ ggplot(tmp, aes(x=sort,y=value,fill=value)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1),legend.position="none")
 
 
+
+# Pairwise AUC computation pesudocode:
+# Algorithm by Sanmi Koyejo, Poldracklab
+# Goal: Measure fraction of times when concept i would be confused for concept j with some fixed threshold
+# Only evaluate on data subset containing only concept i or only concept j.
+
+# Some definitions:
+# dataset = Includes ground truth concepts and probability predictions
+# concepts = list of concepts
+# auc_matrix = matrix of size #concepts x # concepts: Main output
+overlaps = array(0,dim=c(length(nodes),length(nodes)))
+colnames(overlaps) = nodes
+rownames(overlaps) = nodes
+
+# First let's make a matrix of counts for the number of images shared between 
+# pairwise concepts.
+for (node1 in nodes){
+  for (node2 in nodes){
+    if (node1 != node2){
+      # Find the datasets shared between the concepts   
+      group1 = groups[groups$group==node1,]
+      group2 = groups[groups$group==node2,]
+      group1_in = group1$image_ids[which(group1$direction=="in")]
+      group2_in = group2$image_ids[which(group2$direction=="in")]
+      mrset = intersect(group1_in,group2_in)
+      overlaps[node1,node2] = length(mrset)
+     }
+  }
+}
+# Overlap is sparse, however there is a small set that we can work with, I will move forward with analysis.
+pheatmap(overlaps)
+
+nodes = nodes[which(nodes%in%colnames(ri_score))]
+auc_matrix = array(0,dim=c(length(nodes),length(nodes)))
+colnames(auc_matrix) = nodes
+rownames(auc_matrix) = nodes
+
+library(pROC)
+# First let's make a matrix of counts for the number of images shared between 
+# pairwise concepts.
+for (node1 in nodes){
+    for (node2 in nodes){
+      if (node1 != node2){
+        # Find the datasets shared between the concepts   
+        group1 = groups[groups$group==node1,]
+        group2 = groups[groups$group==node2,]
+        group1_in = group1$image_ids[which(group1$direction=="in")]
+        group2_in = group2$image_ids[which(group2$direction=="in")]
+        mrset = intersect(group1_in,group2_in)
+        # Compute label vector with "positive_labels" = i, "negative_labels" = j 
+        # This means the vector starts with all zeros, we give 1s to i values, and -1 to values in i that are also in j
+        labels = array(0,dim=c(length(unique_images)))    
+        names(labels) = unique_images
+        labels[which(names(labels)%in% group1_in)] = 1
+        labels[which(names(labels)%in% mrset)] = -1
+        # compute a score for each example. I suggest the likelihood ratio. Values >>1 indicate that i is much more likely than j
+        # note that likelihood ratio can be much larger than 1. Most auc software can handle this.
+        # Edit: modified to score only when p_i>p_j since these are the cases where "i" would be correctly predicted
+        # Get corresponding ri_scores for each
+        ri1 = ri_score[which(rownames(ri_score)%in% names(labels)),node1]
+        ri2 = ri_score[which(rownames(ri_score)%in% names(labels)),node2]
+        ri1[is.na(ri1)] = 1
+        ri2[is.na(ri2)] = 1
+        # Find scores for which node1/node2
+        scoresgr = which(ri1>ri2)
+        score_vector = array(0,dim=c(length(labels)))
+        if (length(scoresgr)>0){
+            score_vector[scoresgr] = ri1[scoresgr] / ri2[scoresgr]        
+        }
+        # COMPUTE AUC
+        if (sum(score_vector)==0){
+          auc_matrix[node1, node2] = 0
+        } else{
+          pred = roc(score_vector, labels)
+          auc_matrix[node1, node2] = as.numeric(pred$auc)
+        }
+     }
+  }
+}
+colnames(auc_matrix) = node_lookup[colnames(auc_matrix)]
+rownames(auc_matrix) = node_lookup[rownames(auc_matrix)]
+pdf("auc_matrices.pdf")
+pheatmap(auc_matrix,main="AUC Matrix for Pairwise Concepts",fontsize = 4)
+pheatmap(auc_matrix,main="AUC Matrix for Pairwise Concepts",cluster_rows=FALSE,cluster_cols=FALSE,fontsize=4)
+dev.off()
+
+# Notes:
+#  - you can compute avg(auc_matrix) as a summary
+#  - Will not be symmetric, so you need to run all off-diagonal pairs
+
+# Function to calculate confidence intervals
+get_ci = function(dat,direction="upper"){
+  error = qnorm(0.975)*sd(dat)/sqrt(length(dat))
+  if (direction=="upper"){
+    return(mean(dat)+error)
+  } else {
+    return(mean(dat)-error)    
+  }
+}
+
+
+# Finally, let's explore the relationship between the size of the "in" set and the scores
+library(dplyr)
+library(plyr)
+size_results = list.files("data/size_results/",full.names=TRUE)
+pdf("explore_concept_set_sizes.pdf")
+for (result in size_results){
+  res = read.csv(result,sep="\t",row.names=1,stringsAsFactors=FALSE)
+  if (nrow(res)>0){
+    ressum = ddply(res,"in_count",summarise,mean_score=mean(ri_score),ci_up=get_ci(ri_score,"upper"),ci_down=get_ci(ri_score,"lower"))
+    node_name = as.character(node_lookup[unique(res$node)])
+    # First let's look at how the score changes with size
+    p = ggplot(ressum, aes(x=in_count,y=mean_score,ymax=ci_up,ymin=ci_down)) + 
+      geom_line(size=1.5) +
+      ylim(0,1) +
+      geom_ribbon(alpha=0.15,linetype=0) +
+      xlab(paste("size of image set for",node_name)) +
+      ylab("Mean RI Score") 
+      print(p)
+  }
+}
+dev.off()
+
 ## OLD CODE BELOW HERE
 
 # Count evidence for (meaning bayes_in > bayes_out or against (bayes_out > bayes_in)) each concept
