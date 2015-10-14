@@ -294,7 +294,7 @@ for (node1 in nodes){
         mrset = intersect(group1_in,group2_in)
         # Compute label vector with "positive_labels" = i, "negative_labels" = j 
         # This means the vector starts with all zeros, we give 1s to i values, and -1 to values in i that are also in j
-        labels = array(0,dim=c(length(unique_images)))    
+        labels = array(-1,dim=c(length(unique_images)))    
         names(labels) = unique_images
         labels[which(names(labels)%in% group1_in)] = 1
         labels[which(names(labels)%in% mrset)] = -1
@@ -324,7 +324,7 @@ for (node1 in nodes){
 }
 colnames(auc_matrix) = node_lookup[colnames(auc_matrix)]
 rownames(auc_matrix) = node_lookup[rownames(auc_matrix)]
-pdf("auc_matrices.pdf")
+pdf("auc_matricesv2.pdf")
 pheatmap(auc_matrix,main="AUC Matrix for Pairwise Concepts",fontsize = 4)
 pheatmap(auc_matrix,main="AUC Matrix for Pairwise Concepts",cluster_rows=FALSE,cluster_cols=FALSE,fontsize=4)
 dev.off()
