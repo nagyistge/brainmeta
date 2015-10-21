@@ -314,7 +314,7 @@ for (node1 in nodes){
         }
         # COMPUTE AUC
         if (sum(score_vector)==0){
-          auc_matrix[node1, node2] = 0
+          auc_matrix[node1, node2] = 0.5
         } else{
           pred = roc(score_vector, labels)
           auc_matrix[node1, node2] = as.numeric(pred$auc)
@@ -324,7 +324,7 @@ for (node1 in nodes){
 }
 colnames(auc_matrix) = node_lookup[colnames(auc_matrix)]
 rownames(auc_matrix) = node_lookup[rownames(auc_matrix)]
-pdf("auc_matricesv2.pdf")
+pdf("auc_matricesv3_pt5base.pdf")
 pheatmap(auc_matrix,main="AUC Matrix for Pairwise Concepts",fontsize = 4)
 pheatmap(auc_matrix,main="AUC Matrix for Pairwise Concepts",cluster_rows=FALSE,cluster_cols=FALSE,fontsize=4)
 dev.off()
