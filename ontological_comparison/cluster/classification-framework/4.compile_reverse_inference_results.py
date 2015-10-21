@@ -23,24 +23,24 @@ for i in range(0,len(likelihood_pickles)):
 # Parse image IDS
 image_ids = [os.path.split(x)[1].replace(".nii.gz","") for x in all_images]
 
-ri_score = pandas.DataFrame(columns=nodes,index=image_ids)
-ri_bayes = pandas.DataFrame(columns=nodes,index=image_ids)
-counts_in = pandas.DataFrame(columns=nodes,index=image_ids)
-counts_out = pandas.DataFrame(columns=nodes,index=image_ids)
+# We will save a flat data frame
+binary_columns = ["ri_binary_%s" %(thresh) for thresh in range(0,14)]
+ri_score = pandas.DataFrame(columns=["image_id","node","ri_distance","ri_range","in_count","out_count"] + binary_columns)
 
+count=1
 for s in range(0,len(scores)):
     print "Parsing %s of %s" %(s,len(scores))
     # Read in each score table, we will save to one master data frame
     result = pickle.load(open(scores[s],"rb"))
-    image_id = result["image_id"]
-    node = result["nid"]
-    ri_score.loc[image_id,node] = result["ri_query"] 
-    ri_bayes.loc[image_id,node] = result["bayes_factor"]
-    counts_in.loc[image_id,node] = result["in_count"]
-    counts_out.loc[image_id,node] = result["out_count"]
-    
-# Save tables with result to file
-ri_score.to_csv("%s/reverse_inference_scores.tsv" %data,sep="\t")
-ri_bayes.to_csv("%s/reverse_inference_bayes.tsv" %data,sep="\t")
-counts_in.to_csv("%s/reverse_inference_counts_in.tsv" %data,sep="\t")
-counts_out.to_csv("%s/reverse_inference_counts_out.tsv" %data,sep="\t")
+    ri_score.loc[count,"image_id"] = result["image_id"]
+    ri_score.loc[count,"node"] = result["nid"]
+    ri_score.loc[count,"ri_range"] = result["ri_ranges_query"]
+    ri_score.loc[count,"ri_distance"] = result["ri_distance_query"]
+    for thresh in range(0,14):
+        ri_score.loc[count,"ri_binary_%s" %(thresh)] = result["ri_binary_%s_query" %(thresh)]
+    ri_score.loc[count,"in_count"] = result["in_count"]
+    ri_score.loc[count,"out_count"] = result["out_count"]
+    count+=1
+        
+# Save table to file
+ri_score.to_csv("%s/reverse_inference_scores_v2.tsv" %data,sep="\t")
