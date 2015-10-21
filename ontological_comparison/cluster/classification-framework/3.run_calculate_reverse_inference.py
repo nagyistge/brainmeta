@@ -7,6 +7,7 @@ base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON/v2"
 data = "%s/data" %base        # mostly images
 likelihood_pickles = glob("%s/likelihood/*.pkl" %(data))
 scores_folder = "%s/individual_scores" %(data)     # output folder for individual scores
+tables_folder = "%s/likelihood/tables" %(data)
 
 if not os.path.exists(scores_folder):
     os.mkdir(scores_folder)
@@ -28,7 +29,7 @@ for i in range(0,len(likelihood_pickles)):
             filey.writelines("#SBATCH --error=.out/%s.err\n" %(image_id))
             filey.writelines("#SBATCH --time=2-00:00\n")
             filey.writelines("#SBATCH --mem=64000\n")
-            filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/ontological_comparison/cluster/classification-framework/2.calculate_reverse_inference.py %s %s %s" %(image, node, output_pkl))
+            filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/ontological_comparison/cluster/classification-framework/3.calculate_reverse_inference.py %s %s %s %s" %(image, node, output_pkl, tables_folder))
             filey.close()
             os.system("sbatch -p russpold " + ".jobs/ri_%s.job" %(image_id))
 

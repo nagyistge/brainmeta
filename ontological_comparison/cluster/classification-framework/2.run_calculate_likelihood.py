@@ -13,7 +13,7 @@ tables_folder = "%s/likelihood/tables" %(data) # output folder for likelihood ta
 if not os.path.exists(tables_folder):
     os.mkdir(tables_folder)
 
-for p in range(1,len(likelihood_pickles)):
+for p in range(0,len(likelihood_pickles)):
     pkl = likelihood_pickles[p]
     contrast_id = os.path.split(pkl)[-1].split("_")[-1].replace(".pkl","")
     filey = ".jobs/revinf_%s.job" %(contrast_id)
