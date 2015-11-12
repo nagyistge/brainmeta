@@ -291,36 +291,40 @@ for (node1 in nodes){
         group2 = groups[groups$group==node2,]
         group1_in = group1$image_ids[which(group1$direction=="in")]
         group2_in = group2$image_ids[which(group2$direction=="in")]
-        mrset = intersect(group1_in,group2_in)
-        # Compute label vector with "positive_labels" = i, "negative_labels" = j 
-        # This means the vector starts with all zeros, we give 1s to i values, and -1 to values in i that are also in j
-        labels = array(-1,dim=c(length(unique_images)))    
-        names(labels) = unique_images
-        labels[which(names(labels)%in% group1_in)] = 1
-        labels[which(names(labels)%in% mrset)] = -1
-        # compute a score for each example. I suggest the likelihood ratio. Values >>1 indicate that i is much more likely than j
-        # note that likelihood ratio can be much larger than 1. Most auc software can handle this.
-        # Edit: modified to score only when p_i>p_j since these are the cases where "i" would be correctly predicted
-        # Get corresponding ri_scores for each
-        ri1 = ri_score[which(rownames(ri_score)%in% names(labels)),node1]
-        ri2 = ri_score[which(rownames(ri_score)%in% names(labels)),node2]
-        ri1[is.na(ri1)] = 1
-        ri2[is.na(ri2)] = 1
-        # Find scores for which node1/node2
-        scoresgr = which(ri1>ri2)
-        score_vector = array(0,dim=c(length(labels)))
-        if (length(scoresgr)>0){
-            score_vector[scoresgr] = ri1[scoresgr] / ri2[scoresgr]        
+
+        # Our base set of values is the entire image set between group1 and group 2
+        baseset = union(group1_in,group2_in)
+
+        # Here we will create labels, 1 will indicate belonging to both sets
+        labels = array(-1,dim=c(length(baseset)))    
+        names(labels) = baseset
+        
+        # If there are values shared between the sets, these are labels we set to 1
+        # because they would be confused
+        mrintersect = intersect(group1_in,group2_in)
+        if (length(mrintersect) !=0){
+          labels[which(names(labels) %in% mrintersect)] = 1
+          # Get corresponding ri_scores for each
+          ri1 = ri_score[which(rownames(ri_score)%in% names(labels)),node1]
+          ri2 = ri_score[which(rownames(ri_score)%in% names(labels)),node2]
+          ri1[is.na(ri1)] = 1
+          ri2[is.na(ri2)] = 1
+          score_vector = ri1 / ri2
+
+          # if there is only one value, this means that bayes factor is 1, AUC is 0.5
+          # This means that the scores are EXACTLY the same
+          if (length(unique(score_vector))!=1){
+            pred = roc(score_vector, labels)
+            auc_matrix[node1, node2] = as.numeric(pred$auc)
+          } else {
+            auc_matrix[node1, node2] = 1
+          }          
+        # No overlap means that the AUC value is 1 because we always get it right
+        } else {
+          auc_matrix[node1, node2] = 1
         }
-        # COMPUTE AUC
-        if (sum(score_vector)==0){
-          auc_matrix[node1, node2] = 0.5
-        } else{
-          pred = roc(score_vector, labels)
-          auc_matrix[node1, node2] = as.numeric(pred$auc)
-        }
-     }
-  }
+      }
+    }
 }
 colnames(auc_matrix) = node_lookup[colnames(auc_matrix)]
 rownames(auc_matrix) = node_lookup[rownames(auc_matrix)]
