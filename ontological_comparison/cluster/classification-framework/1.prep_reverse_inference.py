@@ -7,7 +7,8 @@ import re
 #from vm import make_analysis_output_folder
 
 # For the VM: these paths will be environmental variables
-base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON/v2"
+base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON/v3"
+base = "/scratch/users/vsochat/DATA/BRAINMETA/ontological_comparison"
 results = "%s/results" %base  # any kind of tsv/result file
 data = "%s/data" %base        # mostly images
 web = "%s/web" %base
@@ -47,18 +48,23 @@ output_triples_file = "%s/task_contrast_triples.tsv" % results
 concept_node_triples(image_dict=image_lookup,output_file=output_triples_file)
 relationship_table = pandas.read_csv(output_triples_file,sep="\t")
 
-# We want to give the concept categories as meta data so we produce category nodes
+# If you want to include concept categories
 meta_data = get_concept_categories()
 
 ## STEP 2: VISUALIZATION WITH PYBRAINCOMPARE
+from pybraincompare.template.templates import save_template
 from pybraincompare.ontology.tree import named_ontology_tree_from_tsv, make_ontology_tree_d3
 
-# First let's look at the tree structure
-# output_json = "%s/task_contrast_tree.json" % outfolder
+# First let's look at the tree structure - here is with categories
 tree = named_ontology_tree_from_tsv(relationship_table,output_json=None,meta_data=meta_data)
+
+# And without
+tree = named_ontology_tree_from_tsv(relationship_table,output_json=None)
+
 html_snippet = make_ontology_tree_d3(tree)
-web_folder = "%s/originaltree" %web
-#make_analysis_web_folder(html_snippet,web_folder)
+web_folder = "%s/concepttree" %web
+#os.mkdir(web_folder)
+save_template(html_snippet,"%s/index.html" %web_folder)
 
 ## STEP 3: DERIVATION OF LIKELIHOOD GROUPS
 # The following steps should be run in a cluster environment

@@ -14,7 +14,7 @@ from pybraincompare.compare.maths import TtoZ
 
 # Set up work folders for data
 # For the VM: these paths will be environmental variables
-base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON"
+base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON/v3"
 results = "%s/results" %base  # any kind of tsv/result file
 data = "%s/data" %base        # mostly images
 

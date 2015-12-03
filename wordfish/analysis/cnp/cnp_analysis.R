@@ -1,11 +1,21 @@
 # Step 0: Data Visualization ################################################################
 
-questions = read.csv("cnp_739.tsv",sep="\t")
+questions = read.csv("data/cnp_704.tsv",sep="\t")
 rownames(questions) = questions$question_label
 
 # Remove test that I exported
 questions = questions[-which(questions$assessment_name=="Test"),]
 assessments = unique(questions$assessment_name)
+
+# PDF to see all
+pdf("cnp_704.pdf")
+questions = questions[,-which(colnames(questions)%in% c("ASSESSQDISORDER","ptid","ASSESSQSYMPTOM"))]
+for (ques in colnames(questions)){
+    tmp = questions[,ques]
+    tmp = tmp[which(tmp!=-9999)]
+    hist(tmp[!is.na(tmp)],main=ques,xlab="response",col="purple")
+}
+dev.off()
 
 # Let's do MDS for all questions, color by assessment
 d = dist(vectors) # euclidean distances between the rows

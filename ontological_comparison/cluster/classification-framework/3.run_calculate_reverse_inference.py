@@ -3,7 +3,7 @@ from glob import glob
 import pickle
 import os
 
-base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON/v2"
+base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON/v3"
 data = "%s/data" %base        # mostly images
 likelihood_pickles = glob("%s/likelihood/*.pkl" %(data))
 scores_folder = "%s/individual_scores" %(data)     # output folder for individual scores
