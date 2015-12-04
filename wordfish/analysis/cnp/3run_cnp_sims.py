@@ -1,5 +1,5 @@
 '''
-1run_cnp_sims.py
+3run_cnp_sims.py
 
 Your wordfish project home directory should be defined as WORDFISH_HOME
 
@@ -61,6 +61,7 @@ def submit_job(scripts_dir,data_pkl,disorder_pkl,question_pkl,r):
 # We will first not take subtypes into account, to maximize data, and do based on disorder groups
 exp = re.compile("^[0-9]{3}")
 groups = numpy.unique([y[0] for y in [exp.findall(x) for x in rx.columns if exp.match(x)]]).tolist()
+# ['291', '292', '293', '295', '296', '300', '303', '304', '305', '307', '309', '311', '314', '799']
 for g in groups:
     submit_job(scripts_dir,data_pkl,disorder_pkl,question_pkl,g)
 

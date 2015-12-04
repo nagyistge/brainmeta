@@ -4,6 +4,7 @@
 from sklearn.preprocessing import scale
 from scipy.stats import pearsonr
 import pandas
+import numpy
 import pickle
 import sys
 import os
@@ -72,7 +73,6 @@ if N > 1:
                         # Find the overlap
                         col1_overlap = col1[overlap]
                         col2_overlap = col2[overlap]
-                        # scale to account for differences in units
                         corr.loc[c1,c2] = pearsonr(col1_overlap,col2_overlap)[0]
                     else:
                         corr.loc[c1,c2] = 0
