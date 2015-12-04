@@ -67,3 +67,33 @@ for g in groups:
 
 # Run one script to do for all
 submit_job(scripts_dir,data_pkl,disorder_pkl,question_pkl,"all")
+
+# Let's also generate matrices to compare similarity of "meta stuffs" about the questions
+meta = pandas.read_csv("%s/cogpheno_739.tsv" %behavior_dir,sep="\t")
+meta = meta[meta.question_label.isin(questions)]
+meta.index = meta.question_label
+
+# We will look at the following:
+#   Similar scales
+#   assessment name
+
+def make_meta_simmatrix(field_name):
+    # Similar scales
+    sim = pandas.DataFrame(columns=meta.index,index=meta.index)
+    for c in range(meta.shape[0]):
+        c1 = meta.index[c]
+        print "Parsing %s, %s of %s" %(c1,c,meta.shape[0])
+        for d in range(meta.shape[0]):
+            c2 = meta.index[d]
+            if c1 <= c2:
+                if meta.loc[c1,field_name] == meta.loc[c2,field_name]:
+                    sim.loc[c1,c2] = 1
+                    sim.loc[c2,c1] = 1
+                else:
+                    sim.loc[c1,c2] = 0
+                    sim.loc[c2,c1] = 0
+
+sim = make_meta_simmatrix("question_options")
+sim.to_csv("%s/cnp_scale_sim.tsv" %behavior_dir,sep="\t")
+sim = make_meta_simmatrix("assessment_name")
+sim.to_csv("%s/cnp_assessment_sim.tsv" %behavior_dir,sep="\t")
