@@ -98,4 +98,4 @@ for label1,mfile1 in sims.iteritems():
         results.loc[label2,label1] = res
         
 
-results.to_csv("%s/rsa_all_norecode.tsv" %rsa_dir,sep="\t")
+results.to_csv("%s/rsa_all_settona.tsv" %rsa_dir,sep="\t")

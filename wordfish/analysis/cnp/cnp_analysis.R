@@ -284,7 +284,15 @@ for (word in rownames(word_matches)){
 data = read.csv("rsa_all_recode.tsv",sep="\t",row.names=1)
 data[is.na(data)]
 #numeric(0)
-pdf("rsa_cnp_vs_wordfish_recode.pdf",width=20)
+pdf("rsa_cnp_vs_wordfish_recode.pdf",width=20,height=20)
+pheatmap(data,cluster_rows=FALSE,cluster_cols=FALSE)
+pheatmap(data)
+dev.off()
+
+data = read.csv("rsa_all_settona.tsv",sep="\t",row.names=1)
+data[is.na(data)]
+#numeric(0)
+pdf("rsa_cnp_vs_wordfish_settona.pdf",width=20,height=20)
 pheatmap(data,cluster_rows=FALSE,cluster_cols=FALSE)
 pheatmap(data)
 dev.off()
