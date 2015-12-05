@@ -278,3 +278,13 @@ for (word in rownames(word_matches)){
       dev.off()
     }
 }
+
+# RSA ANALYSIS
+
+data = read.csv("rsa_all_recode.tsv",sep="\t",row.names=1)
+data[is.na(data)]
+#numeric(0)
+pdf("rsa_cnp_vs_wordfish_recode.pdf",width=20)
+pheatmap(data,cluster_rows=FALSE,cluster_cols=FALSE)
+pheatmap(data)
+dev.off()

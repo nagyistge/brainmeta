@@ -38,15 +38,18 @@ else:
 N = data.shape[0]
 
 # Function to filter/parse a column
-def parse_column(coll,label):
+def parse_column(col,label):
     exp = re.compile("ADHD")
     col = col[col.isnull()==False]
     col = col.astype(float)
     # If we have some flavor of ADHD questoinnaire
     if exp.search(label):
-        col[col==6] = 1 # absent/false due to medication --> not present
-        col[col==8] = 3 # present/true due to medical condition --> moderate
-        col = col[col!=9]   # inadequate information (NA)
+        # Here is doing recode
+        #col[col==6] = 1 # absent/false due to medication --> not present
+        #col[col==8] = 3 # present/true due to medical condition --> moderate
+        #col = col[col!=9]   # inadequate information (NA)
+        #Here is nixing all together
+        col = col[~col.isin([6,8,9])]
     col = col[col.eq(-9999)==False]
     return col
 
