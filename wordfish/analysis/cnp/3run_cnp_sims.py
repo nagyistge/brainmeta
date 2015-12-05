@@ -65,6 +65,11 @@ groups = numpy.unique([y[0] for y in [exp.findall(x) for x in rx.columns if exp.
 for g in groups:
     submit_job(scripts_dir,data_pkl,disorder_pkl,question_pkl,g)
 
+# Now let's defined our own groups based on labels
+groups = ["anxiety","depress","dependence","abuse","bipolar","schizo","attention","alcohol","cannabis"]
+for g in groups:
+    submit_job(scripts_dir,data_pkl,disorder_pkl,question_pkl,g)
+
 # Run one script to do for all
 submit_job(scripts_dir,data_pkl,disorder_pkl,question_pkl,"all")
 
@@ -92,6 +97,7 @@ def make_meta_simmatrix(field_name):
                 else:
                     sim.loc[c1,c2] = 0
                     sim.loc[c2,c1] = 0
+    return sim
 
 sim = make_meta_simmatrix("question_options")
 sim.to_csv("%s/cnp_scale_sim.tsv" %behavior_dir,sep="\t")

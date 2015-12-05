@@ -25,8 +25,8 @@ behavior_dir = os.path.dirname(data_pkl)
 # This means we don't filter down the data
 if r != "all":
     # Find all subtypes of the disorder
-    exp = re.compile("^%s" %r)
-    disorders = [x for x in rx.columns if exp.match(x)]
+    exp = re.compile("%s" %r)
+    disorders = [x for x in rx.columns if exp.search(x.lower())]
     label =  rx[disorders].sum(axis=1)
     individuals = label.index[label==1].tolist()
     # Subset the data to those individuals
@@ -38,9 +38,15 @@ else:
 N = data.shape[0]
 
 # Function to filter/parse a column
-def parse_column(col):
+def parse_column(coll,label):
+    exp = re.compile("ADHD")
     col = col[col.isnull()==False]
     col = col.astype(float)
+    # If we have some flavor of ADHD questoinnaire
+    if exp.search(label):
+        col[col==6] = 1 # absent/false due to medication --> not present
+        col[col==8] = 3 # present/true due to medical condition --> moderate
+        col = col[col!=9]   # inadequate information (NA)
     col = col[col.eq(-9999)==False]
     return col
 
@@ -62,11 +68,11 @@ if N > 1:
     for c1 in subset.columns:
         print "Parsing %s, %s of %s" %(c1,count,subset.shape[1])
         col1 = subset[c1]
-        col1 = parse_column(col1)
+        col1 = parse_column(col1,c1)
         for c2 in subset.columns:
             if c1!=c2: 
                 col2 = subset[c2]
-                col2 = parse_column(col2)
+                col2 = parse_column(col2,c2)
                 if len(col2)>0 and len(col1)>0:
                     overlap = col1.index[col1.index.isin(col2.index)]
                     if len(overlap) > 1:
