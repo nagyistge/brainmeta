@@ -7,15 +7,14 @@ import re
 #from vm import make_analysis_output_folder
 
 # For the VM: these paths will be environmental variables
-base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON/v3"
-base = "/scratch/users/vsochat/DATA/BRAINMETA/ontological_comparison"
+base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON"
 results = "%s/results" %base  # any kind of tsv/result file
 data = "%s/data" %base        # mostly images
 web = "%s/web" %base
 os.mkdir(web)
 
 # Read in images metadata
-images = pandas.read_csv("%s/contrast_defined_images.tsv" %results,sep="\t")
+images = pandas.read_csv("%s/contrast_defined_images_filtered.tsv" %results,sep="\t")
 
 ## STEP 1: GENERATE TRIPLES DATA STRUCTURE
 from cognitiveatlas.datastructure import concept_node_triples, get_concept_categories
@@ -63,7 +62,7 @@ tree = named_ontology_tree_from_tsv(relationship_table,output_json=None)
 
 html_snippet = make_ontology_tree_d3(tree)
 web_folder = "%s/concepttree" %web
-#os.mkdir(web_folder)
+os.mkdir(web_folder)
 save_template(html_snippet,"%s/index.html" %web_folder)
 
 ## STEP 3: DERIVATION OF LIKELIHOOD GROUPS

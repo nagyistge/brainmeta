@@ -3,7 +3,7 @@ from glob import glob
 import pickle
 import os
 
-base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON/v3"
+base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON"
 data = "%s/data" %base        # mostly images
 likelihood_pickles = glob("%s/likelihood/*.pkl" %(data))
 scores_folder = "%s/individual_scores" %(data)     # output folder for individual scores
@@ -12,12 +12,20 @@ tables_folder = "%s/likelihood/tables" %(data)
 if not os.path.exists(scores_folder):
     os.mkdir(scores_folder)
 
-# Generate an output file for each image
+# Make a ridiculosly long list of likelihood pickle/image id pairs
+pairs = []
 for i in range(0,len(likelihood_pickles)):
-    node = likelihood_pickles[i]
-    group = pickle.load(open(node,"rb"))
-    all_images = group["in"] + group["out"]
     for image in all_images:
+        pairs.append([i,image])
+pairs_to_run = pairs[:]
+
+while len(pairs_to_run) > 0:
+    queue_count = int(os.popen("squeue -u vsochat | wc -l").read().strip("\n"))
+    if queue_count < 1000:
+        i,image = pairs_to_run.pop(0)
+        node = likelihood_pickles[i]
+        group = pickle.load(open(node,"rb"))
+        all_images = group["in"] + group["out"]
         image_id = os.path.split(image)[1].replace(".nii.gz","")
         output_pkl = "%s/%s_%s.pkl" %(scores_folder,group["nid"],image_id)
         if not os.path.exists(output_pkl):

@@ -77,6 +77,9 @@ for model_name,model in models.iteritems(): # word2vec
         # And export the model using the vocabulary (vs) as a subset
         export_models_tsv({"%s_%s" %(tag,model_name):model},base_dir,vocabs=[vs])
 
+# Export models NOT subset to a vocabulary (keep all words)
+export_models_tsv(models,base_dir)
+
 # Export vectors - will use to compare contexts in later analysis
 for model_name,model in models.iteritems():
     print "Processing %s" %(model_name)

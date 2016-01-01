@@ -2,7 +2,7 @@ options(java.parameters = "-Xmx4g") # This ensures we don't run out of memory
 library(CogatSimilar) # https://github.com/CognitiveAtlas/cogat-similaR
 
 # Read in table with images
-image_file = "/home/vanessa/Documents/Work/BRAINMETA/reverse_inference/contrast_defined_images.tsv"
+image_file = "/home/vanessa/Documents/Dropbox/Code/Python/brainmeta/ontological_comparison/cluster/classification-framework/analysis/wang/contrast_defined_images_filtered.tsv"
 images = read.csv(image_file,sep="\t",head=TRUE,stringsAsFactors=FALSE)
 
 # We will put our results in a data frame

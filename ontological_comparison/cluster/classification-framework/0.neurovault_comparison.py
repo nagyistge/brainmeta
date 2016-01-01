@@ -6,6 +6,7 @@ import os
 import shutil
 import nibabel
 import pandas
+from glob import glob
 from pyneurovault import api
 from cognitiveatlas.api import get_task, get_concept
 from pybraincompare.compare.maths import TtoZ
@@ -14,7 +15,7 @@ from pybraincompare.compare.maths import TtoZ
 
 # Set up work folders for data
 # For the VM: these paths will be environmental variables
-base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON/v3"
+base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON"
 results = "%s/results" %base  # any kind of tsv/result file
 data = "%s/data" %base        # mostly images
 
@@ -75,13 +76,15 @@ for tt in range(0,len(tmaps)):
     TtoZ(tmap,output_nii=zmap_new,dof=dof)
 
 # Copy all (already) Z maps to the folder
-zmaps = [ "%s/resampled_z/%06d.nii.gz" %(data,x) for x in z.image_id.tolist()]
+zmaps = [ "%s/resampled/%06d.nii.gz" %(data,x) for x in z.image_id.tolist()]
 for zmap in zmaps:
     zmap_new = "%s/%s" %(outfolder_z,os.path.split(zmap)[-1])
     shutil.copyfile(zmap,zmap_new)
 
 if len(glob("%s/*.nii.gz" %(outfolder_z))) != images.shape[0]:
     raise ValueError("ERROR: not all images were found in final folder %s" %(outfolder_z))
+
+images.to_csv("%s/contrast_defined_images_filtered.tsv" %results,encoding="utf-8",sep="\t")
 
 ## STEP 2: IMAGE SIMILARITY
 ######################################################
