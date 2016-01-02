@@ -5,7 +5,7 @@ import pickle
 import pandas
 import os
 
-base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON/v2"
+base = "/scratch/users/vsochat/DATA/BRAINMETA/ontological_comparison"
 data = "%s/data" %base        # mostly images
 scores_folder = "%s/individual_scores" %(data)   # output folder for individual scores
 likelihood_pickles = glob("%s/likelihood/*.pkl" %(data))
@@ -41,6 +41,7 @@ for s in range(0,len(scores)):
     ri_score.loc[count,"in_count"] = result["in_count"]
     ri_score.loc[count,"out_count"] = result["out_count"]
     count+=1
-        
+  
+      
 # Save table to file
-ri_score.to_csv("%s/reverse_inference_scores_v2.tsv" %data,sep="\t")
+ri_score.to_csv("%s/reverse_inference_scores.tsv" %data,sep="\t")

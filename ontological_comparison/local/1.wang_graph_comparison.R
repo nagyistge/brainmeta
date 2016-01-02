@@ -30,5 +30,6 @@ for (i in 1:nrow(images)){
 
 
 # Export to file
-output_file = "/home/vanessa/Documents/Work/BRAINMETA/reverse_inference/contrast_defined_images_wang.tsv"
+output_file = "/home/vanessa/Documents/Dropbox/Code/Python/brainmeta/ontological_comparison/cluster/classification-framework/analysis/wang/contrast_defined_images_wang.Rda"
+save(similarities,file=output_file)
 write.csv(similarities,filename=output_file,sep="\t")

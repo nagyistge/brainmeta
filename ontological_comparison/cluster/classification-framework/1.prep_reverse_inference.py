@@ -7,11 +7,13 @@ import re
 #from vm import make_analysis_output_folder
 
 # For the VM: these paths will be environmental variables
-base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON"
+base = "/scratch/users/vsochat/DATA/BRAINMETA/ontological_comparison"
 results = "%s/results" %base  # any kind of tsv/result file
 data = "%s/data" %base        # mostly images
 web = "%s/web" %base
-os.mkdir(web)
+
+if not os.path.exists(web):
+    os.mkdir(web)
 
 # Read in images metadata
 images = pandas.read_csv("%s/contrast_defined_images_filtered.tsv" %results,sep="\t")
@@ -62,7 +64,9 @@ tree = named_ontology_tree_from_tsv(relationship_table,output_json=None)
 
 html_snippet = make_ontology_tree_d3(tree)
 web_folder = "%s/concepttree" %web
-os.mkdir(web_folder)
+if not os.path.exists(web_folder):
+    os.mkdir(web_folder)
+
 save_template(html_snippet,"%s/index.html" %web_folder)
 
 ## STEP 3: DERIVATION OF LIKELIHOOD GROUPS

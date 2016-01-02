@@ -3,7 +3,8 @@ from glob import glob
 import pickle
 import os
 
-base = "/share/PI/russpold/work/IMAGE_COMPARISON/ONTOLOGICAL_COMPARISON"
+base = "/scratch/users/vsochat/DATA/BRAINMETA/ontological_comparison"
+
 data = "%s/data" %base        # mostly images
 likelihood_pickles = glob("%s/likelihood/*.pkl" %(data))
 scores_folder = "%s/individual_scores" %(data)     # output folder for individual scores
@@ -32,17 +33,18 @@ while len(pairs_to_run) > 0:
         image_id = os.path.split(image)[1].replace(".nii.gz","")
         output_pkl = "%s/%s_%s.pkl" %(scores_folder,group["nid"],image_id)
         if not os.path.exists(output_pkl):
-            filey = ".jobs/oc_%s_%s.job" %(i,image_id)
+            print ".job/oc_%s_%s.job" %(i,image_id)
+            filey = ".job/oc_%s_%s.job" %(i,image_id)
             filey = open(filey,"w")
             filey.writelines("#!/bin/bash\n")
             filey.writelines("#SBATCH --job-name=%s\n" %(image_id))
-            filey.writelines("#SBATCH --output=.out/%s_%s.out\n" %(i,image_id))
-            filey.writelines("#SBATCH --error=.out/%s_%s.err\n" %(i,image_id))
+            filey.writelines("#SBATCH --output=.outs/%s_%s.out\n" %(i,image_id))
+            filey.writelines("#SBATCH --error=.outs/%s_%s.err\n" %(i,image_id))
             filey.writelines("#SBATCH --time=2-00:00\n")
             filey.writelines("#SBATCH --mem=64000\n")
             filey.writelines("python /home/vsochat/SCRIPT/python/brainmeta/ontological_comparison/cluster/classification-framework/3.calculate_reverse_inference.py %s %s %s %s" %(image, node, output_pkl, tables_folder))
             filey.close()
-            os.system("sbatch -p russpold " + ".jobs/oc_%s_%s.job" %(i,image_id))
+            os.system("sbatch -p russpold " + ".job/oc_%s_%s.job" %(i,image_id))
 
 
 # This will produce data for a LOO cross validation procedure:

@@ -78,13 +78,24 @@ from sklearn.neighbors import NearestNeighbors
 
 # Here are the reddit vectors (using different reddit data from months ago, same boards)
 reddit_vectors = pickle.load(open("%s/analysis/models/classifier_reddit.pkl" %(base_dir),"rb"))
-nbrs = NearestNeighbors(n_neighbors=100, algorithm='ball_tree').fit(reddit_vectors)
+reddit_vectors[reddit_vectors.isnull()==True] = 0
 model = load_models(base_dir,"reddit")["reddit"]
-test_labels = [l.split("/")[-1].replace("_meta.txt","") for l in meta]
+
+# Subset to disorder groups only
 train_labels = [l.split("_")[0] for l in reddit_vectors.index]
+disorders = ['Alzheimers', 'AvPD', 'BPD', 'BipolarReddit','CompulsiveSkinPicking', 'DID', 'EOOD', 'EatingDisorders', 'OCD','PTSD', 'SPD', 'amnesia', 'anxiety','autism', 'insomnia','narcissism', 'narcolepsy','phobia','psychoticreddit','schizophrenia', 'stress']
+idx = [reddit_vectors.index[x] for x in range(len(train_labels)) if train_labels[x] in disorders]
+reddit_vectors = reddit_vectors.loc[idx]
+
+nbrs = NearestNeighbors(n_neighbors=100, algorithm='ball_tree').fit(reddit_vectors)
 
 # We will save a data frame of predictions - counts for each test
 predictions = pandas.DataFrame(columns=numpy.unique(train_labels).tolist())
+
+# Also subset meta files to disorder groups only
+new_meta = [l for l in meta if l.split("/")[-1].split("_")[0] in disorders]
+meta = new_meta
+test_labels = [l.split("/")[-1].replace("_meta.txt","") for l in meta]
 
 analyzer = DeepTextAnalyzer(model)
 for m in range(len(meta)):
@@ -102,14 +113,25 @@ for m in range(len(meta)):
             predict = pandas.DataFrame(rx)[0].value_counts()
             predictions.loc[label,predict.index] = predict
 
+# Again, filter to disorders
+idx = [l.split("_")[0] for l in predictions.index]
+idx = [predictions.index[x] for x in range(len(predictions.index)) if idx[x] in disorders]
+
+
 # How many did we get right?
 correct_labels = [x.split("_")[0] for x in predictions.index]
 predicted_labels = predictions.idxmax(axis=1).tolist()
 accuracy = 0
 for x in range(len(correct_labels)):
-    if correct_labels[x]==predicted_labels[x]:
-        accuracy +=1
+    if correct_labels[x]!=predicted_labels[x]:
+        print "%s predicted as %s" %(correct_labels[x],predicted_labels[x])
 accuracy/float(len(correct_labels))
+
+predictions = pickle.load(open("%s/analysis/models/classifier_reddit_predictins.pkl" %(base_dir),"rb"))
+pickle.dump(predictions,open("%s/analysis/models/classifier_reddit_predictins.pkl" %(base_dir),"wb"))
+
+# When this done, trying subsetting to different disorders? Then see if we can validate ontology links with
+# this method (need to figure out how to extract phrases from wordfish...
 
 # Let's now do KNN with a new vector. First map to the space
 vectors = pickle.load(open("%s/analysis/models/classifier_reddit.pkl" %(base_dir),"rb"))
