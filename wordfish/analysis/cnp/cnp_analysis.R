@@ -1,5 +1,6 @@
 # Step 0: Data Visualization ################################################################
 
+setwd("/home/vanessa/Documents/Dropbox/Code/Python/brainmeta/wordfish/analysis/cnp")
 questions = read.csv("data/cnp_704.tsv",sep="\t")
 rownames(questions) = questions$question_label
 
@@ -101,7 +102,8 @@ for (row in 1:nrow(data)){
 
 # Save diagnoses matrix
 write.table(diagnoses,file="data/cnp_rx_table_.tsv",sep="\t")
-save(diagnoses,file="data/cnp_rx_table.Rda")
+#save(diagnoses,file="data/cnp_rx_table.Rda")
+load(file="data/cnp_rx_table.Rda")
 
 # Summarize
 summy = sort(colSums(diagnoses),decreasing=TRUE)
@@ -167,7 +169,8 @@ for (assessment in assessments){
 }
 
 # Save our progress
-save(cnp_phenotypes,file="data/cnp_phenotypes.Rda")
+#save(cnp_phenotypes,file="data/cnp_phenotypes.Rda")
+load(file="data/cnp_phenotypes.Rda")
 
 # Let's make diagnosis groups just based on the "high level" disorder
 diagnoses = as.data.frame(diagnoses)
@@ -281,7 +284,7 @@ for (word in rownames(word_matches)){
 
 # RSA ANALYSIS
 
-data = read.csv("rsa_all_recode.tsv",sep="\t",row.names=1)
+data = read.csv("rsa/rsa_all_recode.tsv",sep="\t",row.names=1)
 data[is.na(data)]
 #numeric(0)
 pdf("rsa_cnp_vs_wordfish_recode.pdf",width=20,height=20)
@@ -289,10 +292,16 @@ pheatmap(data,cluster_rows=FALSE,cluster_cols=FALSE)
 pheatmap(data)
 dev.off()
 
-data = read.csv("rsa_all_settona.tsv",sep="\t",row.names=1)
+data = read.csv("rsa/rsa_all_settona.tsv",sep="\t",row.names=1)
 data[is.na(data)]
 #numeric(0)
 pdf("rsa_cnp_vs_wordfish_settona.pdf",width=20,height=20)
 pheatmap(data,cluster_rows=FALSE,cluster_cols=FALSE)
 pheatmap(data)
 dev.off()
+
+# Let's look at just "all" meaning questions across all disorder groups
+all = data["all"]
+
+# Remove other CNP comparisons
+all = all[-grep("cnp_",rownames(all))]
