@@ -304,4 +304,8 @@ dev.off()
 all = data["all"]
 
 # Remove other CNP comparisons
-all = all[-grep("cnp_",rownames(all))]
+rows_to_keep = rownames(all)[-grep("cnp_*",rownames(all))]
+all = all[-which(rownames(all) %in% rows_to_remove)]
+all = all[which(rownames(all) %in% rows_to_keep),]
+names(all) = rows_to_keep
+all = all[-which(names(all)%in%c("question_scale","assessment","all"))]

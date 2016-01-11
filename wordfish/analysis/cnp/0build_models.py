@@ -40,7 +40,7 @@ boards = subset_corpus(corpus["reddit"])
 # Build missing models
 tobuild = [b for b in boards.keys() if b not in models.keys()]
 boards = dict((k, boards[k]) for k in tobuild)
-newmodels = build_models(boards)
+newmodels = build_models(boards,"word2vec")
 
 # Save all models
 save_models(newmodels,base_dir)
