@@ -74,13 +74,17 @@ pickle.dump(sims,open("%s/rsa_matrix_lookup.pkl" %rsa_dir,"wb"))
     
 
 # Write a function to perform RSA
-def rsa(mfile1,mfile2):
+def rsa(mfile1,mfile2,question_filter=None):
     m1 = pandas.read_csv(mfile1,sep="\t",index_col=0)
     m2 = pandas.read_csv(mfile2,sep="\t",index_col=0)
     # Reduce to common questions (only an issue if neurosynth), diff is one question
     overlap = m1.index[m1.index.isin(m2.index)]
     m1 = m1.loc[overlap,overlap]
     m2 = m2.loc[overlap,overlap]
+    if question_filter != None:
+       ls = [x for x in m1.index.tolist() if re.search(question_filter,x)]
+       m1 = m1.loc[ls,ls]
+       m2 = m2.loc[ls,ls]
     vector1 = m1.mask(numpy.triu(numpy.ones(m1.shape)).astype(numpy.bool)).values.flatten()
     vector2 = m2.mask(numpy.triu(numpy.ones(m2.shape)).astype(numpy.bool)).values.flatten()
     # Find overlapping (non-nans)
@@ -89,13 +93,31 @@ def rsa(mfile1,mfile2):
     idx = numpy.intersect1d(vector1_defined,vector2_defined)
     return pearsonr(vector1[idx],vector2[idx])[0]
 
-results = pandas.DataFrame(columns=sims.keys(),index=sims.keys())
+results = pandas.DataFrame(columns=["RSA"])
 for label1,mfile1 in sims.iteritems():
     print "Processing %s" %(label1)
     for label2,mfile2 in sims.iteritems():
         res = rsa(mfile1,mfile2)
-        results.loc[label1,label2] = res
-        results.loc[label2,label1] = res
+        results.loc["%s_%s" %(label1,label2),"RSA"] = res
         
-
 results.to_csv("%s/rsa_all_settona.tsv" %rsa_dir,sep="\t")
+
+# We will just compare to wordfish reddit for now
+wordfish = sims["wordfish_reddit"]
+cnp = [x for x in sims.keys() if re.search("cnp",x)]
+cnp.append("all")
+results = pandas.DataFrame(columns=["RSA"])
+
+# Now run for subsets of questionnaires
+questions = numpy.unique([''.join([i for i in x if not i.isdigit()]) for x in vectors_sims.index.tolist()]).tolist()
+questions = [x for x in questions if not re.search("ASRS",x) and not re.search("ASSESS",x)]
+questions = questions + ["ASRS","ASSESS"]
+questions.pop(questions.index("TEST_"))
+for label in cnp:
+    for question in questions:
+        print "Processing %s and %s" %(label,question)
+        mfile = sims[label] 
+        res = rsa(mfile,wordfish,question)
+        results.loc["%s_%s" %(label,question),"RSA"] = res
+
+results.to_csv("%s/rsa_cnpwordfish_reddit_byquestionnaire.tsv" %rsa_dir,sep="\t")
