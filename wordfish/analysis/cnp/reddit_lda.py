@@ -4,6 +4,7 @@ from wordfish.nlp import sentence2words
 from wordfish.utils import mkdir
 import pickle
 import gensim
+import pandas
 import json
 import os
 base_dir = os.environ["WORDFISH_HOME"]
@@ -65,3 +66,10 @@ for cnp_question in cnp_questions:
     cnp_lda[text["labels"][0]] = lda[doc_bow]
     
 pickle.dump(cnp_lda,open("%s/cnp_lda.pkl" %models_dir,"wb"))
+
+# Let's make a data frame of 
+scores = pandas.DataFrame(columns=range(100))
+for cnp_question, topic_mapping in cnp_lda.iteritems():
+    for single_mapping in topic_mapping:
+        scores.loc[cnp_question,single_mapping[0]] = single_mapping[1]
+scores.to_csv("%s/cnp_lda_scores.csv" %models_dir)
